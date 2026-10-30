@@ -1,6 +1,7 @@
 """This module contains the StateManager class and a abstract State class."""
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass
@@ -9,6 +10,8 @@ from enum import Enum
 import pygame as pg
 
 from my_game.core.input_manager import InputManager, InputState
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -155,6 +158,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
 
     def change_state(self, next_state: StateKey | None) -> None:
         """Exit the current state, enter the next one."""
+        logger.info(f"Changing state from {self.current_state_id} to {next_state}")
         if next_state is None:
             raise ValueError("Attempted to change state but next_state not set.")
 
