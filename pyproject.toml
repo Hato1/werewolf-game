@@ -1,0 +1,108 @@
+[project]
+name = "my_game"
+version = "0.1.0"
+description = "A Pygame CE template with state management, asset loading, controller input, and cross-platform packaging."
+readme = "README.md"
+# Use Python 3.14 as it's the latest pygbag supports at the time of writing.
+requires-python = "==3.14.*"
+dependencies = [
+    "pygame-ce>=2.5.8",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1", # Static type checker (Note: Replace with Ty when released?).
+    "pre-commit>=4.6.2", # See .pre-commit-config.yaml
+    "ruff>=0.16.8", # Linter.
+    "pytest>=9.1.1", # Testing framework.
+    "pytest-env>=1.7.1", # Environment variables for pytest.
+    "pyinstaller>=6.22.3", # For building executables on Windows, Mac and Linux.
+    "pillow>=12.3.0", # Required for Pyinstaller PNG icon conversion.
+    "pylint>=4.0.9",  # Linter.
+    "pygbag>=0.9.3",  # For building web versions of the game. 0.9.3 doesn't support python3.15
+]
+
+[project.scripts]
+run-game = "my_game.main:run"
+
+# Including this to install project files into venv.
+[build-system]
+requires = ["uv_build>=0.9"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = [
+  "E",       # pycodestyle (error)
+  "W",       # pycodestyle (warning)
+  "F",       # pyflakes
+  "B",       # flake8-bugbear
+  "I",       # isort
+  "N",       # pep8-naming
+  "PIE",     # flake8-pie
+  "PLW",     # pylint warning
+  "PLE",     # pylint error
+  "PLR",     # pylint refactor
+  "PTH",     # Use Pathlib instead of os.path
+  "PT",      # flake8-pytest-style
+  "RUF",     # ruff-specific rules
+  "PGH",     # blanket noqa and type-ignore comments
+  "FBT",     # flake8-boolean-trap
+  "UP",      # pyupgrade
+  "NPY",     # NumPy-specific rules
+  "EXE",     # flake8-executable
+  "C4",      # flake8-comprehensions
+  "C90",     # McCabe complexity
+  "SIM101",  # merge duplicate isinstance calls
+  "SIM201", "SIM202", "SIM222", "SIM223",  # flake8-simplify
+  "FURB168", # Prefer is operator over isinstance for None checks
+  "FURB169", # Do not use is comparison with type(None). Use None
+  "FURB187", # avoid list reverse copy
+  "FURB188", # use str.remove(pre|suf)fix
+  "ISC001",  # implicitly concatenated string
+  "RET501", "RET502",  # better return None handling
+]
+
+ignore = [
+  "E2",     # conflicts with black
+  "E501",   # conflicts with black
+  "E731",   # Do not assign a `lambda` expression, use a `def`
+  "E741",   # Ambiguous variable name
+  "C409",   # https://github.com/astral-sh/ruff/issues/12912
+  "C420",   # reads a little worse. fromkeys predates dict comprehensions
+  "C416",   # There are a few cases where it's nice to have names for the dict items
+  "PIE790", # there's nothing wrong with pass
+  "SIM102", # Splitting a compound conditional into multiple lines is often more readable
+]
+
+unfixable = [
+  "SIM222", # automatic fix might obscure issue
+  "SIM223", # automatic fix might obscure issue
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004"] # Allow magic values used in comparisons for tests.
+
+[tool.pytest.ini_options]
+# importlib is best practice
+# https://docs.pytest.org/en/stable/explanation/goodpractices.html
+addopts = [
+    "--import-mode=importlib",
+]
+
+[tool.mypy]
+check_untyped_defs = true
+follow_untyped_imports = true
+
+[tool.pylint."messages control"]
+disable = [
+    "all"
+]
+enable = [
+    "W0201", # Attribute defined outside __init__
+]
+
+[tool.pytest_env]
+SDL_VIDEODRIVER = "dummy"

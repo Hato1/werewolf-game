@@ -1,0 +1,209 @@
+# This workflow will use PyInstaller to create a Windows, Mac and Linux executable and upload it to the GitHub release
+#
+# As a rule of thumb, it's best to use the oldest OS version possible for building executables,
+# to maximize compatibility with older systems. Here we're using the latest... oh well.
+#
+# Helpful documentation:
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# https://docs.astral.sh/uv/guides/integration/github/
+
+name: Build and Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  web-build:
+    name: Build for Emscripten pygbag runtime
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          # Pinning uv version is best practice to avoid unexpected breakages.
+          version: "0.9.5"
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Build executable with PyInstaller
+        run: |  # TODO: Use ini and/or load config from pyproject.toml.
+              python -m pygbag \
+                --PYBUILD=3.14 \
+                --app_name="my_game" \
+                --title="my_game" \
+                --build \
+                --icon=$GITHUB_WORKSPACE/src/my_game/assets/icon.png \
+                $GITHUB_WORKSPACE/src/my_game
+      # TODO: Upload to GitHub release as well (with --archive for itch.io support)
+      - name : "Upload to GitHub pages branch gh-pages"
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: build/web
+
+  windows-build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          # Pinning uv version is best practice to avoid unexpected breakages.
+          version: "0.9.5"
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Build executable with PyInstaller
+        run: |
+          uv run python tools/build_app.py
+          Compress-Archive -Path dist/* -Destination windows_release.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-executable-windows-zip
+          path: windows_release.zip
+
+  linux-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          # Pinning uv version is best practice to avoid unexpected breakages.
+          version: "0.9.5"
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Build executable with PyInstaller
+        run: |
+          uv run python tools/build_app.py
+          tar -czvf linux_release.tar.gz dist/*
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-executable-linux-zip
+          path: linux_release.tar.gz
+
+  macos-build:
+    # macos-latest uses Apple Silicon (ARM) runners by default.
+    # We want to use the intel runners for broader compatibility.
+    # See https://github.com/actions/runner-images
+    runs-on: macos-15-intel
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          # Pinning uv version is best practice to avoid unexpected breakages.
+          version: "0.9.5"
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Build executable with PyInstaller
+        run: |
+          uv run python tools/build_app.py
+          echo "If MacOS complains about a damaged app or malicious software," > dist/readme.txt
+          echo "Open terminal and type:" >> dist/readme.txt
+          echo "xattr -d com.apple.quarantine {APP}" >> dist/readme.txt
+          echo "Instead of typing {APP}, drag and drop the application into the" >> dist/readme.txt
+          echo "terminal window, then hit enter. This removes the quarantine" >> dist/readme.txt
+          echo "attribute and the program should run." >> dist/readme.txt
+          tar -czvf macos_release.tar.gz dist/*.app dist/readme.txt
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-executable-macos-zip
+          path: macos_release.tar.gz
+
+  executable-upload:
+    runs-on: ubuntu-latest
+    needs: [windows-build, linux-build, macos-build]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download windows executable for job windows-build
+        uses: actions/download-artifact@v5
+        with:
+          name: release-executable-windows-zip
+
+      - name: Download linux executable for job linux-build
+        uses: actions/download-artifact@v5
+        with:
+          name: release-executable-linux-zip
+
+      - name: Download macos executable for job macos-build
+        uses: actions/download-artifact@v5
+        with:
+          name: release-executable-macos-zip
+
+      - name: Upload zipped windows executable to release
+        uses: JasonEtco/upload-to-release@master
+        with:
+          args: windows_release.zip application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload tarballed linux executable to release
+        uses: JasonEtco/upload-to-release@master
+        with:
+          args: linux_release.tar.gz application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload tarballed macos executable to release
+        uses: JasonEtco/upload-to-release@master
+        with:
+          args: macos_release.tar.gz application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
