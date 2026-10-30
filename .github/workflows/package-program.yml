@@ -52,7 +52,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: build/web
+          folder: src/my_game/build/web
 
   windows-build:
     runs-on: windows-latest
