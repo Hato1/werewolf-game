@@ -23,10 +23,6 @@ Context:
     handlers can read it.
     Avoid keys that clash with built-in `LogRecord` attributes such as `name`,
     `message`, `args` or `module`; the standard library raises `KeyError` for those.
-
-Messages also support standard lazy %-style arguments:
-
-        logger.debug("Loaded %s assets", count)
 """
 
 import logging
@@ -36,14 +32,14 @@ from collections.abc import MutableMapping
 from enum import IntEnum
 from typing import Any, ClassVar
 
-# Attributes every LogRecord has; anything else on a record is user-supplied context.
+# Attributes every LogRecord has, anything else on a record is user-supplied context.
 _STANDARD_RECORD_ATTRS = frozenset(logging.makeLogRecord({}).__dict__) | {"message", "asctime"}
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 _TIME_FORMAT = "%H:%M:%S"
 
 
 class LogLevel(IntEnum):
-    """Log severities, mirroring the standard `logging` levels."""
+    """Log severities"""
 
     DEBUG = logging.DEBUG
     INFO = logging.INFO
@@ -134,7 +130,7 @@ def initialize_logger(log_level: int | LogLevel = LogLevel.INFO) -> None:
     Meant to be called once by the application entry point, not by library code.
     Safe to call again to change the level: the console handler is reused.
 
-    log_level: Hide logs below this level. Can be an int or a LogLevel.
+    log_level: Hide logs below this level.
     """
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
