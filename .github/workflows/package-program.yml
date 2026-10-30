@@ -40,10 +40,10 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |  # TODO: Use ini and/or load config from pyproject.toml.
-              python -m pygbag \
+              uv run python -m pygbag \
                 --PYBUILD=3.14 \
-                --app_name="my_game" \
-                --title="my_game" \
+                --app_name="werewolf" \
+                --title="werewolf" \
                 --build \
                 --icon=$GITHUB_WORKSPACE/src/my_game/assets/icon.png \
                 $GITHUB_WORKSPACE/src/my_game
