@@ -19,6 +19,10 @@ import my_game.initialise_pygame  # noqa: F401
 from my_game.constants import DEFAULT_CAPTION, SCREEN_SIZE
 from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
+from my_game.werewolf import registry as werewolf
+
+GAMES = [bullet_hell, werewolf]
+DEFAULT_GAME = werewolf
 
 
 async def main():
@@ -32,8 +36,8 @@ async def main():
 
     state_manager = StateManager(
         screen,
-        bullet_hell.STATE_REGISTRY,
-        bullet_hell.input_manager,
+        DEFAULT_GAME.STATE_REGISTRY,
+        DEFAULT_GAME.input_manager,
         DEFAULT_CAPTION,
     )
 
