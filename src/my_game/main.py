@@ -17,17 +17,21 @@ if "my_game" not in sys.modules:
 
 import my_game.initialise_pygame  # noqa: F401
 from my_game.constants import DEFAULT_CAPTION, SCREEN_SIZE
+from my_game.core.logger import LogLevel, get_logger, initialize_logger
 from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
 from my_game.werewolf import registry as werewolf
 
+logger = get_logger(__name__)
+
+# TODO: Allow selecting which game to run via command line arguments or configuration.
 GAMES = [bullet_hell, werewolf]
 DEFAULT_GAME = werewolf
 
 
 async def main():
     """Run the program."""
-
+    initialize_logger(LogLevel.INFO)
     # Initialization
     pg.init()
     screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
@@ -49,7 +53,10 @@ async def main():
 
 def run() -> None:
     """Synchronous entry point for the console script."""
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.warning("Program interrupted by user.")
 
 
 if __name__ == "__main__":
