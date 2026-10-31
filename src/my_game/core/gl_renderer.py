@@ -18,7 +18,7 @@ pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CO
 pg.display.gl_set_attribute(pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
 
 
-class Renderer:
+class GLRenderer:
     # Is Render Scale still useful?
     RENDER_SCALE: float = 1
 

@@ -17,8 +17,8 @@ if "my_game" not in sys.modules:
 
 import my_game.initialise_pygame  # noqa: F401
 from my_game.constants import DEFAULT_CAPTION, SCREEN_SIZE
+from my_game.core.gl_renderer import GLRenderer
 from my_game.core.logger import LogLevel, get_logger, initialize_logger
-from my_game.core.renderer import Renderer
 from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
 from my_game.werewolf import registry as werewolf
@@ -41,13 +41,13 @@ async def main():
         pg.OPENGL | pg.DOUBLEBUF,
     )
     # screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
-    renderer = Renderer()
+    gl_renderer = GLRenderer()
     assert screen is not None, "Pygame display surface not initialized."
     pg.display.set_caption(DEFAULT_CAPTION)
 
     state_manager = StateManager(
         screen,
-        renderer,
+        gl_renderer,
         DEFAULT_GAME.STATE_REGISTRY,
         DEFAULT_GAME.input_manager,
         DEFAULT_CAPTION,

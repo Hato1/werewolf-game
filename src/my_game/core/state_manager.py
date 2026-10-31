@@ -8,9 +8,9 @@ from enum import Enum
 
 import pygame as pg
 
+from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.logger import get_logger
-from my_game.core.renderer import Renderer
 
 logger = get_logger(__name__)
 
@@ -65,7 +65,7 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         self,
         surface_rect: pg.Rect,
         transition_data: Payload,
-        renderer: Renderer | None,
+        gl_renderer: GLRenderer | None,
     ) -> None:
         """Called when this state becomes the active state.
 
@@ -96,7 +96,7 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         pass
 
     @abstractmethod
-    def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None):
+    def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None):
         """Render to the given surface. Runs every frame.
 
         surface: The surface to draw to.
@@ -137,7 +137,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
     def __init__(
         self,
         screen: pg.Surface,
-        renderer: Renderer | None,
+        gl_renderer: GLRenderer | None,
         registry: StateRegistry[StateKey, Payload],
         input_manager: InputManager,
         caption: str,
@@ -151,14 +151,14 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.input_manager: InputManager = input_manager
         self.caption: str = caption  # Caption for the window.
         self.transition_data_factory = registry.transition_data_factory
-        self.renderer: Renderer | None = renderer
+        self.gl_renderer: GLRenderer | None = gl_renderer
 
         self.quit: bool = False  # Set to True to exit program.
         self.clock: pg.Clock = pg.time.Clock()
         self.fps: float = 60.0  # Used to limit the framerate.
         self.show_fps: bool = True  # Display the framerate in the caption.
 
-        self.current_state.enter(self.screen.get_rect(), self.transition_data_factory(), self.renderer)
+        self.current_state.enter(self.screen.get_rect(), self.transition_data_factory(), self.gl_renderer)
 
     def change_state(self, next_state: StateKey | None) -> None:
         """Exit the current state, enter the next one."""
@@ -178,7 +178,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.current_state.enter(
             self.screen.get_rect(),
             transition_data=transition_data,
-            renderer=self.renderer,
+            gl_renderer=self.gl_renderer,
         )
 
     def toggle_show_fps(self) -> None:
@@ -210,7 +210,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
 
         input_state = self.input_manager.get_input_state()
         self.current_state.update(self.screen.get_rect(), dt, input_state)
-        self.current_state.draw(self.screen, dt, self.renderer)
+        self.current_state.draw(self.screen, dt, self.gl_renderer)
 
     async def main(self):
         """Main loop for entire program.
@@ -221,8 +221,8 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
             dt = self.clock.tick(self.fps) / 1000.0
             self.handle_events()
             self.update(dt)
-            if self.renderer:
-                self.renderer.update()
+            if self.gl_renderer:
+                self.gl_renderer.update()
             else:
                 pg.display.update()
             pg.display.flip()

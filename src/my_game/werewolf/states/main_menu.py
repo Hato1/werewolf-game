@@ -3,8 +3,8 @@ from enum import Enum
 
 import pygame as pg
 
+from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
-from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
@@ -29,12 +29,12 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self,
         surface_rect: pg.Rect,
         transition_data: WerewolfTransitionData,
-        renderer: Renderer | None = None,
+        gl_renderer: GLRenderer | None = None,
     ) -> None:
-        super().enter(surface_rect, transition_data, renderer)
+        super().enter(surface_rect, transition_data, gl_renderer)
         self.background_color = random_color()
-        if renderer:
-            renderer.set_light_position(0.5, 0.19)
+        if gl_renderer:
+            gl_renderer.set_light_position(0.5, 0.19)
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
@@ -44,7 +44,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         pass
 
-    def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None = None) -> None:
+    def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None = None) -> None:
         surface.fill(self.background_color)
 
         text = "press enter to start"
@@ -54,11 +54,11 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         scaled_down_rect = pg.Rect(0, 0, surface.size[0], surface.size[1])
         text_rect = text_surface.get_rect(center=(scaled_down_rect.center))
 
-        if renderer:
-            renderer.blit_to_lit(
+        if gl_renderer:
+            gl_renderer.blit_to_lit(
                 pg.image.load("src/my_game/werewolf/assets/textures/moon_screenshot_trees.png"),
                 surface.get_rect(),
             )
-            renderer.blit_to_unlit(text_surface, text_rect)
+            gl_renderer.blit_to_unlit(text_surface, text_rect)
         else:
             surface.blit(text_surface, text_rect)
