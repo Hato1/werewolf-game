@@ -68,6 +68,7 @@ class GLRenderer:
                     float start_distance = distance(mouse_pos, uvs);
                     float brightness = 1;
                     vec3 sample_total = texture(tex,uvs).rgb;
+                    vec3 sample_bonus = vec3(0,0,0);
                     float weight = 1;
 
 
@@ -78,15 +79,16 @@ class GLRenderer:
                         if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7){
                             //end early
                             float percent_left = 1 - (i / (sample_count));
-                            sample_total = vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
+                            sample_bonus += vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
                             break;
                         }
                         vec3 sample = texture(tex, sample_pos).rgb;
                         //sample_total += vec3(brightness - (distance), 0 ,0);
                         float dist_weight = clamp(1 - ((distance + start_distance)/brightness), 0, 1);
-                        sample_total += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
+                        sample_bonus += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
                         weight = mix(0, 1, dist_weight);
                     }
+                    sample_total += sample_bonus;
                     f_color = vec4(sample_total.r , sample_total.g , sample_total.b , 1.0);
                 }
                 """
@@ -149,7 +151,7 @@ class GLRenderer:
         unlit_render_object = self.ctx.vertex_array(self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
 
         # sample count is the number of steps towards a light a pixel will check.
-        self.program["sample_count"] = 32
+        self.program["sample_count"] = 128
         # px per sample is the distance in pixels the shader will check for each sample
         self.program["px_per_sample"] = 1
 
