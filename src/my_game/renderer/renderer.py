@@ -3,6 +3,27 @@ import array
 import moderngl
 import pygame as pg
 
+
+# Set OpenGL context attributes for Pygame before creating the window.
+# Without this the OpenGL context may not be created with the desired version and profile.
+# And on some platforms, failing to set these attributes may result in an incompatible OpenGL context.
+pg.display.gl_set_attribute(
+    pg.GL_CONTEXT_MAJOR_VERSION, 3
+)
+pg.display.gl_set_attribute(
+    pg.GL_CONTEXT_MINOR_VERSION, 3
+)
+
+pg.display.gl_set_attribute(
+    pg.GL_CONTEXT_PROFILE_MASK,
+    pg.GL_CONTEXT_PROFILE_CORE
+)
+
+pg.display.gl_set_attribute(
+    pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1
+)
+
+
 RENDER_SCALE: float = 1
 
 

@@ -9,9 +9,6 @@ from pathlib import Path
 
 import pygame as pg
 
-import my_game.renderer.renderer as render_constants
-from my_game.renderer.renderer import Renderer
-
 # Hack for Pygbag to ensure the my_game package is correctly recognized.
 if "my_game" not in sys.modules:
     pkg = types.ModuleType("my_game")
@@ -19,10 +16,12 @@ if "my_game" not in sys.modules:
     sys.modules["my_game"] = pkg
 
 import my_game.initialise_pygame  # noqa: F401
+import my_game.renderer.renderer as render_constants
 from my_game.constants import DEFAULT_CAPTION, SCREEN_SIZE
 from my_game.core.logger import LogLevel, get_logger, initialize_logger
 from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
+from my_game.renderer.renderer import Renderer
 from my_game.werewolf import registry as werewolf
 
 logger = get_logger(__name__)
