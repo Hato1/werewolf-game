@@ -2,6 +2,7 @@ from enum import Enum
 
 import pygame as pg
 
+from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
 from my_game.core.state_manager import State
 from my_game.examples.bullet_hell.assets import Fonts
@@ -23,7 +24,7 @@ class MainMenu(State[BulletHellState, BulletHellTransitionData]):
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         pass
 
-    def draw(self, surface: pg.Surface, dt: float) -> None:
+    def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None) -> None:
         surface.fill(pg.Color("gray20"))
 
         text = "press enter to start"

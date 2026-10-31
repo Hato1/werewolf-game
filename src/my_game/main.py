@@ -17,6 +17,7 @@ if "my_game" not in sys.modules:
 
 import my_game.initialise_pygame  # noqa: F401
 from my_game.constants import DEFAULT_CAPTION, SCREEN_SIZE
+from my_game.core.gl_renderer import GLRenderer
 from my_game.core.logger import LogLevel, get_logger, initialize_logger
 from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
@@ -24,9 +25,15 @@ from my_game.werewolf import registry as werewolf
 
 logger = get_logger(__name__)
 
-# TODO: Allow selecting which game to run via command line arguments or configuration.
+# TODO: Allow configuration via command line arguments or something.
 GAMES = [bullet_hell, werewolf]
 DEFAULT_GAME = werewolf
+# Use OpenGL GPU rendering.
+OPENGL = True
+
+# Pygbag does not support OPENGL.
+if sys.platform == "emscripten":
+    OPENGL = False
 
 
 async def main():
@@ -34,12 +41,32 @@ async def main():
     initialize_logger(LogLevel.INFO)
     # Initialization
     pg.init()
-    screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
+
+    if OPENGL:
+        # Set OpenGL context attributes for Pygame before creating the window.
+        # Without this the OpenGL context may not be created with the desired version and profile.
+        # And on some platforms, failing to set these attributes may result in an incompatible OpenGL context.
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
+        options = pg.OPENGL | pg.DOUBLEBUF
+    else:
+        options = pg.SCALED
+
+    screen = pg.display.set_mode(SCREEN_SIZE, options)
+
+    if OPENGL:
+        gl_renderer = GLRenderer()
+    else:
+        gl_renderer = None
+
     assert screen is not None, "Pygame display surface not initialized."
     pg.display.set_caption(DEFAULT_CAPTION)
 
     state_manager = StateManager(
         screen,
+        gl_renderer,
         DEFAULT_GAME.STATE_REGISTRY,
         DEFAULT_GAME.input_manager,
         DEFAULT_CAPTION,
