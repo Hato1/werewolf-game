@@ -1,0 +1,187 @@
+import array
+
+import moderngl
+import pygame as pg
+
+RENDER_SCALE: float = 1
+
+
+class Renderer:
+    started: bool = False
+    ctx: moderngl.Context
+    render_object: moderngl.VertexArray
+    unlit_render_object: moderngl.VertexArray
+    program: moderngl.Program
+    unlit_program: moderngl.Program
+    time: float
+
+    lit_surface: pg.Surface
+    unlit_surface: pg.Surface
+
+    def resized_window():
+        scene_clamp = 1.0 / RENDER_SCALE
+        quad_buffer = Renderer.ctx.buffer(
+            data=array.array(
+                "f",
+                [
+                    # position (x,y), uv coord
+                    -1.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    scene_clamp,
+                    0.0,
+                    -1.0,
+                    -1.0,
+                    0.0,
+                    scene_clamp,
+                    1.0,
+                    -1.0,
+                    scene_clamp,
+                    scene_clamp,
+                ],
+            )
+        )
+        Renderer.render_object = Renderer.ctx.vertex_array(
+            Renderer.program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
+        )
+        Renderer.unlit_render_object = Renderer.ctx.vertex_array(
+            Renderer.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
+        )
+        Renderer.lit_surface = pg.Surface([640, 640])
+        Renderer.unlit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
+        Renderer.unlit_surface.fill(pg.Color(0, 0, 0, 0))
+
+        Renderer.program["sample_count"] = 32
+        Renderer.program["px_per_sample"] = 1
+
+    def init():
+        Renderer.ctx = moderngl.create_context()
+        Renderer.ctx.enable(moderngl.BLEND)
+        # Renderer.ctx.clear(1, 0, 1, 1)
+        vert_shader = """
+                #version 330 core
+
+                in vec2 vert;
+                in vec2 texcoord;
+                out vec2 uvs;
+
+                void main() {
+                uvs = texcoord;
+                gl_Position = vec4(vert, 0.0, 1.0);
+                }
+                """
+
+        lighting_shader = """
+                #version 330 core
+
+                uniform sampler2D tex;
+                uniform vec2 mouse_pos;
+                uniform vec2 screen_size;
+                uniform float sample_count;
+                uniform float px_per_sample;
+
+                in vec2 uvs;
+                out vec4 f_color;
+
+                void main() {
+                    vec2 sample_dir = vec2(0, -screen_size.y);
+                    if(mouse_pos != vec2(0,0))
+                        sample_dir = -normalize(uvs - mouse_pos) * screen_size;
+                    float start_distance = distance(mouse_pos, uvs);
+                    float brightness = 1;
+                    vec3 sample_total = texture(tex,uvs).rgb;
+                    float weight = 1;
+
+
+                    for(int i = 0; i < sample_count; i++){
+                        vec2 sample_pos = uvs + ((sample_dir) * (i * px_per_sample));
+                        float distance = distance(sample_pos, mouse_pos);
+                        vec3 sample = texture(tex, sample_pos).rgb;
+                        //sample_total += vec3(brightness - (distance), 0 ,0);
+                        float dist_weight = clamp(1 - ((distance + start_distance)/brightness), 0, 1);
+                        sample_total += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
+                        weight = mix(0, 1, dist_weight);
+                    }
+                    f_color = vec4(sample_total.r , sample_total.g , sample_total.b , 1.0);
+                }
+                """
+        unlit_shader = """
+                #version 330 core
+
+                uniform sampler2D tex;
+
+                in vec2 uvs;
+                out vec4 f_color;
+
+                void main() {
+                    vec4 sample = texture(tex, uvs ).rgba;
+                    f_color = vec4(sample.r, sample.g, sample.b, sample.a);
+                }
+                """
+        Renderer.program = Renderer.ctx.program(vertex_shader=vert_shader, fragment_shader=lighting_shader)
+        Renderer.unlit_program = Renderer.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
+        Renderer.resized_window()
+        Renderer.started = True
+        print("opengl renderer started : " + str(Renderer.started))
+
+    def surf_to_texture(surface: pg.Surface, context: moderngl.Context):
+        tex: moderngl.Texture = context.texture(surface.get_size(), 4)
+        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        tex.swizzle = "BGRA"
+        tex.write(surface.get_view("0"))
+        return tex
+
+    def draw_lit():
+        # these need to be done every frame
+
+        # convert surface to texture
+        frame_tex = Renderer.surf_to_texture(Renderer.lit_surface, Renderer.ctx)
+        # use this texture
+        frame_tex.use(0)
+        # set uniform tex to using 0
+        Renderer.program["tex"] = 0
+        mouse_position_on_screen = (
+            (pg.mouse.get_pos()[0] / Renderer.lit_surface.size[0]) * (1 / RENDER_SCALE),
+            (pg.mouse.get_pos()[1] / Renderer.lit_surface.size[1]) * (1 / RENDER_SCALE),
+        )
+        Renderer.program["mouse_pos"] = mouse_position_on_screen
+        print(str(mouse_position_on_screen))
+        Renderer.program["screen_size"] = [1 / Renderer.lit_surface.size[0], 1 / Renderer.lit_surface.size[1]]
+        # self.program['time'] = self.time
+        # render it
+        Renderer.render_object.render(mode=moderngl.TRIANGLE_STRIP)
+        frame_tex.release()
+
+    def draw_unlit():
+        frame_tex = Renderer.surf_to_texture(Renderer.unlit_surface, Renderer.ctx)
+        # use this texture
+        frame_tex.use(1)
+        # set uniform tex to using 1
+        Renderer.unlit_program["tex"] = 1
+        # self.program['time'] = self.time
+        # render it
+        Renderer.unlit_render_object.render(mode=moderngl.TRIANGLE_STRIP)
+        frame_tex.release()
+
+    def update():
+        Renderer.draw_lit()
+        Renderer.draw_unlit()
+
+    def set_light_position(x: float, y: float):
+        Renderer.program["mouse_pos"] = (x, y)
+
+    def blit_to_unlit(surf: pg.Surface, rect: pg.Rect):
+        Renderer.unlit_surface.blit(surf, rect)
+
+    def blit_to_lit(surf: pg.Surface, rect: pg.Rect):
+        Renderer.lit_surface.blit(surf, rect)
+
+
+# use multiple passes.
+
+# each pass a different function, i think we only need 3
+# lit, outline, ui
+# use a different surface for each pass

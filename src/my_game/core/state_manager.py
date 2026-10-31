@@ -10,6 +10,7 @@ import pygame as pg
 
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.logger import get_logger
+from my_game.renderer.renderer import Renderer
 
 logger = get_logger(__name__)
 
@@ -206,6 +207,8 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         input_state = self.input_manager.get_input_state()
         self.current_state.update(self.screen.get_rect(), dt, input_state)
         self.current_state.draw(self.screen, dt)
+        if Renderer.started:
+            Renderer.update()
 
     async def main(self):
         """Main loop for entire program.
@@ -215,8 +218,10 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         while not self.quit:
             dt = self.clock.tick(self.fps) / 1000.0
             self.handle_events()
+            if not Renderer.started:
+                pg.display.update()
+            pg.display.flip()
             self.update(dt)
-            pg.display.update()
             await asyncio.sleep(0)
 
             if self.show_fps:

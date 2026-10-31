@@ -9,6 +9,9 @@ from pathlib import Path
 
 import pygame as pg
 
+import my_game.renderer.renderer as render_constants
+from my_game.renderer.renderer import Renderer
+
 # Hack for Pygbag to ensure the my_game package is correctly recognized.
 if "my_game" not in sys.modules:
     pkg = types.ModuleType("my_game")
@@ -30,11 +33,18 @@ DEFAULT_GAME = werewolf
 
 
 async def main():
+    print(sys.platform)
     """Run the program."""
     initialize_logger(LogLevel.INFO)
     # Initialization
     pg.init()
-    screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
+
+    screen = pg.display.set_mode(
+        [SCREEN_SIZE[0] * render_constants.RENDER_SCALE, SCREEN_SIZE[1] * render_constants.RENDER_SCALE],
+        pg.OPENGL | pg.DOUBLEBUF,
+    )
+    # screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
+    Renderer.init()
     assert screen is not None, "Pygame display surface not initialized."
     pg.display.set_caption(DEFAULT_CAPTION)
 
