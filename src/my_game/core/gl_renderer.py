@@ -1,6 +1,17 @@
 import array
+import sys
+from typing import TYPE_CHECKING
 
-import moderngl
+# Pygbag doesn't support ModernGL, so we only import it on non-web platforms.
+# Importlib is required to dynamically import moderngl only on non-web platforms.
+# https://pygame-web.github.io/wiki/pygbag/#adding-modules
+if TYPE_CHECKING:
+    import moderngl
+elif sys.platform != "emscripten":
+    import importlib
+
+    moderngl = importlib.import_module("moderngl")
+
 import pygame as pg
 
 from my_game.core.logger import get_logger
