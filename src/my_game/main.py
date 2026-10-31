@@ -32,7 +32,6 @@ DEFAULT_GAME = werewolf
 
 
 async def main():
-    print(sys.platform)
     """Run the program."""
     initialize_logger(LogLevel.INFO)
     # Initialization

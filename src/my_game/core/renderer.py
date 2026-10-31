@@ -3,6 +3,10 @@ import array
 import moderngl
 import pygame as pg
 
+from my_game.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 # Set OpenGL context attributes for Pygame before creating the window.
 # Without this the OpenGL context may not be created with the desired version and profile.
@@ -146,7 +150,7 @@ class Renderer:
         Renderer.unlit_program = Renderer.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
         Renderer.resized_window()
         Renderer.started = True
-        print("opengl renderer started : " + str(Renderer.started))
+        logger.info("Initialised OpenGL renderer")
 
     def surf_to_texture(surface: pg.Surface, context: moderngl.Context):
         tex: moderngl.Texture = context.texture(surface.get_size(), 4)
@@ -169,7 +173,6 @@ class Renderer:
             (pg.mouse.get_pos()[1] / Renderer.lit_surface.size[1]) * (1 / RENDER_SCALE),
         )
         Renderer.program["mouse_pos"] = mouse_position_on_screen
-        print(str(mouse_position_on_screen))
         Renderer.program["screen_size"] = [1 / Renderer.lit_surface.size[0], 1 / Renderer.lit_surface.size[1]]
         # self.program['time'] = self.time
         # render it
@@ -200,9 +203,8 @@ class Renderer:
     def blit_to_lit(surf: pg.Surface, rect: pg.Rect):
         Renderer.lit_surface.blit(surf, rect)
 
-
+# Notes to self from Penumana:
 # use multiple passes.
-
 # each pass a different function, i think we only need 3
 # lit, outline, ui
 # use a different surface for each pass
