@@ -38,7 +38,7 @@ async def main():
     pg.init()
 
     screen = pg.display.set_mode(
-        [SCREEN_SIZE[0] * render_constants.RENDER_SCALE, SCREEN_SIZE[1] * render_constants.RENDER_SCALE],
+        [SCREEN_SIZE[0], SCREEN_SIZE[1]],
         pg.OPENGL | pg.DOUBLEBUF,
     )
     # screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)

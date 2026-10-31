@@ -3,7 +3,6 @@ from enum import Enum
 
 import pygame as pg
 
-import my_game.core.renderer as render_constants
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
@@ -53,7 +52,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         text_surface = self.FONT.render(text, anti_alias, pg.Color("yellow"))
         # text_surface = text_surface.convert()
         scaled_down_rect = pg.Rect(
-            0, 0, surface.size[0] / render_constants.RENDER_SCALE, surface.size[1] / render_constants.RENDER_SCALE
+            0, 0, surface.size[0], surface.size[1]
         )
         text_rect = text_surface.get_rect(center=(scaled_down_rect.center))
 

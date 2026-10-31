@@ -28,47 +28,9 @@ pg.display.gl_set_attribute(
 )
 
 
-RENDER_SCALE: float = 1
-
-
 class Renderer:
-    def create_render_objects(self):
-        scene_clamp = 1.0 / RENDER_SCALE
-        quad_buffer = self.ctx.buffer(
-            data=array.array(
-                "f",
-                [
-                    # position (x,y), uv coord
-                    -1.0,
-                    1.0,
-                    0.0,
-                    0.0,
-                    1.0,
-                    1.0,
-                    scene_clamp,
-                    0.0,
-                    -1.0,
-                    -1.0,
-                    0.0,
-                    scene_clamp,
-                    1.0,
-                    -1.0,
-                    scene_clamp,
-                    scene_clamp,
-                ],
-            )
-        )
-        render_object = self.ctx.vertex_array(
-            self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
-        )
-        unlit_render_object = self.ctx.vertex_array(
-            self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
-        )
-
-        self.program["sample_count"] = 32
-        self.program["px_per_sample"] = 1
-
-        return render_object, unlit_render_object
+    # Is Render Scale still useful?
+    RENDER_SCALE: float = 1
 
     def init(self):
         self.ctx = moderngl.create_context()
@@ -142,6 +104,44 @@ class Renderer:
         self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
         logger.warning("Initialised OpenGL renderer")
 
+    def create_render_objects(self):
+        scene_clamp = 1.0 / self.RENDER_SCALE
+        quad_buffer = self.ctx.buffer(
+            data=array.array(
+                "f",
+                [
+                    # position (x,y), uv coord
+                    -1.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    scene_clamp,
+                    0.0,
+                    -1.0,
+                    -1.0,
+                    0.0,
+                    scene_clamp,
+                    1.0,
+                    -1.0,
+                    scene_clamp,
+                    scene_clamp,
+                ],
+            )
+        )
+        render_object = self.ctx.vertex_array(
+            self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
+        )
+        unlit_render_object = self.ctx.vertex_array(
+            self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
+        )
+
+        self.program["sample_count"] = 32
+        self.program["px_per_sample"] = 1
+
+        return render_object, unlit_render_object
+
     def surf_to_texture(self, surface: pg.Surface, context: moderngl.Context):
         tex: moderngl.Texture = context.texture(surface.get_size(), 4)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
@@ -159,11 +159,11 @@ class Renderer:
         # set uniform tex to using 0
         self.program["tex"] = 0
         mouse_position_on_screen = (
-            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]) * (1 / RENDER_SCALE),
-            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * (1 / RENDER_SCALE),
+            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]) * (1 / self.RENDER_SCALE),
+            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * (1 / self.RENDER_SCALE),
         )
         self.program["mouse_pos"] = mouse_position_on_screen
-        self.program["screen_size"] = [1 / self.lit_surface.size[0], 1 / self.lit_surface.size[1]]
+        self.program["screen_size"] = [1 / (self.lit_surface.size[0] * self.RENDER_SCALE), 1 / (self.lit_surface.size[1] * self.RENDER_SCALE)]
         # self.program['time'] = self.time
         # render it
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
