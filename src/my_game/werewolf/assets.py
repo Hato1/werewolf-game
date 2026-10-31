@@ -14,6 +14,7 @@ SOUNDS_PATH = ASSETS_PATH / "sounds"
 FONTS_PATH = ASSETS_PATH / "fonts"
 DIALOGUE_PATH = ASSETS_PATH / "dialogue"
 UI_PATH = ASSETS_PATH / "ui"
+SHADERS_PATH = ASSETS_PATH / "shaders"
 
 
 @unique
@@ -41,13 +42,23 @@ class Fonts(Enum):
 
 
 @unique
-class Diagloue(Enum):
+class Dialogue(Enum):
     # Is this a sane way to handle storing/retrieving passages of text?
 
     @cache
     def load(self) -> str:
         """Return the text."""
         return read_text(DIALOGUE_PATH / self.value)
+
+
+@unique
+class Shaders(Enum):
+    """GLSL shader files to use with OpenGL."""
+
+    @cache
+    def load(self) -> str:
+        """Return the text."""
+        return read_text(SHADERS_PATH / self.value)
 
 
 @unique
