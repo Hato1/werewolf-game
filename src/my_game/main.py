@@ -28,10 +28,11 @@ logger = get_logger(__name__)
 # TODO: Allow configuration via command line arguments or something.
 GAMES = [bullet_hell, werewolf]
 DEFAULT_GAME = werewolf
+# Use OpenGL GPU rendering.
 OPENGL = True
 
 # Pygbag does not support OPENGL.
-if sys.platform != "emscripten":
+if sys.platform == "emscripten":
     OPENGL = False
 
 
@@ -42,6 +43,9 @@ async def main():
     pg.init()
 
     if OPENGL:
+        # Set OpenGL context attributes for Pygame before creating the window.
+        # Without this the OpenGL context may not be created with the desired version and profile.
+        # And on some platforms, failing to set these attributes may result in an incompatible OpenGL context.
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
