@@ -4,6 +4,7 @@ from enum import Enum
 import pytest
 
 from my_game.core.input_manager import InputManager, InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State, StateManager, StateRegistry, TransitionData
 
 
@@ -26,7 +27,7 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
             pass
 
-        def draw(self, surface: pg.Surface, dt: float) -> None:
+        def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None) -> None:
             pass
 
     class Beta(State[StateKey, TestTransitionData]):
@@ -36,11 +37,11 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
             pass
 
-        def draw(self, surface: pg.Surface, dt: float) -> None:
+        def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None) -> None:
             pass
 
-        def enter(self, surface_rect: pg.Rect, transition_data: TestTransitionData) -> None:
-            super().enter(surface_rect, transition_data)
+        def enter(self, surface_rect: pg.Rect, transition_data: TestTransitionData, renderer: Renderer | None) -> None:
+            super().enter(surface_rect, transition_data, renderer=None)
             assert transition_data.previous_state is StateKey.ALPHA
             assert transition_data.score == 42
 
@@ -50,7 +51,8 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         StateKey.ALPHA,
         TestTransitionData,
     )
-    manager = StateManager(screen, registry, InputManager(Enum), "Transition test")
+    renderer = None
+    manager = StateManager(screen, renderer, registry, InputManager(Enum), "Transition test")
 
     alpha = manager.current_state
     alpha.done = True
@@ -91,15 +93,17 @@ def test_state_manager_passes_held_actions_to_update(monkeypatch) -> None:
         def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
             self.input_state = input_state
 
-        def draw(self, surface: pg.Surface, dt: float) -> None:
+        def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None) -> None:
             pass
 
     input_manager = InputManager(Action)
     input_manager.bind(Action.MOVE, InputEvent.keyboard(pg.K_w))
     input_manager.bind(Action.ANALOG_MOVE, InputEvent.controller_axis(pg.CONTROLLER_AXIS_LEFTX))
     screen = pg.display.set_mode((64, 64))
+    renderer = None
     manager = StateManager(
         screen,
+        renderer,
         StateRegistry({StateKey.TEST: TestState}, StateKey.TEST, TestTransitionData),
         input_manager,
         "Held input test",

@@ -11,28 +11,18 @@ logger = get_logger(__name__)
 # Set OpenGL context attributes for Pygame before creating the window.
 # Without this the OpenGL context may not be created with the desired version and profile.
 # And on some platforms, failing to set these attributes may result in an incompatible OpenGL context.
-pg.display.gl_set_attribute(
-    pg.GL_CONTEXT_MAJOR_VERSION, 3
-)
-pg.display.gl_set_attribute(
-    pg.GL_CONTEXT_MINOR_VERSION, 3
-)
-
-pg.display.gl_set_attribute(
-    pg.GL_CONTEXT_PROFILE_MASK,
-    pg.GL_CONTEXT_PROFILE_CORE
-)
-
-pg.display.gl_set_attribute(
-    pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1
-)
+pg.init()
+pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
+pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
+pg.display.gl_set_attribute(pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
 
 
 class Renderer:
     # Is Render Scale still useful?
     RENDER_SCALE: float = 1
 
-    def init(self):
+    def __init__(self):
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         # self.ctx.clear(1, 0, 1, 1)
@@ -130,12 +120,8 @@ class Renderer:
                 ],
             )
         )
-        render_object = self.ctx.vertex_array(
-            self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
-        )
-        unlit_render_object = self.ctx.vertex_array(
-            self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
-        )
+        render_object = self.ctx.vertex_array(self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
+        unlit_render_object = self.ctx.vertex_array(self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
 
         self.program["sample_count"] = 32
         self.program["px_per_sample"] = 1
@@ -163,7 +149,10 @@ class Renderer:
             (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * (1 / self.RENDER_SCALE),
         )
         self.program["mouse_pos"] = mouse_position_on_screen
-        self.program["screen_size"] = [1 / (self.lit_surface.size[0] * self.RENDER_SCALE), 1 / (self.lit_surface.size[1] * self.RENDER_SCALE)]
+        self.program["screen_size"] = [
+            1 / (self.lit_surface.size[0] * self.RENDER_SCALE),
+            1 / (self.lit_surface.size[1] * self.RENDER_SCALE),
+        ]
         # self.program['time'] = self.time
         # render it
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
@@ -192,6 +181,7 @@ class Renderer:
 
     def blit_to_lit(self, surf: pg.Surface, rect: pg.Rect):
         self.lit_surface.blit(surf, rect)
+
 
 # Notes to self from Penumana:
 # use multiple passes.

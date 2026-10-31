@@ -5,6 +5,7 @@ from typing import Self
 import pygame as pg
 
 from my_game.core.input_manager import InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.examples.bullet_hell.assets import Fonts, Images, UIElements
 from my_game.examples.bullet_hell.inputs import Action
@@ -141,11 +142,9 @@ class Game(State[BulletHellState, BulletHellTransitionData]):
         self.score: float = 0.0
 
     def enter(
-        self,
-        surface_rect: pg.Rect,
-        transition_data: BulletHellTransitionData,
+        self, surface_rect: pg.Rect, transition_data: BulletHellTransitionData, renderer: Renderer | None
     ) -> None:
-        super().enter(surface_rect, transition_data=transition_data)
+        super().enter(surface_rect, transition_data=transition_data, renderer=None)
         self.monster_meter = 0
         self.monster_interval = self.DEFAULT_MONSTER_INTERVAL
         self.monsters = []
@@ -216,7 +215,7 @@ class Game(State[BulletHellState, BulletHellTransitionData]):
         # Score is time survived in seconds.
         self.score = (pg.time.get_ticks() / 1000.0) - self.start_time
 
-    def draw(self, surface: pg.Surface, dt: float) -> None:
+    def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None) -> None:
         surface.fill(pg.Color("gray"))
         for monster in self.monsters:
             monster.draw(surface, pg.time.get_ticks() / 1000.0)

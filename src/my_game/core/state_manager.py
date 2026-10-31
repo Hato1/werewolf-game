@@ -137,7 +137,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
     def __init__(
         self,
         screen: pg.Surface,
-        renderer: Renderer,
+        renderer: Renderer | None,
         registry: StateRegistry[StateKey, Payload],
         input_manager: InputManager,
         caption: str,

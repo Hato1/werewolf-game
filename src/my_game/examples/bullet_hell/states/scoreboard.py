@@ -5,6 +5,7 @@ from typing import NamedTuple
 import pygame as pg
 
 from my_game.core.input_manager import InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.examples.bullet_hell.assets import Fonts
 from my_game.examples.bullet_hell.inputs import Action
@@ -50,8 +51,9 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
         self,
         surface_rect: pg.Rect,
         transition_data: BulletHellTransitionData,
+        renderer: Renderer | None,
     ):
-        super().enter(surface_rect, transition_data=transition_data)
+        super().enter(surface_rect, transition_data=transition_data, renderer=renderer)
         self.current_score = transition_data.score
         if self.current_score == 0.0:
             print("No score found in persistent data; defaulting to 0.")
@@ -164,7 +166,7 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
         )
         surface.blit(prompt_surf, prompt_rect)
 
-    def draw(self, surface, dt):
+    def draw(self, surface, dt, renderer: Renderer | None):
         surface.fill(pg.Color("black"))
         top_y = self.draw_title(surface)
         self.draw_scores(surface, top_y)

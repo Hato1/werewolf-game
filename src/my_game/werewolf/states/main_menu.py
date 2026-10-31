@@ -51,9 +51,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         anti_alias = True
         text_surface = self.FONT.render(text, anti_alias, pg.Color("yellow"))
         # text_surface = text_surface.convert()
-        scaled_down_rect = pg.Rect(
-            0, 0, surface.size[0], surface.size[1]
-        )
+        scaled_down_rect = pg.Rect(0, 0, surface.size[0], surface.size[1])
         text_rect = text_surface.get_rect(center=(scaled_down_rect.center))
 
         if renderer:
