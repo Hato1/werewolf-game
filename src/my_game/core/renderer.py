@@ -32,18 +32,7 @@ RENDER_SCALE: float = 1
 
 
 class Renderer:
-    started: bool = False
-    ctx: moderngl.Context
-    render_object: moderngl.VertexArray
-    unlit_render_object: moderngl.VertexArray
-    program: moderngl.Program
-    unlit_program: moderngl.Program
-    time: float
-
-    lit_surface: pg.Surface
-    unlit_surface: pg.Surface
-
-    def resized_window(self):
+    def create_render_objects(self):
         scene_clamp = 1.0 / RENDER_SCALE
         quad_buffer = self.ctx.buffer(
             data=array.array(
@@ -69,18 +58,17 @@ class Renderer:
                 ],
             )
         )
-        self.render_object = self.ctx.vertex_array(
+        render_object = self.ctx.vertex_array(
             self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
         )
-        self.unlit_render_object = self.ctx.vertex_array(
+        unlit_render_object = self.ctx.vertex_array(
             self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")]
         )
-        self.lit_surface = pg.Surface([640, 640])
-        self.unlit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
-        self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
 
         self.program["sample_count"] = 32
         self.program["px_per_sample"] = 1
+
+        return render_object, unlit_render_object
 
     def init(self):
         self.ctx = moderngl.create_context()
@@ -148,9 +136,11 @@ class Renderer:
                 """
         self.program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=lighting_shader)
         self.unlit_program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
-        self.resized_window()
-        self.started = True
-        logger.info("Initialised OpenGL renderer")
+        self.render_object, self.unlit_render_object = self.create_render_objects()
+        self.lit_surface = pg.Surface([640, 640])
+        self.unlit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
+        self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
+        logger.warning("Initialised OpenGL renderer")
 
     def surf_to_texture(self, surface: pg.Surface, context: moderngl.Context):
         tex: moderngl.Texture = context.texture(surface.get_size(), 4)
