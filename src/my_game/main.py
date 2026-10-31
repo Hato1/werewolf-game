@@ -42,12 +42,14 @@ async def main():
         pg.OPENGL | pg.DOUBLEBUF,
     )
     # screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
-    Renderer.init()
+    renderer = Renderer()
+    renderer.init()
     assert screen is not None, "Pygame display surface not initialized."
     pg.display.set_caption(DEFAULT_CAPTION)
 
     state_manager = StateManager(
         screen,
+        renderer,
         DEFAULT_GAME.STATE_REGISTRY,
         DEFAULT_GAME.input_manager,
         DEFAULT_CAPTION,

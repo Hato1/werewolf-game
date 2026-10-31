@@ -65,6 +65,7 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         self,
         surface_rect: pg.Rect,
         transition_data: Payload,
+        renderer: Renderer | None,
     ) -> None:
         """Called when this state becomes the active state.
 
@@ -95,7 +96,7 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         pass
 
     @abstractmethod
-    def draw(self, surface: pg.Surface, dt: float):
+    def draw(self, surface: pg.Surface, dt: float, renderer: Renderer | None):
         """Render to the given surface. Runs every frame.
 
         surface: The surface to draw to.
@@ -136,6 +137,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
     def __init__(
         self,
         screen: pg.Surface,
+        renderer: Renderer,
         registry: StateRegistry[StateKey, Payload],
         input_manager: InputManager,
         caption: str,
@@ -149,13 +151,14 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.input_manager: InputManager = input_manager
         self.caption: str = caption  # Caption for the window.
         self.transition_data_factory = registry.transition_data_factory
+        self.renderer: Renderer | None = renderer
 
         self.quit: bool = False  # Set to True to exit program.
         self.clock: pg.Clock = pg.time.Clock()
         self.fps: float = 60.0  # Used to limit the framerate.
         self.show_fps: bool = True  # Display the framerate in the caption.
 
-        self.current_state.enter(self.screen.get_rect(), self.transition_data_factory())
+        self.current_state.enter(self.screen.get_rect(), self.transition_data_factory(), self.renderer)
 
     def change_state(self, next_state: StateKey | None) -> None:
         """Exit the current state, enter the next one."""
@@ -175,6 +178,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.current_state.enter(
             self.screen.get_rect(),
             transition_data=transition_data,
+            renderer=self.renderer,
         )
 
     def toggle_show_fps(self) -> None:
@@ -206,9 +210,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
 
         input_state = self.input_manager.get_input_state()
         self.current_state.update(self.screen.get_rect(), dt, input_state)
-        self.current_state.draw(self.screen, dt)
-        if Renderer.started:
-            Renderer.update()
+        self.current_state.draw(self.screen, dt, self.renderer)
 
     async def main(self):
         """Main loop for entire program.
@@ -218,10 +220,12 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         while not self.quit:
             dt = self.clock.tick(self.fps) / 1000.0
             self.handle_events()
-            if not Renderer.started:
+            self.update(dt)
+            if self.renderer:
+                self.renderer.update()
+            else:
                 pg.display.update()
             pg.display.flip()
-            self.update(dt)
             await asyncio.sleep(0)
 
             if self.show_fps:
