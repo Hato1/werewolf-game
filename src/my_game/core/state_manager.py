@@ -10,7 +10,7 @@ import pygame as pg
 
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.logger import get_logger
-from my_game.renderer.renderer import Renderer
+from my_game.core.renderer import Renderer
 
 logger = get_logger(__name__)
 

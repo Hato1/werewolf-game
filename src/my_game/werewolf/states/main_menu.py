@@ -3,10 +3,10 @@ from enum import Enum
 
 import pygame as pg
 
-import my_game.renderer.renderer as render_constants
+import my_game.core.renderer as render_constants
 from my_game.core.input_manager import InputState
 from my_game.core.state_manager import State
-from my_game.renderer.renderer import Renderer
+from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
