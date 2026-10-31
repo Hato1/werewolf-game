@@ -25,9 +25,14 @@ from my_game.werewolf import registry as werewolf
 
 logger = get_logger(__name__)
 
-# TODO: Allow selecting which game to run via command line arguments or configuration.
+# TODO: Allow configuration via command line arguments or something.
 GAMES = [bullet_hell, werewolf]
 DEFAULT_GAME = werewolf
+OPENGL = True
+
+# Pygbag does not support OPENGL.
+if sys.platform != "emscripten":
+    OPENGL = False
 
 
 async def main():
@@ -36,12 +41,22 @@ async def main():
     # Initialization
     pg.init()
 
-    screen = pg.display.set_mode(
-        [SCREEN_SIZE[0], SCREEN_SIZE[1]],
-        pg.OPENGL | pg.DOUBLEBUF,
-    )
-    # screen = pg.display.set_mode(SCREEN_SIZE, pg.SCALED)
-    gl_renderer = GLRenderer()
+    if OPENGL:
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
+        options = pg.OPENGL | pg.DOUBLEBUF
+    else:
+        options = pg.SCALED
+
+    screen = pg.display.set_mode(SCREEN_SIZE, options)
+
+    if OPENGL:
+        gl_renderer = GLRenderer()
+    else:
+        gl_renderer = None
+
     assert screen is not None, "Pygame display surface not initialized."
     pg.display.set_caption(DEFAULT_CAPTION)
 
