@@ -21,12 +21,19 @@ logger = get_logger(__name__)
 
 class GLRenderer:
     # Is Render Scale still useful?
+    # render scale is useful if we want to increase scale of pixel art
     RENDER_SCALE: float = 1
 
     def __init__(self):
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         # self.ctx.clear(1, 0, 1, 1)
+        # shaders are instructions for the GPU to run.
+        # these are essentially glsl files that im writing as
+        # multiline strings.
+
+        # vertex shader. doesnt do anything because we're only gonna be
+        # drawing to the window's size.
         vert_shader = """
                 #version 330 core
 
@@ -40,6 +47,8 @@ class GLRenderer:
                 }
                 """
 
+        # fragment shader for the lit pass.
+        # basically smears light colors in a direction
         lighting_shader = """
                 #version 330 core
 
@@ -65,6 +74,13 @@ class GLRenderer:
                     for(int i = 0; i < sample_count; i++){
                         vec2 sample_pos = uvs + ((sample_dir) * (i * px_per_sample));
                         float distance = distance(sample_pos, mouse_pos);
+                        vec2 sample_dir_to_light = normalize(mouse_pos - sample_pos);
+                        if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7){
+                            //end early
+                            float percent_left = 1 - (i / (sample_count));
+                            sample_total = vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
+                            break;
+                        }
                         vec3 sample = texture(tex, sample_pos).rgb;
                         //sample_total += vec3(brightness - (distance), 0 ,0);
                         float dist_weight = clamp(1 - ((distance + start_distance)/brightness), 0, 1);
@@ -74,6 +90,8 @@ class GLRenderer:
                     f_color = vec4(sample_total.r , sample_total.g , sample_total.b , 1.0);
                 }
                 """
+        # fragment shader for unlit pass.
+        # performs no changes.
         unlit_shader = """
                 #version 330 core
 
@@ -87,6 +105,8 @@ class GLRenderer:
                     f_color = vec4(sample.r, sample.g, sample.b, sample.a);
                 }
                 """
+        # program is a shader, basically. you tell opengl to draw vertecies(vertex shader),
+        # then do something on the pixels within those verticies(fragment shader)
         self.program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=lighting_shader)
         self.unlit_program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
         self.render_object, self.unlit_render_object = self.create_render_objects()
@@ -97,6 +117,10 @@ class GLRenderer:
 
     def create_render_objects(self):
         scene_clamp = 1.0 / self.RENDER_SCALE
+        # the quad buffer is the verts that opengl needs to draw.
+        # it uses 2 vector2s for each point, being x,y and u,v coordinates
+        # uvs are adjusted for render scale. not sure how to explain it,
+        # but it is necessary otherwise strange visual artifacts occcur.
         quad_buffer = self.ctx.buffer(
             data=array.array(
                 "f",
@@ -124,11 +148,15 @@ class GLRenderer:
         render_object = self.ctx.vertex_array(self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
         unlit_render_object = self.ctx.vertex_array(self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
 
+        # sample count is the number of steps towards a light a pixel will check.
         self.program["sample_count"] = 32
+        # px per sample is the distance in pixels the shader will check for each sample
         self.program["px_per_sample"] = 1
 
         return render_object, unlit_render_object
 
+    # creates a texture usable by opengl from a pygame surface
+    # this really doesnt need to be used anywhere but here.
     def surf_to_texture(self, surface: pg.Surface, context: moderngl.Context):
         tex: moderngl.Texture = context.texture(surface.get_size(), 4)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
@@ -136,6 +164,7 @@ class GLRenderer:
         tex.write(surface.get_view("0"))
         return tex
 
+    # run the lit shader.
     def draw_lit(self):
         # these need to be done every frame
 
@@ -159,6 +188,7 @@ class GLRenderer:
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
         frame_tex.release()
 
+    # run the unlit shader
     def draw_unlit(self):
         frame_tex = self.surf_to_texture(self.unlit_surface, self.ctx)
         # use this texture
@@ -170,16 +200,22 @@ class GLRenderer:
         self.unlit_render_object.render(mode=moderngl.TRIANGLE_STRIP)
         frame_tex.release()
 
+    # called every frame to actually make things visible.
+    # later draw calls are done on top of the previous ones!
+    # make sure your surface is transparent!
     def update(self):
         self.draw_lit()
         self.draw_unlit()
 
+    # set the light position of the lit shader.
     def set_light_position(self, x: float, y: float):
         self.program["mouse_pos"] = (x, y)
 
+    # draw a surface to the the unlit surface
     def blit_to_unlit(self, surf: pg.Surface, rect: pg.Rect):
         self.unlit_surface.blit(surf, rect)
 
+    # draw a surface to the lit surface
     def blit_to_lit(self, surf: pg.Surface, rect: pg.Rect):
         self.lit_surface.blit(surf, rect)
 

@@ -6,7 +6,7 @@ import pygame as pg
 from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
 from my_game.core.state_manager import State
-from my_game.werewolf.assets import Fonts
+from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
@@ -56,7 +56,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
         if gl_renderer:
             gl_renderer.blit_to_lit(
-                pg.image.load("src/my_game/werewolf/assets/textures/moon_screenshot_trees.png"),
+                Images.TEST_BACKGROUND.load(),
                 surface.get_rect(),
             )
             gl_renderer.blit_to_unlit(text_surface, text_rect)

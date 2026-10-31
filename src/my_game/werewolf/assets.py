@@ -9,7 +9,7 @@ import pygame as pg
 from my_game.core.asset_manager import load_font, load_image, load_sound, read_text
 
 ASSETS_PATH = files(__package__) / "assets"
-IMAGES_PATH = ASSETS_PATH / "images"
+IMAGES_PATH = ASSETS_PATH / "textures"
 SOUNDS_PATH = ASSETS_PATH / "sounds"
 FONTS_PATH = ASSETS_PATH / "fonts"
 DIALOGUE_PATH = ASSETS_PATH / "dialogue"
@@ -19,6 +19,8 @@ SHADERS_PATH = ASSETS_PATH / "shaders"
 
 @unique
 class Images(Enum):
+    TEST_BACKGROUND = "room_test.png"
+
     @cache
     def load(self) -> pg.Surface:
         return load_image(IMAGES_PATH / self.value)
