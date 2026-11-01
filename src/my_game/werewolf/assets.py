@@ -19,7 +19,8 @@ SHADERS_PATH = ASSETS_PATH / "shaders"
 
 @unique
 class Images(Enum):
-    TEST_BACKGROUND = "room_test.png"
+    TEST_BACKGROUND = "bg3.png"
+    TEST_SHADOW = "bg_shadow.png"
 
     @cache
     def load(self) -> pg.Surface:

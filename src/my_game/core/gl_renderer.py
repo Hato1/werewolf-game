@@ -121,7 +121,7 @@ class GLRenderer:
         self.program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=lighting_shader)
         self.unlit_program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
         self.render_object, self.unlit_render_object = self.create_render_objects()
-        self.lit_surface = pg.Surface([640, 640])
+        self.lit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
         self.unlit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
         self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
         logger.warning("Initialised OpenGL renderer")
@@ -206,6 +206,7 @@ class GLRenderer:
         # render it
         self.unlit_render_object.render(mode=moderngl.TRIANGLE_STRIP)
         frame_tex.release()
+        self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
 
     # called every frame to actually make things visible.
     # later draw calls are done on top of the previous ones!
