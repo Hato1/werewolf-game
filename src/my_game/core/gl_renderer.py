@@ -24,6 +24,9 @@ class GLRenderer:
     # render scale is useful if we want to increase scale of pixel art
     RENDER_SCALE: float = 1
 
+    LIGHT_MODE_DIRECTION = 1
+    LIGHT_MODE_POINT = 2
+
     def __init__(self):
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
@@ -53,20 +56,23 @@ class GLRenderer:
                 #version 330 core
 
                 uniform sampler2D tex;
-                uniform vec2 mouse_pos;
+                uniform vec2 light_position;
                 uniform vec2 screen_size;
                 uniform float sample_count;
                 uniform float px_per_sample;
+                uniform float intensity;
+                uniform float light_size;
+                uniform bool static_direction;
 
                 in vec2 uvs;
                 out vec4 f_color;
 
                 void main() {
-                    vec2 sample_dir = vec2(0, -screen_size.y);
-                    if(mouse_pos != vec2(0,0))
-                        sample_dir = -normalize(uvs - mouse_pos) * screen_size;
-                    float start_distance = distance(mouse_pos, uvs);
-                    float brightness = 1;
+                    vec2 sample_dir = vec2(-screen_size.y, -screen_size.y);
+                    if(light_position != vec2(0,0) && !static_direction){
+                        sample_dir = -normalize(uvs - light_position) * screen_size;
+                    }
+                    float start_distance = distance(light_position, uvs);
                     vec3 sample_total = texture(tex,uvs).rgb;
                     vec3 sample_bonus = vec3(0,0,0);
                     float weight = 1;
@@ -74,21 +80,24 @@ class GLRenderer:
 
                     for(int i = 0; i < sample_count; i++){
                         vec2 sample_pos = uvs + ((sample_dir) * (i * px_per_sample));
-                        float distance = distance(sample_pos, mouse_pos);
-                        vec2 sample_dir_to_light = normalize(mouse_pos - sample_pos);
-                        if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7){
+                        float distance = distance(sample_pos, light_position);
+                        vec2 sample_dir_to_light = normalize(light_position - sample_pos);
+                        if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7 && !static_direction){
                             //end early
                             float percent_left = 1 - (i / (sample_count));
                             sample_bonus += vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
                             break;
                         }
                         vec3 sample = texture(tex, sample_pos).rgb;
-                        //sample_total += vec3(brightness - (distance), 0 ,0);
-                        float dist_weight = clamp(1 - ((distance + start_distance)/brightness), 0, 1);
+                        //sample_total += vec3(light_size - (distance), 0 ,0);
+                        float dist_weight = clamp(1 - ((distance + start_distance)/light_size), 0, 1);
                         sample_bonus += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
-                        weight = mix(0, 1, dist_weight);
+                        if(!static_direction)
+                            weight = mix(0, 1, dist_weight);
+                        else
+                            weight *= 0.99;
                     }
-                    sample_total += sample_bonus;
+                    sample_total += sample_bonus * intensity;
                     f_color = vec4(sample_total.r , sample_total.g , sample_total.b , 1.0);
                 }
                 """
@@ -150,11 +159,7 @@ class GLRenderer:
         render_object = self.ctx.vertex_array(self.program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
         unlit_render_object = self.ctx.vertex_array(self.unlit_program, [(quad_buffer, "2f 2f", "vert", "texcoord")])
 
-        # sample count is the number of steps towards a light a pixel will check.
-        self.program["sample_count"] = 128
-        # px per sample is the distance in pixels the shader will check for each sample
-        self.program["px_per_sample"] = 1
-
+        self.reset_lit_to_defaults()
         return render_object, unlit_render_object
 
     # creates a texture usable by opengl from a pygame surface
@@ -180,7 +185,7 @@ class GLRenderer:
             (pg.mouse.get_pos()[0] / self.lit_surface.size[0]) * (1 / self.RENDER_SCALE),
             (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * (1 / self.RENDER_SCALE),
         )
-        self.program["mouse_pos"] = mouse_position_on_screen
+        self.program["light_position"] = mouse_position_on_screen
         self.program["screen_size"] = [
             1 / (self.lit_surface.size[0] * self.RENDER_SCALE),
             1 / (self.lit_surface.size[1] * self.RENDER_SCALE),
@@ -211,7 +216,7 @@ class GLRenderer:
 
     # set the light position of the lit shader.
     def set_light_position(self, x: float, y: float):
-        self.program["mouse_pos"] = (x, y)
+        self.program["light_position"] = (x, y)
 
     # draw a surface to the the unlit surface
     def blit_to_unlit(self, surf: pg.Surface, rect: pg.Rect):
@@ -220,6 +225,41 @@ class GLRenderer:
     # draw a surface to the lit surface
     def blit_to_lit(self, surf: pg.Surface, rect: pg.Rect):
         self.lit_surface.blit(surf, rect)
+
+    # changes the intensity of the lit shader
+    def set_intensity(self, intensity: float):
+        self.program["intensity"] = intensity
+
+    # uses normalized value! 1 = screen size, 0.25 is 25% of the screen size, etc.
+    # can be larger than 1
+    def set_light_size(self, radius: float):
+        self.program["light_size"] = radius
+
+    # changes behavior of the light.
+    # POINT makes the light emit from the light_position
+    # DIRECTION makes the light emit from every pixel
+    def set_light_mode(self, light_mode: int):
+        if light_mode == self.LIGHT_MODE_DIRECTION:
+            self.program["static_direction"] = True
+        elif light_mode == self.LIGHT_MODE_POINT:
+            self.program["static_direction"] = False
+
+    # px per sample is the distance in pixels the shader will check for each sample
+    def set_pixel_per_sample(self, pixels: float):
+        self.program["px_per_sample"] = pixels
+
+    # sample count is the number of steps towards a light a pixel will check.
+    def set_sample_count(self, samples: int):
+        self.program["sample_count"] = samples
+
+    # reset the lit material to default values
+    def reset_lit_to_defaults(self):
+        self.set_light_size(0.2)
+        self.set_intensity(0.2)
+        self.set_light_position(0.5, 0.2)
+        self.set_light_mode(self.LIGHT_MODE_POINT)
+        self.set_pixel_per_sample(1)
+        self.set_sample_count(128)
 
 
 # Notes to self from Penumana:
