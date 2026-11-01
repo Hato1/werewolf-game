@@ -59,6 +59,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                 Images.TEST_BACKGROUND.load(),
                 surface.get_rect(),
             )
+            gl_renderer.blit_to_unlit(Images.TEST_SHADOW.load().convert_alpha(), surface.get_rect())
             gl_renderer.blit_to_unlit(text_surface, text_rect)
         else:
             surface.blit(text_surface, text_rect)
