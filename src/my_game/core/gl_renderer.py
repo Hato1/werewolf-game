@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 class GLRenderer:
     # Is Render Scale still useful?
     # render scale is useful if we want to increase scale of pixel art
-    RENDER_SCALE: tuple = 1, 1
+    RENDER_SCALE: tuple = 4, 4
 
     LIGHT_MODE_DIRECTION = 1
     LIGHT_MODE_POINT = 2
@@ -185,8 +185,8 @@ class GLRenderer:
         # set uniform tex to using 0
         self.program["tex"] = 0
         mouse_position_on_screen = (
-            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]) * self.RENDER_SCALE[0],
-            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * self.RENDER_SCALE[1],
+            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]),
+            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]),
         )
         self.program["light_position"] = mouse_position_on_screen
         self.program["screen_size"] = [
@@ -274,15 +274,22 @@ class GLRenderer:
     # scales a surface to fit based on current render scale and window scale
     def resize_surface_to_fit(self, surf: pg.Surface):
         raw_size = surf.get_rect()
-        var_percent_size = [raw_size[2] / 1920, raw_size[3] / 1080]
+        var_percent_size = [raw_size[2] / 480, raw_size[3] / 270]
         var_scale = [(var_percent_size[0] * constants.SCREEN_SIZE[0]), (var_percent_size[1] * constants.SCREEN_SIZE[1])]
         return pg.transform.scale(surface=surf, size=[var_scale[0], var_scale[1]])
 
     # returns a rect of where the ui should be based on screen size
-    def get_ui_rect(self):
+    def get_ui_rect_side(self):
         var_percent_size = [0.75, 1]
         var_scale = [(var_percent_size[0] * constants.SCREEN_SIZE[0]), (var_percent_size[1] * constants.SCREEN_SIZE[1])]
         return pg.Rect(var_scale[0], 0, 480 * (0.25 * constants.SCREEN_SIZE[0]), 1080 * var_scale[1])
+
+    def get_ui_rect(self):
+        var_percent_size = [1, 0.359259259]
+        var_scale = [(var_percent_size[0] * constants.SCREEN_SIZE[0]), (var_percent_size[1] * constants.SCREEN_SIZE[1])]
+        return pg.Rect(
+            0, (constants.SCREEN_SIZE[1] * (1 - var_percent_size[1])), 1920 * var_scale[0], 1080 * var_scale[1]
+        )
 
 
 # Notes to self from Penumana:
