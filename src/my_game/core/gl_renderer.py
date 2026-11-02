@@ -14,6 +14,7 @@ elif sys.platform != "emscripten":
 
 import pygame as pg
 
+from my_game import constants
 from my_game.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,7 +23,7 @@ logger = get_logger(__name__)
 class GLRenderer:
     # Is Render Scale still useful?
     # render scale is useful if we want to increase scale of pixel art
-    RENDER_SCALE: float = 1
+    RENDER_SCALE: tuple = 1, 1
 
     LIGHT_MODE_DIRECTION = 1
     LIGHT_MODE_POINT = 2
@@ -63,6 +64,7 @@ class GLRenderer:
                 uniform float intensity;
                 uniform float light_size;
                 uniform bool static_direction;
+                uniform bool ignore_distance;
 
                 in vec2 uvs;
                 out vec4 f_color;
@@ -92,7 +94,7 @@ class GLRenderer:
                         //sample_total += vec3(light_size - (distance), 0 ,0);
                         float dist_weight = clamp(1 - ((distance + start_distance)/light_size), 0, 1);
                         sample_bonus += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
-                        if(!static_direction)
+                        if(!static_direction && !ignore_distance)
                             weight = mix(0, 1, dist_weight);
                         else
                             weight *= 0.99;
@@ -121,13 +123,14 @@ class GLRenderer:
         self.program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=lighting_shader)
         self.unlit_program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
         self.render_object, self.unlit_render_object = self.create_render_objects()
-        self.lit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
-        self.unlit_surface = pg.Surface([640, 640], pg.SRCALPHA, 32)
+        self.lit_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
+        self.unlit_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
         self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
         logger.warning("Initialised OpenGL renderer")
 
     def create_render_objects(self):
-        scene_clamp = 1.0 / self.RENDER_SCALE
+        # scene_clamp = [1.0/self.RENDER_SCALE[0], 1.0/self.RENDER_SCALE[1]]
+        scene_clamp = [1, 1]
         # the quad buffer is the verts that opengl needs to draw.
         # it uses 2 vector2s for each point, being x,y and u,v coordinates
         # uvs are adjusted for render scale. not sure how to explain it,
@@ -143,16 +146,16 @@ class GLRenderer:
                     0.0,
                     1.0,
                     1.0,
-                    scene_clamp,
+                    scene_clamp[0],
                     0.0,
                     -1.0,
                     -1.0,
                     0.0,
-                    scene_clamp,
+                    scene_clamp[1],
                     1.0,
                     -1.0,
-                    scene_clamp,
-                    scene_clamp,
+                    scene_clamp[0],
+                    scene_clamp[1],
                 ],
             )
         )
@@ -182,13 +185,13 @@ class GLRenderer:
         # set uniform tex to using 0
         self.program["tex"] = 0
         mouse_position_on_screen = (
-            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]) * (1 / self.RENDER_SCALE),
-            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * (1 / self.RENDER_SCALE),
+            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]) * self.RENDER_SCALE[0],
+            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]) * self.RENDER_SCALE[1],
         )
         self.program["light_position"] = mouse_position_on_screen
         self.program["screen_size"] = [
-            1 / (self.lit_surface.size[0] * self.RENDER_SCALE),
-            1 / (self.lit_surface.size[1] * self.RENDER_SCALE),
+            1 / (self.lit_surface.size[0] * self.RENDER_SCALE[0]),
+            1 / (self.lit_surface.size[1] * self.RENDER_SCALE[1]),
         ]
         # self.program['time'] = self.time
         # render it
@@ -236,6 +239,11 @@ class GLRenderer:
     def set_light_size(self, radius: float):
         self.program["light_size"] = radius
 
+    # does the distance to a light influence the intensity of the lit effect?
+    # setting light mode to DIRECTION effectively sets this to true
+    def set_ignore_distance(self, *, do_ignore: bool):
+        self.program["ignore_distance"] = do_ignore
+
     # changes behavior of the light.
     # POINT makes the light emit from the light_position
     # DIRECTION makes the light emit from every pixel
@@ -255,12 +263,26 @@ class GLRenderer:
 
     # reset the lit material to default values
     def reset_lit_to_defaults(self):
-        self.set_light_size(0.2)
+        self.set_light_size(0.1)
         self.set_intensity(0.2)
         self.set_light_position(0.5, 0.2)
         self.set_light_mode(self.LIGHT_MODE_POINT)
         self.set_pixel_per_sample(1)
         self.set_sample_count(128)
+        self.set_ignore_distance(do_ignore=True)
+
+    # scales a surface to fit based on current render scale and window scale
+    def resize_surface_to_fit(self, surf: pg.Surface):
+        raw_size = surf.get_rect()
+        var_percent_size = [raw_size[2] / 1920, raw_size[3] / 1080]
+        var_scale = [(var_percent_size[0] * constants.SCREEN_SIZE[0]), (var_percent_size[1] * constants.SCREEN_SIZE[1])]
+        return pg.transform.scale(surface=surf, size=[var_scale[0], var_scale[1]])
+
+    # returns a rect of where the ui should be based on screen size
+    def get_ui_rect(self):
+        var_percent_size = [0.75, 1]
+        var_scale = [(var_percent_size[0] * constants.SCREEN_SIZE[0]), (var_percent_size[1] * constants.SCREEN_SIZE[1])]
+        return pg.Rect(var_scale[0], 0, 480 * (0.25 * constants.SCREEN_SIZE[0]), 1080 * var_scale[1])
 
 
 # Notes to self from Penumana:

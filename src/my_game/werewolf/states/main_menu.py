@@ -56,10 +56,13 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
         if gl_renderer:
             gl_renderer.blit_to_lit(
-                Images.TEST_BACKGROUND.load(),
+                gl_renderer.resize_surface_to_fit(Images.TEST_BACKGROUND.load()),
                 surface.get_rect(),
             )
-            gl_renderer.blit_to_unlit(Images.TEST_SHADOW.load().convert_alpha(), surface.get_rect())
+            # gl_renderer.blit_to_unlit(Images.TEST_SHADOW.load().convert_alpha(), surface.get_rect())
+            gl_renderer.blit_to_unlit(
+                gl_renderer.resize_surface_to_fit(Images.TEST_UI_BACKGROUND.load()), gl_renderer.get_ui_rect()
+            )
             gl_renderer.blit_to_unlit(text_surface, text_rect)
         else:
             surface.blit(text_surface, text_rect)
