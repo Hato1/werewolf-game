@@ -10,7 +10,7 @@ from pathlib import Path
 import pygame as pg
 
 # Hack for Pygbag to ensure the my_game package is correctly recognized.
-if "my_game" not in sys.modules:
+if sys.platform == "emscripten" and "my_game" not in sys.modules:
     pkg = types.ModuleType("my_game")
     pkg.__path__ = [str(Path(__file__).parent)]
     sys.modules["my_game"] = pkg
