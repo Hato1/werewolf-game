@@ -3,7 +3,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from my_game import constants
-from my_game.werewolf.assets import Images
+from my_game.werewolf.assets import Shaders
 
 # Pygbag doesn't support ModernGL, so we only import it on non-web platforms.
 # Importlib is required to dynamically import moderngl only on non-web platforms.
@@ -41,127 +41,27 @@ class GLRenderer:
 
         # vertex shader. doesnt do anything because we're only gonna be
         # drawing to the window's size.
-        vert_shader = """
-                #version 330 core
-
-                in vec2 vert;
-                in vec2 texcoord;
-                out vec2 uvs;
-
-                void main() {
-                uvs = texcoord;
-                gl_Position = vec4(vert, 0.0, 1.0);
-                }
-                """
+        self.vert_shader = Shaders.load(Shaders.STANDARD_VERT)
 
         # fragment shader for the lit pass.
         # basically smears light colors in a direction
-        outline_vert_shader = """
-                        #version 330 core
-
-                        uniform float time;
-                        in vec2 vert;
-                        in vec2 offset;
-                        in vec2 scale;
-                        in vec2 texcoord;
-                        in vec3 instance_color;
-                        out vec2 uvs;
-                        out vec3 color;
-
-                        void main() {
-                            uvs = texcoord;
-                            gl_Position = vec4(vec2(vert.x * scale.x, vert.y * scale.x) + vec2(offset.x * sin(time + gl_InstanceID), 0.1 + offset.y * sin(time + gl_InstanceID)), 0.0, 1.0);
-                            color = vec3(instance_color.x,instance_color.y,instance_color.z);
-                        }
-                        """
+        self.outline_vert_shader = Shaders.load(Shaders.OUTLINE_VERT)
 
         # fragment shader for the lit pass.
         # basically smears light colors in a direction
-        lighting_shader = """
-                #version 330 core
-
-                uniform sampler2D tex;
-                uniform vec2 light_position;
-                uniform vec2 screen_size;
-                uniform float sample_count;
-                uniform float px_per_sample;
-                uniform float intensity;
-                uniform float light_size;
-                uniform bool static_direction;
-                uniform bool ignore_distance;
-
-                in vec2 uvs;
-                out vec4 f_color;
-
-                void main() {
-                    vec2 sample_dir = vec2(-screen_size.y, -screen_size.y);
-                    if(light_position != vec2(0,0) && !static_direction){
-                        sample_dir = -normalize(uvs - light_position) * screen_size;
-                    }
-                    float start_distance = distance(light_position, uvs);
-                    vec3 sample_total = texture(tex,uvs).rgb;
-                    vec3 sample_bonus = vec3(0,0,0);
-                    float weight = 1;
-
-                    for(int i = 0; i < sample_count; i++){
-                        vec2 sample_pos = uvs + ((sample_dir) * (i * px_per_sample));
-                        float distance = distance(sample_pos, light_position);
-                        vec2 sample_dir_to_light = normalize(light_position - sample_pos);
-                        if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7 && !static_direction){
-                            //end early
-                            float percent_left = 1 - (i / (sample_count));
-                            sample_bonus += vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
-                            break;
-                        }
-                        vec3 sample = texture(tex, sample_pos).rgb;
-                        //sample_total += vec3(light_size - (distance), 0 ,0);
-                        float dist_weight = clamp(1 - ((distance + start_distance)/light_size), 0, 1);
-                        sample_bonus += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
-                        if(!static_direction && !ignore_distance)
-                            weight = mix(0, 1, dist_weight);
-                        else
-                            weight *= 0.99;
-                    }
-                    sample_total += sample_bonus * intensity;
-                    f_color = vec4(sample_total.r , sample_total.g , sample_total.b , 1.0);
-                }
-                """
+        self.lighting_shader = Shaders.load(Shaders.LIT_FRAG)
         # fragment shader for unlit pass.
         # performs no changes.
-        unlit_shader = """
-                #version 330 core
-
-                uniform sampler2D tex;
-
-                in vec2 uvs;
-                out vec4 f_color;
-
-                void main() {
-                    vec4 sample = texture(tex, uvs ).rgba;
-                    f_color = vec4(sample.r, sample.g, sample.b, sample.a);
-                }
-                """
-
-        outline_shader = """
-            #version 330 core
-
-            uniform sampler2D tex;
-
-            in vec2 uvs;
-            //in float outline_intensity;
-            in vec3 color;
-            out vec4 f_color;
-
-            void main() {
-                vec4 sample = texture(tex, uvs ).rgba;
-                f_color = vec4(vec3(sample.r,sample.g,sample.b),1);
-            }
-            """
+        self.unlit_shader = Shaders.load(Shaders.UNLIT_FRAG)
+        # with open("src/my_game/werewolf/assets/shaders/outline_fragment.shader", "r", encoding="utf-8") as f:
+        self.outline_shader = Shaders.load(Shaders.OUTLINE_FRAG)
         # program is a shader, basically. you tell opengl to draw vertecies(vertex shader),
         # then do something on the pixels within those verticies(fragment shader)
-        self.program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=lighting_shader)
-        self.unlit_program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=unlit_shader)
-        self.outline_program = self.ctx.program(vertex_shader=outline_vert_shader, fragment_shader=outline_shader)
+        self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.lighting_shader)
+        self.unlit_program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.unlit_shader)
+        self.outline_program = self.ctx.program(
+            vertex_shader=self.outline_vert_shader, fragment_shader=self.outline_shader
+        )
 
         self.render_object, self.unlit_render_object, self.outline_render_object = self.create_render_objects()
         self.lit_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
@@ -208,6 +108,8 @@ class GLRenderer:
         # colors = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 1], [0, 1, 1], [1, 1, 0], [1, 0, 1]]
         offset_buffer = self.ctx.buffer(data=array.array("f", [-0.1, 0, -0.2, 0, -0.3, 0, 0, 0.4]))
         scale_buffer = self.ctx.buffer(data=array.array("f", [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]))
+
+        # texture_buffer = self.ctx.buffer(data=[])
         outline_render_object = self.ctx.vertex_array(
             self.outline_program,
             [
@@ -283,23 +185,82 @@ class GLRenderer:
         self.draw_unlit()
         self.TIME += 0.02
 
+    # called during draw outlined objects. draws X images with different
+    def update_outline_render_pass(self, iterations, instace_count, surface: pg.Surface, transforms):
+
+        o_frame_tex = self.surf_to_texture(surface, self.ctx)
+        single_pass_outline_program = self.ctx.program(
+            vertex_shader=self.outline_vert_shader, fragment_shader=self.outline_shader
+        )
+        o_frame_tex.use(location=2 + iterations)
+        single_pass_outline_program["tex"] = 2 + iterations
+        single_pass_outline_program["time"] = self.TIME
+
+        quad_buffer = self.ctx.buffer(
+            data=array.array(
+                "f",
+                [
+                    # position (x,y), uv coord
+                    -1.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    1,
+                    0.0,
+                    -1.0,
+                    -1.0,
+                    0.0,
+                    1,
+                    1.0,
+                    -1.0,
+                    1,
+                    1,
+                ],
+            )
+        )
+        transform_buffer = self.ctx.buffer(data=transforms)
+
+        single_pass_render_object = self.ctx.vertex_array(
+            single_pass_outline_program,
+            [
+                (quad_buffer, "2f 2f", "vert", "texcoord"),
+                (transform_buffer, "2f 2f /i", "offset", "scale"),
+            ],
+        )
+        single_pass_render_object.render(mode=moderngl.TRIANGLE_STRIP, instances=instace_count)
+
+        o_frame_tex.release()
+
     # most complicated pass because each instance of an object needs to run the outline shader.
     def draw_outlined_objects(self):
         # use foreach to set vertext offset
-        # for entry in self.outline_render_list:
-        #    pass
-        surf = Images.TEST_SHADER.load()
-        # self.blit_to_unlit(surf, surf.get_rect())
-        # print(surf.get_rect())
-        # self.outline_surface.blit(surf,surf.get_rect())
-        o_frame_tex = self.surf_to_texture(surf, self.ctx)
-        o_frame_tex.use(2)
-        self.outline_program["tex"] = 2
         self.outline_program["time"] = self.TIME
 
-        self.outline_render_object.render(mode=moderngl.TRIANGLE_STRIP, instances=4)
+        transforms = array.array("f", [])
+
+        prev_surface = self.outline_surface
+        instances_of_texture = 0
+        for i in range(len(self.outline_render_list)):
+            entry: OutlinedRenderObject = self.outline_render_list[i]
+            surf = entry.surface
+            if surf != prev_surface and instances_of_texture != 0:
+                # render instances_of_texture instances
+                self.update_outline_render_pass(i, instances_of_texture, prev_surface, transforms)
+                transforms.clear()
+
+            transforms.append(entry.offset[0])
+            transforms.append(entry.offset[1])
+            transforms.append(entry.scale[0])
+            transforms.append(entry.scale[1])
+            instances_of_texture += 1
+        # update outline render object
+        if instances_of_texture != 0:
+            self.update_outline_render_pass(
+                len(self.outline_render_list), instances_of_texture, prev_surface, transforms
+            )
         self.outline_render_list.clear()
-        o_frame_tex.release()
         self.outline_surface.fill(pg.Color(0, 0, 0, 0))
 
     # set the light position of the lit shader.

@@ -25,6 +25,7 @@ class Images(Enum):
     # TEST_UI_BACKGROUND = "ui_background_placeholder.png"
     TEST_UI_BACKGROUND = "ui_test_only.png"
     TEST_SHADER = "shader_test_image.png"
+    TEST_SHADER_0 = "shader_test_image_0.png"
 
     @cache
     def load(self) -> pg.Surface:
@@ -61,6 +62,13 @@ class Dialogue(Enum):
 @unique
 class Shaders(Enum):
     """GLSL shader files to use with OpenGL."""
+
+    UNLIT_FRAG = "unlit_fragment.shader"
+    OUTLINE_FRAG = "outline_fragment.shader"
+    LIT_FRAG = "lit_fragment.shader"
+
+    STANDARD_VERT = "standard_vertex.shader"
+    OUTLINE_VERT = "outline_vertex.shader"
 
     @cache
     def load(self) -> str:
