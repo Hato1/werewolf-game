@@ -2,6 +2,7 @@ from enum import Enum
 
 import pygame as pg
 
+from my_game.constants import SCREEN_SIZE
 from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
 from my_game.core.state_manager import State
@@ -45,8 +46,8 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         super().__init__()
 
         # background
+        self.background_color = pg.Color("gray20")
         self.background = Images.TEST_BACKGROUND.load()
-
         # text
         self.FONT = Fonts.PICO8.load(24)
         self.TITLE_FONT = Fonts.PICO8.load(60)
@@ -103,7 +104,10 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
     def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None = None) -> None:
 
+        surface.fill(self.background_color)
+
         if gl_renderer:
+            gl_renderer.blit_to_lit(surface, surface.get_rect())
             gl_renderer.blit_to_lit(
                 gl_renderer.resize_surface_to_fit(self.background),
                 surface.get_rect(),
@@ -111,7 +115,8 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             gl_renderer.blit_to_unlit(self.title_surface, self.title_rect)
 
         else:
-            pass
+            background = pg.transform.scale(self.background, SCREEN_SIZE)
+            surface.blit(background, surface.get_rect())
 
         for button in self.buttons:
             button.draw(surface, gl_renderer)
