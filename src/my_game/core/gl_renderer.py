@@ -188,12 +188,12 @@ class GLRenderer:
     # called during draw outlined objects. draws X images with different
     def update_outline_render_pass(self, iterations, instace_count, surface: pg.Surface, transforms):
 
-        o_frame_tex = self.surf_to_texture(surface, self.ctx)
+        o_frame_tex = self.surf_to_texture(surface.convert_alpha(), self.ctx)
         single_pass_outline_program = self.ctx.program(
             vertex_shader=self.outline_vert_shader, fragment_shader=self.outline_shader
         )
-        o_frame_tex.use(location=2 + iterations)
-        single_pass_outline_program["tex"] = 2 + iterations
+        o_frame_tex.use(2)
+        single_pass_outline_program["tex"] = 2
         single_pass_outline_program["time"] = self.TIME
 
         quad_buffer = self.ctx.buffer(
@@ -245,10 +245,15 @@ class GLRenderer:
         for i in range(len(self.outline_render_list)):
             entry: OutlinedRenderObject = self.outline_render_list[i]
             surf = entry.surface
+            if prev_surface == self.outline_surface:
+                prev_surface = surf
             if surf != prev_surface and instances_of_texture != 0:
+                if prev_surface != self.outline_surface:
+                    self.update_outline_render_pass(i, instances_of_texture, prev_surface, transforms)
+                    transforms.clear()
+                    instances_of_texture = 1
+                    prev_surface = surf
                 # render instances_of_texture instances
-                self.update_outline_render_pass(i, instances_of_texture, prev_surface, transforms)
-                transforms.clear()
 
             transforms.append(entry.offset[0])
             transforms.append(entry.offset[1])
