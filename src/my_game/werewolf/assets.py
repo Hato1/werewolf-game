@@ -10,6 +10,7 @@ from my_game.core.asset_manager import load_font, load_image, load_sound, read_t
 
 ASSETS_PATH = files(__package__) / "assets"
 IMAGES_PATH = ASSETS_PATH / "textures"
+IMAGES_PATH = ASSETS_PATH / "textures"
 SOUNDS_PATH = ASSETS_PATH / "sounds"
 FONTS_PATH = ASSETS_PATH / "fonts"
 DIALOGUE_PATH = ASSETS_PATH / "dialogue"
@@ -23,6 +24,7 @@ class Images(Enum):
     TEST_SHADOW = "bg_shadow.png"
     # TEST_UI_BACKGROUND = "ui_background_placeholder.png"
     TEST_UI_BACKGROUND = "ui_test_only.png"
+    TEST_SHADER = "shader_test_image.png"
 
     @cache
     def load(self) -> pg.Surface:
