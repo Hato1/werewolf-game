@@ -245,6 +245,17 @@ class GLRenderer:
         # use foreach to set vertext offset
         # self.outline_program["time"] = self.TIME
 
+        # example of what to do when you want to draw an outlined object
+        # gl_renderer.queue_outline_render_object(
+        #    gl_renderer.create_outline_render_object(
+        #    surf=Images.TEST_SHADER_0.load(),
+        #    intensity=0.25,
+        #    _z_index=2,
+        #    offset=(0, 64),
+        #    pixel_size=(64, 64),
+        #    )
+        # )
+
         # hahaha transform, like the werewolfs.
         transforms = array.array("f", [])
 
