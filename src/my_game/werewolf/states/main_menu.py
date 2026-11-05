@@ -48,6 +48,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         # background
         self.background_color = pg.Color("gray20")
         self.background = Images.TEST_BACKGROUND.load()
+
         # text
         self.FONT = Fonts.PICO8.load(24)
         self.TITLE_FONT = Fonts.PICO8.load(60)
@@ -67,15 +68,11 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         ]
         self.button_index = 0
 
-    def enter(
-        self,
-        surface_rect: pg.Rect,
-        transition_data: WerewolfTransitionData,
-        gl_renderer: GLRenderer | None = None,
-    ) -> None:
-        super().enter(surface_rect, transition_data, gl_renderer)
-        if gl_renderer:
-            gl_renderer.set_light_position(0.5, 0.19)
+        # timer
+        self.stick_time = pg.time.get_ticks()
+        self.first_time = pg.time.get_ticks()
+        self.stick_delay = 125
+        self.first_delay = 250
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
@@ -86,11 +83,15 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             self.buttons[self.button_index].selected = False
             self.button_index = (self.button_index - 1) % len(self.buttons)
             self.buttons[self.button_index].selected = True
+            self.stick_time = pg.time.get_ticks()
+            self.first_time = pg.time.get_ticks()
 
         if Action.DOWN in actions:
             self.buttons[self.button_index].selected = False
             self.button_index = (self.button_index + 1) % len(self.buttons)
             self.buttons[self.button_index].selected = True
+            self.stick_time = pg.time.get_ticks()
+            self.first_time = pg.time.get_ticks()
 
         if Action.MOUSE_SELECT in actions:
             pos = pg.mouse.get_pos()
@@ -100,7 +101,28 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                     self.next_state = button.next_state
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
-        pass
+        up_power = input_state.get_action_strength(Action.UP)
+        down_power = input_state.get_action_strength(Action.DOWN)
+
+        if (
+            up_power > 0
+            and pg.time.get_ticks() - self.first_time >= self.first_delay
+            and pg.time.get_ticks() - self.stick_time >= self.stick_delay * (1 / up_power)
+        ):
+            self.buttons[self.button_index].selected = False
+            self.button_index = (self.button_index - 1) % len(self.buttons)
+            self.buttons[self.button_index].selected = True
+            self.stick_time = pg.time.get_ticks()
+
+        elif (
+            down_power > 0
+            and pg.time.get_ticks() - self.first_time >= self.first_delay
+            and pg.time.get_ticks() - self.stick_time >= self.stick_delay * (1 / down_power)
+        ):
+            self.buttons[self.button_index].selected = False
+            self.button_index = (self.button_index + 1) % len(self.buttons)
+            self.buttons[self.button_index].selected = True
+            self.stick_time = pg.time.get_ticks()
 
     def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None = None) -> None:
 
