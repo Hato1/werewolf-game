@@ -12,27 +12,25 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
 class MainMenuButton:
-    def __init__(self, font, text, pos, next_state, selected) -> None:
+    def __init__(self, font, text, next_state) -> None:
         self.text = text
-        self.selected = selected
-        self.font_color = "white"
         self.font = font
-        self.pos = pos
+        self.pos = (0, 0)
         self.next_state = next_state
         self.antialias = True
 
         # shapes
         self.surf = self.font.render(self.text, self.antialias, pg.Color("white"))
-        self.rect = self.surf.get_rect(topleft=pos)
+        self.rect = self.surf.get_rect(topleft=self.pos)
 
-    def draw(self, surface, gl_renderer: GLRenderer | None = None) -> None:
+    def draw(self, surface, selected, gl_renderer: GLRenderer | None = None) -> None:
         draw_pos = self.pos
-        if self.selected:
-            self.font_color = "yellow"
+        font_color = "white"
+        if selected:
+            font_color = "yellow"
             draw_pos = self.pos[0] + 25, self.pos[1]
-        else:
-            self.font_color = "white"
-        self.surf = self.font.render(self.text, self.antialias, pg.Color(self.font_color))
+
+        self.surf = self.font.render(self.text, self.antialias, pg.Color(font_color))
         self.rect = self.surf.get_rect(topleft=(draw_pos))
 
         if gl_renderer:
@@ -40,8 +38,19 @@ class MainMenuButton:
         else:
             surface.blit(self.surf, self.rect)
 
+    def set_pos(self, pos):
+        self.pos = pos
+        self.rect = self.surf.get_rect(topleft=pos)
+
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
+    MENU_FONT_SIZE = 24
+    TITLE_FONT_SIZE = 60
+    BUTTON_OFFSET_X = 75
+    BUTTON_OFFSET_Y = 200
+    # Distance between buttons
+    BUTTON_SPACING_Y = 50
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -50,8 +59,8 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self.background = Images.TEST_BACKGROUND.load()
 
         # text
-        self.FONT = Fonts.PICO8.load(24)
-        self.TITLE_FONT = Fonts.PICO8.load(60)
+        self.FONT = Fonts.PICO8.load(self.MENU_FONT_SIZE)
+        self.TITLE_FONT = Fonts.PICO8.load(self.TITLE_FONT_SIZE)
         self.anti_alias = True
 
         # title
@@ -61,18 +70,15 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
         # buttons
         self.buttons = [
-            MainMenuButton(self.FONT, "Start", (75, 200), WerewolfState.MAIN_MENU, selected=True),
-            MainMenuButton(self.FONT, "Load", (75, 250), WerewolfState.MAIN_MENU, selected=False),
-            MainMenuButton(self.FONT, "Options", (75, 300), WerewolfState.MAIN_MENU, selected=False),
-            MainMenuButton(self.FONT, "Exit", (75, 350), WerewolfState.MAIN_MENU, selected=False),
+            MainMenuButton(self.FONT, "Start", WerewolfState.MAIN_MENU),
+            MainMenuButton(self.FONT, "Load", WerewolfState.MAIN_MENU),
+            MainMenuButton(self.FONT, "Options", WerewolfState.MAIN_MENU),
+            MainMenuButton(self.FONT, "Exit", WerewolfState.MAIN_MENU),
         ]
         self.button_index = 0
 
-        # timer
-        self.stick_time = pg.time.get_ticks()
-        self.first_time = pg.time.get_ticks()
-        self.stick_delay = 125
-        self.first_delay = 250
+        for i in range(len(self.buttons)):
+            self.buttons[i].set_pos((self.BUTTON_OFFSET_X, self.BUTTON_OFFSET_Y + (i * self.BUTTON_SPACING_Y)))
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
@@ -80,18 +86,10 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             self.next_state = self.buttons[self.button_index].next_state
 
         if Action.UP in actions:
-            self.buttons[self.button_index].selected = False
             self.button_index = (self.button_index - 1) % len(self.buttons)
-            self.buttons[self.button_index].selected = True
-            self.stick_time = pg.time.get_ticks()
-            self.first_time = pg.time.get_ticks()
 
         if Action.DOWN in actions:
-            self.buttons[self.button_index].selected = False
             self.button_index = (self.button_index + 1) % len(self.buttons)
-            self.buttons[self.button_index].selected = True
-            self.stick_time = pg.time.get_ticks()
-            self.first_time = pg.time.get_ticks()
 
         if Action.MOUSE_SELECT in actions:
             pos = pg.mouse.get_pos()
@@ -101,28 +99,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                     self.next_state = button.next_state
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
-        up_power = input_state.get_action_strength(Action.UP)
-        down_power = input_state.get_action_strength(Action.DOWN)
-
-        if (
-            up_power > 0
-            and pg.time.get_ticks() - self.first_time >= self.first_delay
-            and pg.time.get_ticks() - self.stick_time >= self.stick_delay * (1 / up_power)
-        ):
-            self.buttons[self.button_index].selected = False
-            self.button_index = (self.button_index - 1) % len(self.buttons)
-            self.buttons[self.button_index].selected = True
-            self.stick_time = pg.time.get_ticks()
-
-        elif (
-            down_power > 0
-            and pg.time.get_ticks() - self.first_time >= self.first_delay
-            and pg.time.get_ticks() - self.stick_time >= self.stick_delay * (1 / down_power)
-        ):
-            self.buttons[self.button_index].selected = False
-            self.button_index = (self.button_index + 1) % len(self.buttons)
-            self.buttons[self.button_index].selected = True
-            self.stick_time = pg.time.get_ticks()
+        pass
 
     def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None = None) -> None:
 
@@ -140,5 +117,5 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             background = pg.transform.scale(self.background, SCREEN_SIZE)
             surface.blit(background, surface.get_rect())
 
-        for button in self.buttons:
-            button.draw(surface, gl_renderer)
+        for i in range(len(self.buttons)):
+            self.buttons[i].draw(surface, self.button_index == i, gl_renderer)
