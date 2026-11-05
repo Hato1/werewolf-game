@@ -10,6 +10,7 @@ from my_game.core.asset_manager import load_font, load_image, load_sound, read_t
 
 ASSETS_PATH = files(__package__) / "assets"
 IMAGES_PATH = ASSETS_PATH / "textures"
+IMAGES_PATH = ASSETS_PATH / "textures"
 SOUNDS_PATH = ASSETS_PATH / "sounds"
 FONTS_PATH = ASSETS_PATH / "fonts"
 DIALOGUE_PATH = ASSETS_PATH / "dialogue"
@@ -23,6 +24,8 @@ class Images(Enum):
     TEST_SHADOW = "bg_shadow.png"
     # TEST_UI_BACKGROUND = "ui_background_placeholder.png"
     TEST_UI_BACKGROUND = "ui_test_only.png"
+    TEST_SHADER = "shader_test_image.png"
+    TEST_SHADER_0 = "shader_test_image_0.png"
 
     @cache
     def load(self) -> pg.Surface:
@@ -59,6 +62,13 @@ class Dialogue(Enum):
 @unique
 class Shaders(Enum):
     """GLSL shader files to use with OpenGL."""
+
+    UNLIT_FRAG = "unlit_fragment.shader"
+    OUTLINE_FRAG = "outline_fragment.shader"
+    LIT_FRAG = "lit_fragment.shader"
+
+    STANDARD_VERT = "standard_vertex.shader"
+    OUTLINE_VERT = "outline_vertex.shader"
 
     @cache
     def load(self) -> str:
