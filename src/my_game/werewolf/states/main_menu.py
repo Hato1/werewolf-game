@@ -47,7 +47,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
     def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None = None) -> None:
         surface.fill(self.background_color)
 
-        text = "press enter to start"
+        text = "press enter to fart"
         anti_alias = True
         text_surface = self.FONT.render(text, anti_alias, pg.Color("yellow"))
         # text_surface = text_surface.convert()
