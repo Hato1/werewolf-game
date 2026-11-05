@@ -19,11 +19,24 @@ Ideally, by figuring out which components and behaviors are common to all dialog
 by reducing redundancies where possible.
 """
 
+from my_game.werewolf.assets import Fonts
+
 
 class Dialogue:
+    FONT = Fonts.PICO8.load(6)
     unique_id = None
     char_id = None
     npc_id = None
-    dialogue_tree = None
-    next_script = None  # ID of next text to load when user advances the text, if applicable
-    previous_script = None  # Not sure if we need to track previous text/dialogue
+    script = None  # array of messages
+    responses = None  # optional array of responses to load new dialogues or end current one
+
+    def __init__(self, unique_id, char_id, npc_id, text, responses):
+        self.unique_id = unique_id
+        self.char_id = char_id
+        self.npc_id = npc_id
+        self.script = text
+        self.responses = responses
+
+    # def write_text(self, screen: pg.Surface, text):
+    #     anti_alias = True
+    #     text_surface = self.FONT.render(text, anti_alias, pg.Color("magenta"))

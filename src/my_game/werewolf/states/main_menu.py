@@ -19,7 +19,7 @@ def random_color():
 
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
-    FONT = Fonts.PICO8.load(6)
+    FONT = Fonts.PICO8.load(10)
 
     def __init__(self) -> None:
         super().__init__()

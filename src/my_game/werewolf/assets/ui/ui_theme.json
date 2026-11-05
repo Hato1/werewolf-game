@@ -1,0 +1,64 @@
+{
+  "button":
+  {
+    "colors":
+    {
+      "normal_bg":"#1D0900",
+      "normal_border": "#6E4742",
+      "normal_text":"#9C9488",
+      "hovered_bg":"#1D0900",
+      "hovered_border": "#C16B7C",
+      "hovered_text": "gold",
+      "disabled_bg": "#1D0900",
+      "disabled_border": "#6E4742",
+      "text_shadow": "silver"
+    },
+    "misc": {
+      "tool_tip_delay": "1.5"
+    },
+    "image": {
+      "position": [0.5,0.5],
+      "auto-scale_images": 1
+    }
+  },
+
+  "@inv_empty": {
+    "image": {
+      "path": ""
+    }
+  },
+
+  "@inv_test": {
+    "image": {
+      "path": "../assets/textures/player_portrait_wolf.png",
+      "auto-scale_images": 1
+    }
+  },
+
+  "@frame_1": {
+    "colors": {
+      "dark_bg": "#392B29"
+    }
+  },
+
+  "@frame_2": {
+    "colors": {
+      "dark_bg": "#392B29"
+    }
+  },
+
+  "@portrait": {
+    "images": {
+      "normal_images": {
+        "id": "ww_texture",
+        "path": "../assets/textures/krita_files/player_portrait_wolf.png",
+        "layer": 0,
+        "position": [0.5, 0.5]
+      },
+      "misc": {
+        "path": "../assets/textures/krita_files/player_portrait_wolf.png",
+        "auto-scale_images": 1
+      }
+    }
+  }
+}

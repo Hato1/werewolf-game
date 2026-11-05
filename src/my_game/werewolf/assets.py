@@ -68,6 +68,8 @@ class Shaders(Enum):
 
 @unique
 class UIElements(Enum):
+    UI_THEME = "ui_theme.json"
+
     @cache
     def load(self) -> pg.Surface:
         return load_image(UI_PATH / self.value)

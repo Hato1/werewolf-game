@@ -1,4 +1,4 @@
 """Constants for the game placed here for easy access."""
 
-DEFAULT_CAPTION = "My Game"
-SCREEN_SIZE = (1920 / 2, 1080 / 2)
+DEFAULT_CAPTION = "The Beast of Temerev"
+SCREEN_SIZE = (1920 // 2, 1080 // 2)
