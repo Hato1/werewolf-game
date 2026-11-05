@@ -14,6 +14,7 @@ class Action(Enum):
     RIGHT = auto()
     UI_SELECT = auto()
     UI_CANCEL = auto()
+    MOUSE_SELECT = auto()
     TOGGLE_DEBUG = auto()
 
 
@@ -23,6 +24,7 @@ input_manager = InputManager(Action)
 input_manager.bind(Action.UI_SELECT, InputEvent.keyboard(pg.K_RETURN))
 input_manager.bind(Action.UI_SELECT, InputEvent.keyboard(pg.K_SPACE))
 input_manager.bind(Action.UI_CANCEL, InputEvent.keyboard(pg.K_ESCAPE))
+input_manager.bind(Action.MOUSE_SELECT, InputEvent.mouse_button(1))
 input_manager.bind(Action.TOGGLE_DEBUG, InputEvent.keyboard(pg.K_F1))
 input_manager.bind(Action.UP, InputEvent.keyboard(pg.K_w))
 input_manager.bind(Action.UP, InputEvent.keyboard(pg.K_UP))
