@@ -127,6 +127,8 @@ class GLRenderer:
     def surf_to_texture(self, surface: pg.Surface, context: moderngl.Context):
         tex: moderngl.Texture = context.texture(surface.get_size(), 4)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        tex.repeat_x = False
+        tex.repeat_y = False
         tex.swizzle = "BGRA"
         tex.write(surface.get_view("0"))
         return tex
@@ -135,9 +137,11 @@ class GLRenderer:
         self.outline_render_list.append(object)
 
     def create_outline_render_object(
-        self, surf: pg.Surface, intensity: float, _z_index: int, offset: tuple, scale: tuple
+        self, surf: pg.Surface, intensity: float, _z_index: int, offset: tuple, pixel_size: tuple
     ):
-        return OutlinedRenderObject(surf, intensity, _z_index, offset, scale)
+        return OutlinedRenderObject(
+            surf, intensity, _z_index, offset, self.pixel_to_screen_size(pixel_size, constants.SCREEN_SIZE)
+        )
 
     # run the lit shader.
     def draw_lit(self):
@@ -194,7 +198,7 @@ class GLRenderer:
         )
         o_frame_tex.use(2)
         single_pass_outline_program["tex"] = 2
-        single_pass_outline_program["time"] = self.TIME
+        # single_pass_outline_program["time"] = self.TIME
 
         quad_buffer = self.ctx.buffer(
             data=array.array(
@@ -226,7 +230,7 @@ class GLRenderer:
             single_pass_outline_program,
             [
                 (quad_buffer, "2f 2f", "vert", "texcoord"),
-                (transform_buffer, "2f 2f /i", "offset", "scale"),
+                (transform_buffer, "2f 2f 1f /i", "offset", "scale", "outline_amount"),
             ],
         )
         single_pass_render_object.render(mode=moderngl.TRIANGLE_STRIP, instances=instace_count)
@@ -236,8 +240,9 @@ class GLRenderer:
     # most complicated pass because each instance of an object needs to run the outline shader.
     def draw_outlined_objects(self):
         # use foreach to set vertext offset
-        self.outline_program["time"] = self.TIME
+        # self.outline_program["time"] = self.TIME
 
+        # hahaha transform, like the werewolfs.
         transforms = array.array("f", [])
 
         prev_surface = self.outline_surface
@@ -247,26 +252,33 @@ class GLRenderer:
             surf = entry.surface
             if prev_surface == self.outline_surface:
                 prev_surface = surf
+            # only draw instances when there's a different surface
             if surf != prev_surface and instances_of_texture != 0:
                 if prev_surface != self.outline_surface:
                     self.update_outline_render_pass(i, instances_of_texture, prev_surface, transforms)
                     transforms.clear()
                     instances_of_texture = 1
                     prev_surface = surf
-                # render instances_of_texture instances
 
             transforms.append(entry.offset[0])
             transforms.append(entry.offset[1])
             transforms.append(entry.scale[0])
             transforms.append(entry.scale[1])
+            transforms.append(entry.highlight_intensity)
             instances_of_texture += 1
-        # update outline render object
+        # draw any remaining instances
         if instances_of_texture != 0:
             self.update_outline_render_pass(
                 len(self.outline_render_list), instances_of_texture, prev_surface, transforms
             )
         self.outline_render_list.clear()
         self.outline_surface.fill(pg.Color(0, 0, 0, 0))
+
+    def pixel_to_screen_size(self, pixel_size: tuple, screen_size: tuple):
+        return [
+            (pixel_size[0] / screen_size[0]) * self.RENDER_SCALE[0] / 2,
+            (pixel_size[1] / screen_size[1]) * self.RENDER_SCALE[1] / 2,
+        ]
 
     # set the light position of the lit shader.
     def set_light_position(self, x: float, y: float):
