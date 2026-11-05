@@ -11,7 +11,7 @@ from my_game.werewolf.inputs import Action
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
-class MainMenuButtons:
+class MainMenuButton:
     def __init__(self, font, text, pos, next_state, selected) -> None:
         self.text = text
         self.selected = selected
@@ -61,10 +61,10 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
         # buttons
         self.buttons = [
-            MainMenuButtons(self.FONT, "Start", (75, 200), WerewolfState.MAIN_MENU, selected=True),
-            MainMenuButtons(self.FONT, "Load", (75, 250), WerewolfState.MAIN_MENU, selected=False),
-            MainMenuButtons(self.FONT, "Options", (75, 300), WerewolfState.MAIN_MENU, selected=False),
-            MainMenuButtons(self.FONT, "Exit", (75, 350), WerewolfState.MAIN_MENU, selected=False),
+            MainMenuButton(self.FONT, "Start", (75, 200), WerewolfState.MAIN_MENU, selected=True),
+            MainMenuButton(self.FONT, "Load", (75, 250), WerewolfState.MAIN_MENU, selected=False),
+            MainMenuButton(self.FONT, "Options", (75, 300), WerewolfState.MAIN_MENU, selected=False),
+            MainMenuButton(self.FONT, "Exit", (75, 350), WerewolfState.MAIN_MENU, selected=False),
         ]
         self.button_index = 0
 
