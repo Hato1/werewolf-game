@@ -133,14 +133,17 @@ class GLRenderer:
         tex.write(surface.get_view("0"))
         return tex
 
-    def add_outline_render_object(self, object: OutlinedRenderObject):
+    # add an object to the draw queue. the queue is cleared after each frame.
+    def queue_outline_render_object(self, object: OutlinedRenderObject):
         self.outline_render_list.append(object)
 
+    # create a render object to use with the draw queue.
     def create_outline_render_object(
         self, surf: pg.Surface, intensity: float, _z_index: int, offset: tuple, pixel_size: tuple
     ):
+        screen_size = self.pixel_to_screen_size(pixel_size)
         return OutlinedRenderObject(
-            surf, intensity, _z_index, offset, self.pixel_to_screen_size(pixel_size, constants.SCREEN_SIZE)
+            surf, intensity, _z_index, self.pixel_to_screen_offset(offset, screen_size), screen_size
         )
 
     # run the lit shader.
@@ -247,6 +250,8 @@ class GLRenderer:
 
         prev_surface = self.outline_surface
         instances_of_texture = 0
+
+        self.outline_render_list.sort(key=lambda x: x.z_index)
         for i in range(len(self.outline_render_list)):
             entry: OutlinedRenderObject = self.outline_render_list[i]
             surf = entry.surface
@@ -274,11 +279,19 @@ class GLRenderer:
         self.outline_render_list.clear()
         self.outline_surface.fill(pg.Color(0, 0, 0, 0))
 
-    def pixel_to_screen_size(self, pixel_size: tuple, screen_size: tuple):
+    # convert pixels into screen size units
+    def pixel_to_screen_size(self, pixel_size: tuple):
+        screen_size = constants.SCREEN_SIZE
         return [
             (pixel_size[0] / screen_size[0]) * self.RENDER_SCALE[0] / 2,
             (pixel_size[1] / screen_size[1]) * self.RENDER_SCALE[1] / 2,
         ]
+
+    # converts pygame's pixel offset to the renderer's screen offset
+    def pixel_to_screen_offset(self, pixel_position: tuple, screen_size: tuple):
+        scaled = self.pixel_to_screen_size(pixel_position)
+        scaled[1] *= -1
+        return [scaled[0] + (screen_size[0]) - 1, scaled[1] - screen_size[1] + 1]
 
     # set the light position of the lit shader.
     def set_light_position(self, x: float, y: float):
@@ -354,14 +367,7 @@ class GLRenderer:
         )
 
 
-# Notes to self from Penumana:
-# use multiple passes.
-# each pass a different function, i think we only need 3
-# lit, outline, ui
-# use a different surface for each pass
-
-
-# janky solution to get instanced rendering
+# data class for an object to be drawn by the outline pass
 class OutlinedRenderObject:
     surface: pg.Surface
     highlight_intensity: float

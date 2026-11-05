@@ -60,15 +60,19 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                 surface.get_rect(),
             )
             for i in range(4):
-                gl_renderer.add_outline_render_object(
+                gl_renderer.queue_outline_render_object(
                     gl_renderer.create_outline_render_object(
-                        Images.TEST_SHADER_0.load(), 0.25 * i, 0, offset=(-0.35, -0.5 + 0.35 * i), pixel_size=(64, 64)
+                        surf=Images.TEST_SHADER_0.load(),
+                        intensity=0.25 * i,
+                        _z_index=2,
+                        offset=(0, 64 * i),
+                        pixel_size=(64, 64),
                     )
                 )
             for i in range(4):
-                gl_renderer.add_outline_render_object(
+                gl_renderer.queue_outline_render_object(
                     gl_renderer.create_outline_render_object(
-                        Images.TEST_SHADER.load(), 0.25 * i, 1, offset=(0 + 0.1 * i, 0.1), pixel_size=(64, 64)
+                        Images.TEST_SHADER.load(), 0.25 * i, 1, offset=(64 * i, 0), pixel_size=(64, 64)
                     )
                 )
             # load = Images.TEST_SHADER.load()

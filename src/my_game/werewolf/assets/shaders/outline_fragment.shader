@@ -21,5 +21,5 @@ void main() {
 
     vec3 color_out = vec3(mix(sample.r, 1, i), mix(sample.g, 0, i), mix(sample.b, 0, i));
 
-    f_color = vec4(color_out.rgb,sample.a + abs(m));
+    f_color = vec4(color_out.rgb,sample.a + i);
 }
