@@ -5,6 +5,7 @@ import pytest
 
 from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputManager, InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State, StateManager, StateRegistry, TransitionData
 
 
@@ -27,7 +28,7 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
             pass
 
-        def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None) -> None:
+        def draw(self, renderer: Renderer, dt: float) -> None:
             pass
 
     class Beta(State[StateKey, TestTransitionData]):
@@ -37,7 +38,7 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
             pass
 
-        def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None) -> None:
+        def draw(self, renderer: Renderer, dt: float) -> None:
             pass
 
         def enter(
@@ -95,7 +96,7 @@ def test_state_manager_passes_held_actions_to_update(monkeypatch) -> None:
         def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
             self.input_state = input_state
 
-        def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None) -> None:
+        def draw(self, renderer: Renderer, dt: float) -> None:
             pass
 
     input_manager = InputManager(Action)

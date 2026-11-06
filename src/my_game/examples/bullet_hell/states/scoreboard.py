@@ -6,6 +6,7 @@ import pygame as pg
 
 from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.examples.bullet_hell.assets import Fonts
 from my_game.examples.bullet_hell.inputs import Action
@@ -118,14 +119,14 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
     def update(self, surface_rect, dt, input_state: InputState) -> None:
         pass
 
-    def draw_title(self, surface: pg.Surface):
+    def draw_title(self, renderer: Renderer):
         anti_alias = True
         title_surf = self.BIGFONT.render("high scores", anti_alias, pg.Color("white"))
-        title_rect = title_surf.get_rect(midtop=(surface.get_rect().centerx, self.UI_OFFSET))
-        surface.blit(title_surf, title_rect)
+        title_rect = title_surf.get_rect(midtop=(renderer.rect.centerx, self.UI_OFFSET))
+        renderer(title_surf, title_rect, unlit=True)
         return title_rect.bottom + self.UI_OFFSET
 
-    def draw_score(self, surface: pg.Surface, top_y: int, entry: ScoreEntry, position: int, *, highlight: bool = False):
+    def draw_score(self, renderer: Renderer, top_y: int, entry: ScoreEntry, position: int, *, highlight: bool = False):
         blink_frequency = 500  # milliseconds
         blink_duration = 25  # milliseconds
         if highlight and pg.time.get_ticks() % blink_frequency < blink_duration:
@@ -134,24 +135,24 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
         color = pg.Color("yellow") if highlight else pg.Color("white")
         anti_alias = True
         entry_surf = self.FONT.render(f"{position + 1}. {entry.name} - {entry.score:.2f}", anti_alias, color)
-        x = surface.get_rect().centerx
+        x = renderer.rect.centerx
         y = top_y + position * (self.FONT.get_height() + self.UI_OFFSET)
         entry_rect = entry_surf.get_rect(midtop=(x, y))
-        surface.blit(entry_surf, entry_rect)
+        renderer(entry_surf, entry_rect, unlit=True)
 
-    def draw_scores(self, surface: pg.Surface, top_y: int):
+    def draw_scores(self, renderer: Renderer, top_y: int):
         # TODO: Draw arrows above/below the current character in the name entry when in NEW_HIGHSCORE sub-state.
         user_score_drawn = False
         for i, entry in enumerate(self.scores):
             if self.sub_state == SubState.NEW_HIGHSCORE:
                 if not user_score_drawn and self.current_score > entry.score:
                     user_score = ScoreEntry("".join(self.player_name), self.current_score)
-                    self.draw_score(surface, top_y, user_score, i, highlight=True)
+                    self.draw_score(renderer, top_y, user_score, i, highlight=True)
                     user_score_drawn = True
             if i + user_score_drawn < len(self.scores):
-                self.draw_score(surface, top_y, entry, i + user_score_drawn)
+                self.draw_score(renderer, top_y, entry, i + user_score_drawn)
 
-    def draw_prompt(self, surface):
+    def draw_prompt(self, renderer: Renderer):
         match self.sub_state:
             case SubState.VIEWING:
                 prompt = "press enter to continue"
@@ -161,13 +162,11 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
                 raise ValueError(f"Unhandled sub-state: {self.sub_state}")
         anti_alias = True
         prompt_surf = self.FONT.render(prompt, anti_alias, pg.Color("yellow"))
-        prompt_rect = prompt_surf.get_rect(
-            midbottom=(surface.get_rect().centerx, surface.get_height() - self.UI_OFFSET)
-        )
-        surface.blit(prompt_surf, prompt_rect)
+        prompt_rect = prompt_surf.get_rect(midbottom=(renderer.rect.centerx, renderer.rect.bottom - self.UI_OFFSET))
+        renderer(prompt_surf, prompt_rect, unlit=True)
 
-    def draw(self, surface, dt, gl_renderer: GLRenderer | None):
-        surface.fill(pg.Color("black"))
-        top_y = self.draw_title(surface)
-        self.draw_scores(surface, top_y)
-        self.draw_prompt(surface)
+    def draw(self, renderer: Renderer, dt: float) -> None:
+        renderer.fill(pg.Color("black"))
+        top_y = self.draw_title(renderer)
+        self.draw_scores(renderer, top_y)
+        self.draw_prompt(renderer)
