@@ -1,5 +1,6 @@
 import array
 import sys
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from my_game import constants
@@ -20,6 +21,12 @@ import pygame as pg
 from my_game.core.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+class RenderPassType(Enum):
+    LIT_PASS = 0
+    OUTLINE_PASS = 1
+    UNLIT_PASS = 2
 
 
 class GLRenderer:
@@ -68,8 +75,8 @@ class GLRenderer:
         self.unlit_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
         self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
         self.lit_surface.fill(pg.Color(0, 0, 0, 0))
-        self.outline_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
-        self.outline_surface.fill(pg.Color(0, 0, 0, 0))
+        self.mask_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
+        self.mask_surface.fill(pg.Color(0, 0, 0, 0))
         logger.warning("Initialised OpenGL renderer")
 
     def create_render_objects(self):
@@ -152,10 +159,14 @@ class GLRenderer:
 
         # convert surface to texture
         frame_tex = self.surf_to_texture(self.lit_surface, self.ctx)
+        mask_tex = self.surf_to_texture(self.mask_surface, self.ctx)
         # use this texture
         frame_tex.use(0)
+        mask_tex.use(1)
         # set uniform tex to using 0
         self.program["tex"] = 0
+        self.program["mask"] = 1
+        self.program["ignore_mask"] = False
         mouse_position_on_screen = (
             (pg.mouse.get_pos()[0] / self.lit_surface.size[0]),
             (pg.mouse.get_pos()[1] / self.lit_surface.size[1]),
@@ -169,6 +180,7 @@ class GLRenderer:
         # render it
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
         frame_tex.release()
+        mask_tex.release()
 
     # run the unlit shader
     def draw_unlit(self):
@@ -259,18 +271,18 @@ class GLRenderer:
         # hahaha transform, like the werewolfs.
         transforms = array.array("f", [])
 
-        prev_surface = self.outline_surface
+        prev_surface = self.mask_surface
         instances_of_texture = 0
 
         self.outline_render_list.sort(key=lambda x: x.z_index)
         for i in range(len(self.outline_render_list)):
             entry: OutlinedRenderObject = self.outline_render_list[i]
             surf = entry.surface
-            if prev_surface == self.outline_surface:
+            if prev_surface == self.mask_surface:
                 prev_surface = surf
             # only draw instances when there's a different surface
             if surf != prev_surface and instances_of_texture != 0:
-                if prev_surface != self.outline_surface:
+                if prev_surface != self.mask_surface:
                     self.update_outline_render_pass(i, instances_of_texture, prev_surface, transforms)
                     transforms.clear()
                     instances_of_texture = 1
@@ -288,7 +300,6 @@ class GLRenderer:
                 len(self.outline_render_list), instances_of_texture, prev_surface, transforms
             )
         self.outline_render_list.clear()
-        self.outline_surface.fill(pg.Color(0, 0, 0, 0))
 
     # convert pixels into screen size units
     def pixel_to_screen_size(self, pixel_size: tuple):
@@ -315,6 +326,9 @@ class GLRenderer:
     # draw a surface to the lit surface
     def blit_to_lit(self, surf: pg.Surface, rect: pg.Rect):
         self.lit_surface.blit(surf, rect)
+
+    def blit_to_light_mask(self, surf: pg.Surface, rect: pg.Rect):
+        self.mask_surface.blit(surf, rect)
 
     # changes the intensity of the lit shader
     def set_intensity(self, intensity: float):
@@ -349,13 +363,13 @@ class GLRenderer:
 
     # reset the lit material to default values
     def reset_lit_to_defaults(self):
-        self.set_light_size(0.1)
+        self.set_light_size(0.6)
         self.set_intensity(0.2)
         self.set_light_position(0.5, 0.2)
         self.set_light_mode(self.LIGHT_MODE_POINT)
         self.set_pixel_per_sample(1)
         self.set_sample_count(128)
-        self.set_ignore_distance(do_ignore=True)
+        self.set_ignore_distance(do_ignore=False)
 
     # scales a surface to fit based on current render scale and window scale
     def resize_surface_to_fit(self, surf: pg.Surface):

@@ -6,14 +6,12 @@ from my_game.core.state_manager import State, StateRegistry
 from my_game.werewolf.inputs import input_manager
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 from my_game.werewolf.states.main_menu import MainMenu
+from my_game.werewolf.states.render_test import RenderTest
 from my_game.werewolf.states.room_test import RoomTest
 
 STATE_FACTORIES: dict[
     WerewolfState,
     Callable[[], State[WerewolfState, WerewolfTransitionData]],
-] = {
-    WerewolfState.MAIN_MENU: MainMenu,
-    WerewolfState.TEST_ROOM: RoomTest,
-}
+] = {WerewolfState.MAIN_MENU: MainMenu, WerewolfState.TEST_ROOM: RoomTest, WerewolfState.RENDER_TEST: RenderTest}
 STATE_REGISTRY = StateRegistry(STATE_FACTORIES, WerewolfState.MAIN_MENU, WerewolfTransitionData)
 __all__ = ["STATE_REGISTRY", "input_manager"]

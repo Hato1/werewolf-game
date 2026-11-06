@@ -1,6 +1,8 @@
 #version 330 core
 
 uniform sampler2D tex;
+uniform sampler2D mask;
+uniform bool ignore_mask;
 uniform vec2 light_position;
 uniform vec2 screen_size;
 uniform float sample_count;
@@ -30,10 +32,14 @@ void main() {
         if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7 && !static_direction){
             //end early
             float percent_left = 1 - (i / (sample_count));
-            sample_bonus += vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
+            sample_bonus += texture(mask, sample_pos).rgb * percent_left;
+            if(ignore_mask)
+                sample_bonus += vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
             break;
         }
-        vec3 sample = texture(tex, sample_pos).rgb;
+        vec3 sample = texture(mask, sample_pos).rgb;
+        if(ignore_mask)
+            sample = texture(tex, sample_pos).rgb;
         //sample_total += vec3(light_size - (distance), 0 ,0);
         float dist_weight = clamp(1 - ((distance + start_distance)/light_size), 0, 1);
         sample_bonus += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);

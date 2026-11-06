@@ -31,6 +31,7 @@ class Renderer:
         *,
         unlit: bool = False,
         fit: bool = False,
+        to_lightmask: bool = False,
     ) -> None:
         """Draws the given surface to the target rectangle, using the appropriate render backend.
 
@@ -46,6 +47,8 @@ class Renderer:
 
         if self.gl_renderer is None:
             self.surface.blit(surface, target_rect)
+        elif to_lightmask:
+            self.gl_renderer.blit_to_light_mask(surface, target_rect)
         elif unlit:
             self.gl_renderer.blit_to_unlit(surface, target_rect)
         else:
