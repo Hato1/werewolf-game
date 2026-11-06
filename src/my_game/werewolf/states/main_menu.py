@@ -11,7 +11,7 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
 class MainMenuButton:
-    def __init__(self, font, text, next_state) -> None:
+    def __init__(self, font, text, next_state: WerewolfState | None) -> None:
         self.text = text
         self.font = font
         self.pos = (0, 0)
@@ -69,7 +69,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             MainMenuButton(self.FONT, "Start", WerewolfState.TEST_ROOM),
             MainMenuButton(self.FONT, "Load", WerewolfState.MAIN_MENU),
             MainMenuButton(self.FONT, "Options", WerewolfState.MAIN_MENU),
-            MainMenuButton(self.FONT, "Exit", WerewolfState.MAIN_MENU),
+            MainMenuButton(self.FONT, "Exit", None),
         ]
         self.button_index = 0
 
@@ -80,6 +80,8 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         if Action.UI_SELECT in actions:
             self.done = True
             self.next_state = self.buttons[self.button_index].next_state
+            if not self.next_state:
+                self.quit = True
 
         if Action.UP in actions:
             self.button_index = (self.button_index - 1) % len(self.buttons)
@@ -88,11 +90,12 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             self.button_index = (self.button_index + 1) % len(self.buttons)
 
         if Action.MOUSE_SELECT in actions:
-            pos = pg.mouse.get_pos()
             for button in self.buttons:
-                if button.rect.collidepoint(pos):
+                if button.rect.collidepoint(event.pos):
                     self.done = True
                     self.next_state = button.next_state
+                    if not self.next_state:
+                        self.quit = True
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         pass

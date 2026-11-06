@@ -1,4 +1,4 @@
-"""Generic state for displaying a Room: draws it, shows a timed message when a prop is clicked, and exits on cancel."""
+"""Generic state for displaying a Room: draws it and shows a timed message when a prop is clicked."""
 
 from enum import Enum
 
