@@ -1,5 +1,9 @@
 """Object representing a room in the game."""
 
+import pygame as pg
+
+from my_game.core.gl_renderer import GLRenderer
+
 Point = tuple[int, int]
 polygon = list[Point]
 
@@ -10,15 +14,18 @@ class Character:
     # TODO: Add dialogue and interaction methods for the character.
     """
 
-    def __init__(self, name: str, sprite, point: Point) -> None:
+    def __init__(self, name: str, sprite: pg.Surface, point: Point) -> None:
         self.name = name
         self.sprite = sprite
         self.position: Point = point
 
-    def draw(self):
+    def draw(self, surface: pg.Surface, gl_renderer: GLRenderer | None = None) -> None:
         """Draw the character in the room."""
-        # Drawing logic goes here.
-        pass
+        rect = self.sprite.get_rect(topleft=self.position)
+        if gl_renderer is not None:
+            gl_renderer.blit_to_lit(self.sprite, rect)
+        else:
+            surface.blit(self.sprite, rect)
 
 
 class Hotspot:
@@ -63,7 +70,7 @@ class Region:
 class Prop:
     """Props are objects within a room that the player can interact with."""
 
-    def __init__(self, name: str, description: str, sprite) -> None:
+    def __init__(self, name: str, description: str, sprite: pg.Surface) -> None:
         self.name = name
         self.description = description
         self.sprite = sprite
@@ -85,12 +92,15 @@ class Prop:
         self.visible = False
         self.clickable = False
 
-    def draw(self):
+    def draw(self, surface: pg.Surface, gl_renderer: GLRenderer | None = None) -> None:
         """Draw the prop in the room."""
         if not self.visible:
             return
-        # Drawing logic goes here.
-        pass
+        rect = self.sprite.get_rect(topleft=self.position)
+        if gl_renderer is not None:
+            gl_renderer.blit_to_lit(self.sprite, rect)
+        else:
+            surface.blit(self.sprite, rect)
 
 
 class Room:
@@ -118,10 +128,10 @@ class Room:
         # It's defined as a list of polygons, where each polygon is represented as a list of coordinate tuples.
         self.walkable_areas: list[polygon] = []
 
-    def draw(self):
+    def draw(self, surface: pg.Surface, gl_renderer: GLRenderer | None = None) -> None:
         """Draw the room and its contents."""
         for prop in sorted(self.props, key=lambda p: p.height):
-            prop.draw()
+            prop.draw(surface, gl_renderer)
 
         for character in self.characters:
-            character.draw()
+            character.draw(surface, gl_renderer)
