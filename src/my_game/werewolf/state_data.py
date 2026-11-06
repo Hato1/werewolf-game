@@ -9,6 +9,7 @@ from my_game.core.state_manager import TransitionData
 class WerewolfState(StrEnum):
     MAIN_MENU = auto()
     PROLOGUE = auto()
+    TEST_ROOM = auto()
 
 
 @dataclass

@@ -21,6 +21,7 @@ SHADERS_PATH = ASSETS_PATH / "shaders"
 @unique
 class Images(Enum):
     TEST_BACKGROUND = "bgtest2.png"
+    TEST_ROOM_BACKGROUND = "bg1.png"
     TEST_SHADOW = "bg_shadow.png"
     # TEST_UI_BACKGROUND = "ui_background_placeholder.png"
     TEST_UI_BACKGROUND = "ui_test_only.png"
