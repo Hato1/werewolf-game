@@ -11,6 +11,7 @@ import pygame as pg
 from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.logger import get_logger
+from my_game.core.renderer import Renderer
 
 logger = get_logger(__name__)
 
@@ -48,7 +49,7 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
             Don't draw anything to any surfaces here.
             Must be implemented by subclasses.
 
-        draw(surface: pg.Surface, dt: float):
+        draw(renderer: Renderer, dt: float):
             Abstract method to draw the program to the given surface.
             Don't update program logic here.
             Must be implemented by subclasses.
@@ -96,10 +97,10 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         pass
 
     @abstractmethod
-    def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None):
+    def draw(self, renderer: Renderer, dt: float) -> None:
         """Render to the given surface. Runs every frame.
 
-        surface: The surface to draw to.
+        renderer: Callable renderer for the active display backend.
         dt: Time in seconds since last frame.
         """
         pass
@@ -152,6 +153,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.caption: str = caption  # Caption for the window.
         self.transition_data_factory = registry.transition_data_factory
         self.gl_renderer: GLRenderer | None = gl_renderer
+        self.renderer = Renderer(screen, gl_renderer)
 
         self.quit: bool = False  # Set to True to exit program.
         self.clock: pg.Clock = pg.time.Clock()
@@ -210,7 +212,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
 
         input_state = self.input_manager.get_input_state()
         self.current_state.update(self.screen.get_rect(), dt, input_state)
-        self.current_state.draw(self.screen, dt, self.gl_renderer)
+        self.current_state.draw(self.renderer, dt)
 
     async def main(self):
         """Main loop for entire program.

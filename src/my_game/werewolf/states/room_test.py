@@ -1,12 +1,15 @@
-"""A simple room scene for testing room rendering."""
+"""A simple room scene for testing room rendering.
+
+VERY UGLY WIP, DO NOT READ
+"""
 
 from enum import Enum
 
 import pygame as pg
 
 from my_game.constants import SCREEN_SIZE
-from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
@@ -39,10 +42,6 @@ class RoomTest(State[WerewolfState, WerewolfTransitionData]):
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         pass
 
-    def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None) -> None:
-        surface.fill(pg.Color("black"))
-        self.room.draw(surface, gl_renderer)
-        if gl_renderer is not None:
-            gl_renderer.blit_to_unlit(self.prompt, self.prompt_rect)
-        else:
-            surface.blit(self.prompt, self.prompt_rect)
+    def draw(self, renderer: Renderer, dt: float) -> None:
+        self.room.draw(renderer)
+        renderer(self.prompt, self.prompt_rect, unlit=True)

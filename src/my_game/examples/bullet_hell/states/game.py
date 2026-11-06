@@ -6,6 +6,7 @@ import pygame as pg
 
 from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
+from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.examples.bullet_hell.assets import Fonts, Images, UIElements
 from my_game.examples.bullet_hell.inputs import Action
@@ -64,12 +65,12 @@ class Monster:
         """Update the monster's position based on its speed and direction."""
         self.position += self.direction * self.speed * dt
 
-    def draw(self, surface: pg.Surface, current_time: float):
+    def draw(self, renderer: Renderer, current_time: float):
         # Simple animation based on time and monster speed.
         sprite_index = int((current_time * self.speed * 10) % 2)
         sprite = self.SPRITE[sprite_index]
         self.rect = sprite.get_rect(center=(self.position))
-        surface.blit(sprite, self.rect)
+        renderer(sprite, self.rect)
 
 
 class Player:
@@ -121,8 +122,8 @@ class Player:
         self.clamp_position(surface_rect)
         self.rect = self.SPRITE.get_rect(center=(self.position))
 
-    def draw(self, surface):
-        surface.blit(self.SPRITE, self.rect)
+    def draw(self, renderer: Renderer):
+        renderer(self.SPRITE, self.rect)
 
 
 class Game(State[BulletHellState, BulletHellTransitionData]):
@@ -156,21 +157,24 @@ class Game(State[BulletHellState, BulletHellTransitionData]):
             self.done = True
             self.next_state = BulletHellState.SCOREBOARD
 
-    def draw_healthbar(self, surface) -> None:
+    def draw_healthbar(self, renderer: Renderer) -> None:
         """Draws the player's health as hearts in the top-left corner."""
         heart_full = UIElements.HEART_FULL.load()
         empty_heart = UIElements.HEART_EMPTY.load()
 
         for i in range(self.player.max_health):
             heart = heart_full if i < self.player.health else empty_heart
-            surface.blit(heart, (self.UI_OFFSET + i * (heart.get_width() + self.UI_OFFSET), self.UI_OFFSET))
+            heart_rect = heart.get_rect(
+                topleft=(self.UI_OFFSET + i * (heart.get_width() + self.UI_OFFSET), self.UI_OFFSET)
+            )
+            renderer(heart, heart_rect, unlit=True)
 
-    def draw_score(self, surface: pg.Surface) -> None:
+    def draw_score(self, renderer: Renderer) -> None:
         """Draws the player's score in the top-right corner."""
         anti_alias = True
         score_surf = self.FONT.render(f"score: {self.score:.2f}", anti_alias, pg.Color("yellow"))
-        score_rect = score_surf.get_rect(topright=(surface.get_width() - self.UI_OFFSET, self.UI_OFFSET))
-        surface.blit(score_surf, score_rect)
+        score_rect = score_surf.get_rect(topright=(renderer.rect.right - self.UI_OFFSET, self.UI_OFFSET))
+        renderer(score_surf, score_rect, unlit=True)
 
     def update_monster_spawner(self, surface_rect: pg.Rect, dt: float) -> None:
         """Spawns monsters over time based on the monster meter and interval."""
@@ -215,13 +219,13 @@ class Game(State[BulletHellState, BulletHellTransitionData]):
         # Score is time survived in seconds.
         self.score = (pg.time.get_ticks() / 1000.0) - self.start_time
 
-    def draw(self, surface: pg.Surface, dt: float, gl_renderer: GLRenderer | None) -> None:
-        surface.fill(pg.Color("gray"))
+    def draw(self, renderer: Renderer, dt: float) -> None:
+        renderer.fill(pg.Color("gray"))
         for monster in self.monsters:
-            monster.draw(surface, pg.time.get_ticks() / 1000.0)
-        self.player.draw(surface)
-        self.draw_healthbar(surface)
-        self.draw_score(surface)
+            monster.draw(renderer, pg.time.get_ticks() / 1000.0)
+        self.player.draw(renderer)
+        self.draw_healthbar(renderer)
+        self.draw_score(renderer)
 
     def exit(self) -> BulletHellTransitionData:
         self.transition_data.score = self.score

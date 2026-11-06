@@ -1,6 +1,7 @@
 import pygame as pg
 
 from my_game.constants import SCREEN_SIZE
+from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.registry import STATE_REGISTRY
 from my_game.werewolf.room import Prop, Room
@@ -17,7 +18,7 @@ def test_room_draws_visible_props_at_their_positions() -> None:
     prop.position = (3, 4)
     room = Room("test", "A test room.", [prop], [], [])
 
-    room.draw(surface)
+    room.draw(Renderer(surface, None))
 
     assert surface.get_at((3, 4)) == pg.Color("red")
     assert surface.get_at((0, 0)) == pg.Color("black")
@@ -31,7 +32,7 @@ def test_hidden_props_are_not_drawn() -> None:
     prop.hide()
     room = Room("test", "A test room.", [prop], [], [])
 
-    room.draw(surface)
+    room.draw(Renderer(surface, None))
 
     assert surface.get_at((0, 0)) == pg.Color("black")
 

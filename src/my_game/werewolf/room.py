@@ -2,7 +2,7 @@
 
 import pygame as pg
 
-from my_game.core.gl_renderer import GLRenderer
+from my_game.core.renderer import Renderer
 
 Point = tuple[int, int]
 polygon = list[Point]
@@ -19,13 +19,10 @@ class Character:
         self.sprite = sprite
         self.position: Point = point
 
-    def draw(self, surface: pg.Surface, gl_renderer: GLRenderer | None = None) -> None:
+    def draw(self, renderer: Renderer) -> None:
         """Draw the character in the room."""
         rect = self.sprite.get_rect(topleft=self.position)
-        if gl_renderer is not None:
-            gl_renderer.blit_to_lit(self.sprite, rect)
-        else:
-            surface.blit(self.sprite, rect)
+        renderer(self.sprite, rect)
 
 
 class Hotspot:
@@ -92,15 +89,12 @@ class Prop:
         self.visible = False
         self.clickable = False
 
-    def draw(self, surface: pg.Surface, gl_renderer: GLRenderer | None = None) -> None:
+    def draw(self, renderer: Renderer) -> None:
         """Draw the prop in the room."""
         if not self.visible:
             return
         rect = self.sprite.get_rect(topleft=self.position)
-        if gl_renderer is not None:
-            gl_renderer.blit_to_lit(self.sprite, rect)
-        else:
-            surface.blit(self.sprite, rect)
+        renderer(self.sprite, rect)
 
 
 class Room:
@@ -128,10 +122,10 @@ class Room:
         # It's defined as a list of polygons, where each polygon is represented as a list of coordinate tuples.
         self.walkable_areas: list[polygon] = []
 
-    def draw(self, surface: pg.Surface, gl_renderer: GLRenderer | None = None) -> None:
+    def draw(self, renderer: Renderer) -> None:
         """Draw the room and its contents."""
         for prop in sorted(self.props, key=lambda p: p.height):
-            prop.draw(surface, gl_renderer)
+            prop.draw(renderer)
 
         for character in self.characters:
-            character.draw(surface, gl_renderer)
+            character.draw(renderer)
