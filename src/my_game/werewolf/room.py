@@ -84,6 +84,10 @@ class Prop:
         # This will determine the order in which props are rendered relative to each other.
         self.height: int = 0
 
+    @property
+    def rect(self) -> pg.Rect:
+        return self.sprite.get_rect(topleft=self.position)
+
     def hide(self):
         """Hide the prop from the room."""
         self.visible = False
@@ -129,3 +133,10 @@ class Room:
 
         for character in self.characters:
             character.draw(renderer)
+
+    def get_clicked_prop(self, point: Point) -> Prop | None:
+        """Return the topmost visible, clickable prop at the given point."""
+        for prop in sorted(self.props, key=lambda p: p.height, reverse=True):
+            if prop.visible and prop.clickable and prop.rect.collidepoint(point):
+                return prop
+        return None

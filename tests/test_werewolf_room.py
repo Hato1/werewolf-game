@@ -1,6 +1,8 @@
 import pygame as pg
+import pytest
 
 from my_game.constants import SCREEN_SIZE
+from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.registry import STATE_REGISTRY
@@ -52,3 +54,28 @@ def test_main_menu_opens_registered_test_room() -> None:
 
     assert room_state.done
     assert room_state.next_state is WerewolfState.MAIN_MENU
+
+
+def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
+    pg.init()
+    pg.display.set_mode((1, 1))
+    room_state = RoomTest()
+    studio = room_state.room.props[1]
+    ticks = 1_000
+    monkeypatch.setattr(pg.time, "get_ticks", lambda: ticks)
+
+    room_state.handle_event(
+        {Action.MOUSE_SELECT},
+        pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=studio.rect.center),
+    )
+
+    assert room_state.message_surface is not None
+    assert room_state.message_expires_at == ticks + room_state.MESSAGE_DURATION_MS
+
+    ticks += room_state.MESSAGE_DURATION_MS - 1
+    room_state.update(pg.Rect(0, 0, *SCREEN_SIZE), 0, InputState(frozenset(), {}))
+    assert room_state.message_surface is not None
+
+    ticks += 1
+    room_state.update(pg.Rect(0, 0, *SCREEN_SIZE), 0, InputState(frozenset(), {}))
+    assert room_state.message_surface is None
