@@ -116,6 +116,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         else:
             background = pg.transform.scale(self.background, SCREEN_SIZE)
             surface.blit(background, surface.get_rect())
+            surface.blit(self.title_surface, self.title_rect)
 
         for i in range(len(self.buttons)):
             self.buttons[i].draw(surface, self.button_index == i, gl_renderer)
