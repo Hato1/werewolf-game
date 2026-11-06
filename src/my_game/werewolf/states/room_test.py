@@ -7,35 +7,21 @@ from enum import Enum
 
 import pygame as pg
 
-from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
-from my_game.werewolf.assets import Fonts, Images
+from my_game.werewolf.assets import Fonts, Rooms
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room import Prop, Room
+from my_game.werewolf.room_data import load_room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
 class RoomTest(State[WerewolfState, WerewolfTransitionData]):
     MESSAGE_DURATION_MS = 3000
-    STUDIO_SCALE = 0.1
 
     def __init__(self) -> None:
         super().__init__()
-        background = pg.transform.scale(Images.TEST_ROOM_BACKGROUND.load(), SCREEN_SIZE)
-        studio_sprite = pg.transform.smoothscale_by(Images.STUDIO.load(), self.STUDIO_SCALE)
-        studio = Prop("Studio", "a tiny studio model.", studio_sprite)
-        studio.position = (SCREEN_SIZE[0] - studio_sprite.get_width() - 48, SCREEN_SIZE[1] - studio_sprite.get_height())
-        background_prop = Prop("Background", "The room background.", background)
-        background_prop.clickable = False
-        self.room = Room(
-            "Test Room",
-            "A room for testing the room rendering system.",
-            [background_prop, studio],
-            [],
-            [],
-        )
+        self.room = load_room(Rooms.TEST_ROOM)
         self.prompt_font = Fonts.PICO8.load(12)
         self.prompt = self.prompt_font.render(
             "Test room - press Esc to return", antialias=True, color=pg.Color("white")

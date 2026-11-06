@@ -1,6 +1,6 @@
 """Asset catalog for the werewolf game."""
 
-from enum import Enum, unique
+from enum import Enum, StrEnum, unique
 from functools import cache
 from importlib.resources import files
 
@@ -10,16 +10,16 @@ from my_game.core.asset_manager import load_font, load_image, load_sound, read_t
 
 ASSETS_PATH = files(__package__) / "assets"
 IMAGES_PATH = ASSETS_PATH / "textures"
-IMAGES_PATH = ASSETS_PATH / "textures"
 SOUNDS_PATH = ASSETS_PATH / "sounds"
 FONTS_PATH = ASSETS_PATH / "fonts"
 DIALOGUE_PATH = ASSETS_PATH / "dialogue"
+ROOMS_PATH = ASSETS_PATH / "rooms"
 UI_PATH = ASSETS_PATH / "ui"
 SHADERS_PATH = ASSETS_PATH / "shaders"
 
 
 @unique
-class Images(Enum):
+class Images(StrEnum):
     TEST_BACKGROUND = "bgtest2.png"
     TEST_ROOM_BACKGROUND = "bg1.png"
     STUDIO = "studio.png"
@@ -32,6 +32,17 @@ class Images(Enum):
     @cache
     def load(self) -> pg.Surface:
         return load_image(IMAGES_PATH / self.value)
+
+
+@unique
+class Rooms(Enum):
+    """Room definition files. These are data and may be rewritten by the level editor."""
+
+    TEST_ROOM = "test_room.json"
+
+    def load(self) -> str:
+        """Return the raw JSON text. Not cached, so edits to the file are picked up on reload."""
+        return read_text(ROOMS_PATH / self.value)
 
 
 @unique
