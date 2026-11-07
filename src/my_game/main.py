@@ -55,6 +55,7 @@ async def main():
         options = pg.SCALED
 
     screen = pg.display.set_mode(SCREEN_SIZE, options)
+    pg.mouse.set_relative_mode(True)
 
     if OPENGL:
         gl_renderer = GLRenderer()
