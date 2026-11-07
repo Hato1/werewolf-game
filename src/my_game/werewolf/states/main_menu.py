@@ -2,6 +2,7 @@ from enum import Enum
 
 import pygame as pg
 
+from my_game.constants import MENU_ANTI_ALIAS, MENU_BUTTON_OFFSET_X, MENU_BUTTON_SPACING_Y, MENU_FONT_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
@@ -16,10 +17,9 @@ class MainMenuButton:
         self.font = font
         self.pos = (0, 0)
         self.next_state = next_state
-        self.antialias = True
 
         # shapes
-        self.surf = self.font.render(self.text, self.antialias, pg.Color("white"))
+        self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
         self.rect = self.surf.get_rect(topleft=self.pos)
 
     def draw(self, renderer: Renderer, *, selected: bool) -> None:
@@ -29,7 +29,7 @@ class MainMenuButton:
             font_color = "yellow"
             draw_pos = self.pos[0] + 25, self.pos[1]
 
-        self.surf = self.font.render(self.text, self.antialias, pg.Color(font_color))
+        self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color(font_color))
         self.rect = self.surf.get_rect(topleft=(draw_pos))
 
         renderer(self.surf, self.rect, unlit=True)
@@ -40,12 +40,8 @@ class MainMenuButton:
 
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
-    MENU_FONT_SIZE = 24
     TITLE_FONT_SIZE = 60
-    BUTTON_OFFSET_X = 75
-    BUTTON_OFFSET_Y = 200
-    # Distance between buttons
-    BUTTON_SPACING_Y = 50
+    MENU_BUTTON_OFFSET_Y = 200
 
     def __init__(self) -> None:
         super().__init__()
@@ -55,13 +51,12 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self.background = Images.TEST_BACKGROUND.load()
 
         # text
-        self.FONT = Fonts.PICO8.load(self.MENU_FONT_SIZE)
+        self.FONT = Fonts.PICO8.load(MENU_FONT_SIZE)
         self.TITLE_FONT = Fonts.PICO8.load(self.TITLE_FONT_SIZE)
-        self.anti_alias = True
 
         # title
         title = "The Beast of \nTemerev"
-        self.title_surface = self.TITLE_FONT.render(title, self.anti_alias, pg.Color("white"))
+        self.title_surface = self.TITLE_FONT.render(title, MENU_ANTI_ALIAS, pg.Color("white"))
         self.title_rect = self.title_surface.get_rect(topleft=(50, 50))
 
         # buttons
@@ -74,7 +69,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self.button_index = 0
 
         for i in range(len(self.buttons)):
-            self.buttons[i].set_pos((self.BUTTON_OFFSET_X, self.BUTTON_OFFSET_Y + (i * self.BUTTON_SPACING_Y)))
+            self.buttons[i].set_pos((MENU_BUTTON_OFFSET_X, self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y)))
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
