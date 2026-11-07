@@ -31,7 +31,7 @@ class Renderer:
         *,
         unlit: bool = False,
         fit: bool = False,
-        to_lightmask: bool = False,
+        draw_mode: int = 0,
     ) -> None:
         """Draws the given surface to the target rectangle, using the appropriate render backend.
 
@@ -40,15 +40,21 @@ class Renderer:
             rect (pg.Rect | None): The target rectangle. If None, uses the surface's rect.
             unlit (bool): If True, draws to the unlit buffer when using GLRenderer.
             fit (bool): If True, scales the surface to fit the target rectangle.
+            draw_mode (int): additional layers to draw to for lighting purposes.
         """
         if fit:
             surface = self.fit(surface)
         target_rect = rect if rect is not None else surface.get_rect()
 
+        draw_normal = 2
+        draw_mask = 1
+
         if self.gl_renderer is None:
             self.surface.blit(surface, target_rect)
-        elif to_lightmask:
+        elif draw_mode == draw_mask:
             self.gl_renderer.blit_to_light_mask(surface, target_rect)
+        elif draw_mode == draw_normal:
+            self.gl_renderer.blit_to_normals(surface, target_rect)
         elif unlit:
             self.gl_renderer.blit_to_unlit(surface, target_rect)
         else:

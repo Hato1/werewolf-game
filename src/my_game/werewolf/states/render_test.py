@@ -19,12 +19,14 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
         self.done = False
         self.background = Images.load(Images.TEST_ROOM_BACKGROUND)
         self.light_mask = Images.load(Images.TEST_SHADOW)
+        self.normal_map = Images.load(Images.TEST_NORMALS)
 
     def draw(self, renderer: Renderer, dt: float) -> None:
         # renderer(background)
         # super().draw(renderer, dt)
         renderer(self.background, renderer.rect, fit=True)
-        renderer(self.light_mask, self.light_mask.get_rect(), to_lightmask=True, fit=True)
+        renderer(self.light_mask, self.light_mask.get_rect(), draw_mode=1, fit=True)
+        renderer(self.normal_map, self.normal_map.get_rect(), draw_mode=2, fit=True)
         renderer(self.prompt, self.prompt_rect, unlit=True)
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
