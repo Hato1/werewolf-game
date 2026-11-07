@@ -51,6 +51,8 @@ async def main():
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
         options = pg.OPENGL | pg.DOUBLEBUF
+    elif sys.platform == "emscripten":
+        options = 0
     else:
         options = pg.SCALED
 
