@@ -24,6 +24,7 @@ class Images(StrEnum):
     TEST_ROOM_BACKGROUND = "bg1.png"
     STUDIO = "studio.png"
     TEST_SHADOW = "bg_shadow.png"
+    TEST_NORMALS = "bg1_normals.png"
     # TEST_UI_BACKGROUND = "ui_background_placeholder.png"
     TEST_UI_BACKGROUND = "ui_test_only.png"
     TEST_SHADER = "shader_test_image.png"
@@ -79,6 +80,7 @@ class Shaders(Enum):
     UNLIT_FRAG = "unlit_fragment.shader"
     OUTLINE_FRAG = "outline_fragment.shader"
     LIT_FRAG = "lit_fragment.shader"
+    POINT_LIGHTS_FRAG = "point_light_fragment.shader"
 
     STANDARD_VERT = "standard_vertex.shader"
     OUTLINE_VERT = "outline_vertex.shader"

@@ -59,6 +59,7 @@ class GLRenderer:
         # fragment shader for the lit pass.
         # basically smears light colors in a direction
         self.lighting_shader = Shaders.load(Shaders.LIT_FRAG)
+        self.point_lighting_shader = Shaders.load(Shaders.POINT_LIGHTS_FRAG)
         # fragment shader for unlit pass.
         # performs no changes.
         self.unlit_shader = Shaders.load(Shaders.UNLIT_FRAG)
@@ -66,7 +67,7 @@ class GLRenderer:
         self.outline_shader = Shaders.load(Shaders.OUTLINE_FRAG)
         # program is a shader, basically. you tell opengl to draw vertecies(vertex shader),
         # then do something on the pixels within those verticies(fragment shader)
-        self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.lighting_shader)
+        self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.point_lighting_shader)
         self.unlit_program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.unlit_shader)
         self.outline_program = self.ctx.program(
             vertex_shader=self.outline_vert_shader, fragment_shader=self.outline_shader
@@ -74,6 +75,8 @@ class GLRenderer:
 
         self.render_object, self.unlit_render_object, self.outline_render_object = self.create_render_objects()
         self.lit_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
+        self.normal_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
+
         self.unlit_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
         self.unlit_surface.fill(pg.Color(0, 0, 0, 0))
         self.lit_surface.fill(pg.Color(0, 0, 0, 0))
@@ -162,13 +165,16 @@ class GLRenderer:
         # convert surface to texture
         frame_tex = self.surf_to_texture(self.lit_surface, self.ctx)
         mask_tex = self.surf_to_texture(self.mask_surface, self.ctx)
+        normal_tex = self.surf_to_texture(self.normal_surface, self.ctx)
         # use this texture
         frame_tex.use(0)
         mask_tex.use(1)
+        normal_tex.use(2)
         # set uniform tex to using 0
         self.program["tex"] = 0
-        self.program["mask"] = 1
-        self.program["ignore_mask"] = False
+        # self.program["mask"] = 1
+        self.program["normals"] = 2
+        # self.program["ignore_mask"] = True
         mouse_position_on_screen = (
             (pg.mouse.get_pos()[0] / self.lit_surface.size[0]),
             (pg.mouse.get_pos()[1] / self.lit_surface.size[1]),
@@ -183,6 +189,7 @@ class GLRenderer:
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
         frame_tex.release()
         mask_tex.release()
+        normal_tex.release()
 
     # run the unlit shader
     def draw_unlit(self):
@@ -329,6 +336,9 @@ class GLRenderer:
     def blit_to_lit(self, surf: pg.Surface, rect: pg.Rect):
         self.lit_surface.blit(surf, rect)
 
+    def blit_to_normals(self, surf: pg.Surface, rect: pg.Rect):
+        self.normal_surface.blit(surf, rect)
+
     def blit_to_light_mask(self, surf: pg.Surface, rect: pg.Rect):
         self.mask_surface.blit(surf, rect)
 
@@ -365,13 +375,13 @@ class GLRenderer:
 
     # reset the lit material to default values
     def reset_lit_to_defaults(self):
-        self.set_light_size(0.6)
-        self.set_intensity(0.2)
+        self.set_light_size(0.5)
+        self.set_intensity(1)
         self.set_light_position(0.5, 0.2)
-        self.set_light_mode(self.LIGHT_MODE_POINT)
-        self.set_pixel_per_sample(1)
-        self.set_sample_count(128)
-        self.set_ignore_distance(do_ignore=False)
+        # self.set_light_mode(self.LIGHT_MODE_POINT)
+        # self.set_pixel_per_sample(1)
+        # self.set_sample_count(128)
+        # self.set_ignore_distance(do_ignore=False)
 
     # scales a surface to fit based on current render scale and window scale
     def resize_surface_to_fit(self, surf: pg.Surface):
