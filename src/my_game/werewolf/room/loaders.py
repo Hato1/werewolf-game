@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field, fields
 import pygame as pg
 
 from my_game.werewolf.assets import Images, Rooms
-from my_game.werewolf.room import Prop, Room
+from my_game.werewolf.room.models import Prop, Room
 
 
 @dataclass

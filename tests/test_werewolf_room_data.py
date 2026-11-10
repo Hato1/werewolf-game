@@ -3,7 +3,7 @@ import pytest
 
 from my_game.constants import SCREEN_SIZE
 from my_game.werewolf.assets import Images, Rooms
-from my_game.werewolf.room_data import PropData, RoomData, build_room, load_room, room_from_json, room_to_json
+from my_game.werewolf.room.loaders import PropData, RoomData, build_room, load_room, room_from_json, room_to_json
 
 
 def test_bundled_room_file_round_trips() -> None:

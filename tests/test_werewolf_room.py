@@ -6,7 +6,7 @@ from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.registry import STATE_REGISTRY
-from my_game.werewolf.room import Prop, Room
+from my_game.werewolf.room.models import Prop, Room
 from my_game.werewolf.state_data import WerewolfState
 from my_game.werewolf.states.main_menu import MainMenu
 from my_game.werewolf.states.room_test import RoomTest

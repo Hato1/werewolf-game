@@ -9,7 +9,7 @@ from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room import Room
+from my_game.werewolf.room.models import Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 

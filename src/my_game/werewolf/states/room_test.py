@@ -7,7 +7,7 @@ import pygame as pg
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Fonts, Rooms
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room_data import load_room
+from my_game.werewolf.room.loaders import load_room
 from my_game.werewolf.state_data import WerewolfState
 from my_game.werewolf.states.room_state import RoomState
 
