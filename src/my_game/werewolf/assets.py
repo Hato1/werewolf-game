@@ -20,12 +20,19 @@ SHADERS_PATH = ASSETS_PATH / "shaders"
 
 @unique
 class Images(StrEnum):
+    BACKGROUND_CHURCH_CEMETARY = "backgrounds/church_cemetary.png"
+    BACKGROUND_INN = "backgrounds/inn.png"
+    BACKGROUND_TOWN_CENTER = "backgrounds/town_center.png"
+    BACKGROUND_TOWN_ENTRANCE = "backgrounds/town_entrance.png"
+    BACKGROUND_TOWN_HALL = "backgrounds/town_hall.png"
+    BACKGROUND_WOODS = "backgrounds/woods.png"
+
+    # Test and miscellaneous images
     TEST_BACKGROUND = "bgtest2.png"
     TEST_ROOM_BACKGROUND = "bg1.png"
     STUDIO = "studio.png"
     TEST_SHADOW = "bg_shadow.png"
     TEST_NORMALS = "bg1_normals.png"
-    # TEST_UI_BACKGROUND = "ui_background_placeholder.png"
     TEST_UI_BACKGROUND = "ui_test_only.png"
     TEST_SHADER = "shader_test_image.png"
     TEST_SHADER_0 = "shader_test_image_0.png"

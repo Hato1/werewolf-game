@@ -17,6 +17,16 @@ class Action(Enum):
     MOUSE_SELECT = auto()
     TOGGLE_DEBUG = auto()
 
+    DEBUG_ROOM_1 = auto()
+    DEBUG_ROOM_2 = auto()
+    DEBUG_ROOM_3 = auto()
+    DEBUG_ROOM_4 = auto()
+    DEBUG_ROOM_5 = auto()
+    DEBUG_ROOM_6 = auto()
+    DEBUG_7 = auto()
+    DEBUG_8 = auto()
+    DEBUG_9 = auto()
+
 
 input_manager = InputManager(Action)
 
@@ -34,6 +44,14 @@ input_manager.bind(Action.LEFT, InputEvent.keyboard(pg.K_a))
 input_manager.bind(Action.LEFT, InputEvent.keyboard(pg.K_LEFT))
 input_manager.bind(Action.RIGHT, InputEvent.keyboard(pg.K_d))
 input_manager.bind(Action.RIGHT, InputEvent.keyboard(pg.K_RIGHT))
+
+# Debug Keys, remove in production
+input_manager.bind(Action.DEBUG_ROOM_1, InputEvent.keyboard(pg.K_1))
+input_manager.bind(Action.DEBUG_ROOM_2, InputEvent.keyboard(pg.K_2))
+input_manager.bind(Action.DEBUG_ROOM_3, InputEvent.keyboard(pg.K_3))
+input_manager.bind(Action.DEBUG_ROOM_4, InputEvent.keyboard(pg.K_4))
+input_manager.bind(Action.DEBUG_ROOM_5, InputEvent.keyboard(pg.K_5))
+input_manager.bind(Action.DEBUG_ROOM_6, InputEvent.keyboard(pg.K_6))
 
 # Controller
 input_manager.bind(Action.UI_SELECT, InputEvent.controller_button(pg.CONTROLLER_BUTTON_A))
