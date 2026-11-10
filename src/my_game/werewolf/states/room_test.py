@@ -5,16 +5,16 @@ from enum import Enum
 import pygame as pg
 
 from my_game.core.renderer import Renderer
-from my_game.werewolf.assets import Fonts, Rooms
+from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room.loaders import load_room
+from my_game.werewolf.room import rooms
 from my_game.werewolf.state_data import WerewolfState
 from my_game.werewolf.states.room_state import RoomState
 
 
 class RoomTest(RoomState):
     def __init__(self) -> None:
-        super().__init__(load_room(Rooms.TEST_ROOM))
+        super().__init__(rooms.TEST_ROOM)
         prompt_font = Fonts.PICO8.load(12)
         self.prompt = prompt_font.render("Test room - press Esc to return", antialias=True, color=pg.Color("white"))
         self.prompt_rect = self.prompt.get_rect(topleft=(16, 16))
