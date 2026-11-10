@@ -1,4 +1,8 @@
-"""Generic state for displaying a Room: draws it and shows a timed message when a prop is clicked."""
+"""State representing rooms in the game.
+
+This state handles displaying a room, responding to prop clicks,
+showing timed messages, and handling room transitions.
+"""
 
 from enum import Enum
 
