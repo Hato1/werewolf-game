@@ -36,17 +36,6 @@ class Images(StrEnum):
 
 
 @unique
-class Rooms(Enum):
-    """Room definition files. These are data and may be rewritten by the level editor."""
-
-    TEST_ROOM = "test_room.json"
-
-    def load(self) -> str:
-        """Return the raw JSON text. Not cached, so edits to the file are picked up on reload."""
-        return read_text(ROOMS_PATH / self.value)
-
-
-@unique
 class Sounds(Enum):
     @cache
     def load(self) -> pg.Sound:

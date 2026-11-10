@@ -9,6 +9,7 @@ from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
+from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
@@ -20,9 +21,9 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     # Distance from bottom of the screen to display the message in pixels.
     MESSAGE_DISPLAY_OFFSET = 16
 
-    def __init__(self, room: Room) -> None:
+    def __init__(self, room: RoomData) -> None:
         super().__init__()
-        self.room = room
+        self.room = Room.from_room_data(room)
         self.message_font = Fonts.PICO8.load(self.MESSAGE_FONT_SIZE)
         # By having only one message surface, we ensure that only one message is shown at a time.
         self.message_surface: pg.Surface | None = None

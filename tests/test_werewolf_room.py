@@ -16,9 +16,21 @@ def test_room_draws_visible_props_at_their_positions() -> None:
     surface = pg.Surface((8, 8))
     sprite = pg.Surface((2, 2))
     sprite.fill(pg.Color("red"))
-    prop = Prop("test", "A test prop.", sprite)
-    prop.position = (3, 4)
-    room = Room("test", "A test room.", [prop], [], [])
+    prop = Prop(
+        name="test",
+        description="A test prop.",
+        sprite=sprite,
+        position=(3, 4),
+        visible=True,
+        clickable=True,
+        hotspot=None,
+        scale=1.0,
+        size=None,
+        parallax=0.0,
+        depth=0,
+        baseline=0,
+    )
+    room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
 
     room.draw(Renderer(surface, None))
 
@@ -30,9 +42,21 @@ def test_hidden_props_are_not_drawn() -> None:
     surface = pg.Surface((8, 8))
     sprite = pg.Surface((2, 2))
     sprite.fill(pg.Color("red"))
-    prop = Prop("test", "A test prop.", sprite)
-    prop.hide()
-    room = Room("test", "A test room.", [prop], [], [])
+    prop = Prop(
+        name="test",
+        description="A test prop.",
+        sprite=sprite,
+        position=(0, 0),
+        visible=False,
+        clickable=False,
+        hotspot=None,
+        scale=1.0,
+        size=None,
+        parallax=0.0,
+        depth=0,
+        baseline=0,
+    )
+    room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
 
     room.draw(Renderer(surface, None))
 
