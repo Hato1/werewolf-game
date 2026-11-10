@@ -30,7 +30,7 @@
 
   "@inv_test": {
     "image": {
-      "path": "../assets/ui/player_portrait_wolf.png",
+      "path": "../assets/textures/player_portrait_wolf.png",
       "auto-scale_images": 1
     }
   },
@@ -51,12 +51,12 @@
     "images": {
       "normal_images": {
         "id": "ww_texture",
-        "path": "../assets/ui/player_portrait_wolf.png",
+        "path": "../assets/textures/krita_files/player_portrait_wolf.png",
         "layer": 0,
         "position": [0.5, 0.5]
       },
       "misc": {
-        "path": "../assets/ui/player_portrait_wolf.png",
+        "path": "../assets/textures/krita_files/player_portrait_wolf.png",
         "auto-scale_images": 1
       }
     }

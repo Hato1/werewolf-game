@@ -12,7 +12,6 @@ from my_game.werewolf.inputs import Action
 from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
-from my_game.werewolf.ui.ui import PlayerUI
 
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
@@ -29,7 +28,6 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         # By having only one message surface, we ensure that only one message is shown at a time.
         self.message_surface: pg.Surface | None = None
         self.message_expires_at = 0
-        self.player_ui = PlayerUI("data.json")
 
     def show_message(self, text: str) -> None:
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
@@ -45,8 +43,6 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             if prop is not None:
                 self.on_prop_clicked(prop.description)
 
-        self.player_ui.run_ui()
-
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         if self.message_surface is not None and pg.time.get_ticks() >= self.message_expires_at:
             self.message_surface = None
@@ -58,4 +54,3 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
                 midbottom=(renderer.rect.centerx, renderer.rect.bottom - self.MESSAGE_DISPLAY_OFFSET)
             )
             renderer(self.message_surface, message_rect, unlit=True)
-        self.player_ui.draw_ui(renderer)
