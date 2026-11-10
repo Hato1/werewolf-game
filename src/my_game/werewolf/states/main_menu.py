@@ -67,9 +67,9 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         # buttons
         self.buttons = [
             MainMenuButton(self.FONT, "Start", WerewolfState.TEST_ROOM),
-            MainMenuButton(self.FONT, "Load", WerewolfState.MAIN_MENU),
+            MainMenuButton(self.FONT, "Load", WerewolfState.RENDER_TEST),
             MainMenuButton(self.FONT, "Options", WerewolfState.MAIN_MENU),
-            MainMenuButton(self.FONT, "Exit", WerewolfState.RENDER_TEST),
+            MainMenuButton(self.FONT, "Exit", None),
         ]
         self.button_index = 0
 
