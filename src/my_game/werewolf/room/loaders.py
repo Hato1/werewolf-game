@@ -8,10 +8,10 @@ from dataclasses import dataclass, field
 from my_game.werewolf.assets import Images
 
 Point = tuple[int, int]
-Polygon = list[Point]
+Polygon = tuple[Point, ...]
 
 
-@dataclass
+@dataclass(frozen=True)
 class CharacterData:
     """Data representation of a character."""
 
@@ -21,16 +21,16 @@ class CharacterData:
     position: Point
 
 
-@dataclass
+@dataclass(frozen=True)
 class HotspotData:
     """Data representation of a hotspot."""
 
     name: str
     description: str
-    polygon: Polygon = field(default_factory=list)
+    polygon: Polygon = field(default_factory=tuple)
 
 
-@dataclass
+@dataclass(frozen=True)
 class PropData:
     """Data representation of a prop."""
 
@@ -48,15 +48,15 @@ class PropData:
     baseline: int = 0
 
 
-@dataclass
+@dataclass(frozen=True)
 class RoomData:
     """Data representation of a room."""
 
     name: str
     description: str
-    props: list[PropData] = field(default_factory=list)
-    hotspots: list[HotspotData] = field(default_factory=list)
-    characters: list[CharacterData] = field(default_factory=list)
-    regions: list[Polygon] = field(default_factory=list)
-    points: list[Point] = field(default_factory=list)
-    walkable_areas: list[Polygon] = field(default_factory=list)
+    props: tuple[PropData, ...] = field(default_factory=tuple)
+    hotspots: tuple[HotspotData, ...] = field(default_factory=tuple)
+    characters: tuple[CharacterData, ...] = field(default_factory=tuple)
+    regions: tuple[Polygon, ...] = field(default_factory=tuple)
+    points: tuple[Point, ...] = field(default_factory=tuple)
+    walkable_areas: tuple[Polygon, ...] = field(default_factory=tuple)

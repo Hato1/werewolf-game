@@ -1,7 +1,7 @@
 """Object representing a room in the game."""
 
 from dataclasses import dataclass, field
-from typing import Self
+from typing import ClassVar, Self
 
 import pygame as pg
 
@@ -9,7 +9,7 @@ from my_game.core.renderer import Renderer
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, PropData, RoomData
 
 Point = tuple[int, int]
-Polygon = list[Point]
+Polygon = tuple[Point, ...]
 
 
 @dataclass
@@ -183,6 +183,8 @@ class Room:
         walkable_areas: Regions where the player can move freely.
     """
 
+    registry: ClassVar[dict[RoomData, Self]] = {}
+
     name: str
     description: str
     props: list[Prop] = field(default_factory=list)
@@ -193,17 +195,21 @@ class Room:
     walkable_areas: list[Polygon] = field(default_factory=list)
 
     @classmethod
-    def from_room_data(cls, data: RoomData) -> Self:
-        return cls(
+    def from_room_data(cls, data: RoomData, *, overwrite=False) -> Self:
+        if data in cls.registry and not overwrite:
+            return cls.registry[data]
+        room = cls(
             name=data.name,
             description=data.description,
             props=[Prop.from_prop_data(prop) for prop in data.props],
             hotspots=[Hotspot.from_hotspot_data(hs) for hs in data.hotspots],
             characters=[Character.from_character_data(ch) for ch in data.characters],
-            regions=data.regions,
-            points=data.points,
-            walkable_areas=data.walkable_areas,
+            regions=list(data.regions),
+            points=list(data.points),
+            walkable_areas=list(data.walkable_areas),
         )
+        cls.registry[data] = room
+        return room
 
     def draw(self, renderer: Renderer) -> None:
         """Draw the room and its contents."""
@@ -219,3 +225,11 @@ class Room:
             if prop.visible and prop.clickable and prop.rect.collidepoint(point):
                 return prop
         return None
+
+    def on_enter(self) -> None:
+        """Hook for when the player enters the room."""
+        pass
+
+    def on_exit(self) -> None:
+        """Hook for when the player exits the room."""
+        pass
