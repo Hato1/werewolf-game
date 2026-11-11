@@ -139,6 +139,5 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         for i in range(len(self.buttons)):
             self.buttons[i][0].draw(renderer, selected=self.button_y == i)
             if self.buttons[i][1]:
-                
                 temp = self.buttons[i][1]
                 temp.draw(renderer, selected=self.button_y == i and self.button_x == 1)
