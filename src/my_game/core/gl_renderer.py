@@ -38,6 +38,7 @@ class GLRenderer:
     TIME: float = 0
     LIGHT_MODE_DIRECTION = 1
     LIGHT_MODE_POINT = 2
+    light_z = 0.5
 
     def __init__(self):
         self.ctx = moderngl.create_context()
@@ -179,7 +180,7 @@ class GLRenderer:
             (pg.mouse.get_pos()[0] / self.lit_surface.size[0]),
             (pg.mouse.get_pos()[1] / self.lit_surface.size[1]),
         )
-        self.program["light_position"] = mouse_position_on_screen
+        self.program["light_position"] = (mouse_position_on_screen[0], mouse_position_on_screen[1], self.light_z)
         self.program["screen_size"] = [
             1 / (self.lit_surface.size[0] * self.RENDER_SCALE[0]),
             1 / (self.lit_surface.size[1] * self.RENDER_SCALE[1]),
@@ -190,6 +191,7 @@ class GLRenderer:
         frame_tex.release()
         mask_tex.release()
         normal_tex.release()
+        self.normal_surface.fill(pg.Color(0, 0, 0, 0))
 
     # run the unlit shader
     def draw_unlit(self):
@@ -326,7 +328,7 @@ class GLRenderer:
 
     # set the light position of the lit shader.
     def set_light_position(self, x: float, y: float):
-        self.program["light_position"] = (x, y)
+        self.program["light_position"] = (x, y, self.light_z)
 
     # draw a surface to the the unlit surface
     def blit_to_unlit(self, surf: pg.Surface, rect: pg.Rect):
