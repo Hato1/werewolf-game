@@ -4,8 +4,9 @@ uniform sampler2D tex;
 uniform sampler2D mask;
 uniform sampler2D normals;
 
+
 uniform bool ignore_mask;
-uniform vec2 light_position;
+uniform vec3 light_position;
 uniform vec2 screen_size;
 uniform float sample_count;
 uniform float px_per_sample;
@@ -23,8 +24,8 @@ float remap(float value, float min1, float max1, float min2, float max2) {
 
 void main() {
     vec2 sample_dir = vec2(-screen_size.y, -screen_size.y);
-    if(light_position != vec2(0,0) && !static_direction){
-        sample_dir = -normalize(uvs - light_position) * screen_size;
+    if(light_position.xy != vec2(0,0) && !static_direction){
+        sample_dir = -normalize(uvs - light_position.xy) * screen_size;
     }
     float aspect = screen_size.y/ screen_size.x;
     float inv_aspect = screen_size.x/ screen_size.y;
@@ -33,20 +34,27 @@ void main() {
     corrected_uvs.x *= aspect;
     corrected_uvs.x -= (light_position.x * (aspect - 1.0));
 
-    float start_distance = distance(light_position, corrected_uvs);
-    vec3 sample_total = texture(tex,uvs).rgb;
-    vec3 sample_bonus = vec3(0,0,0);
-    float weight = 1;
 
     vec3 light_color = vec3(1, 0.75, 0.45);
 
-    vec2 sample_dir_to_light = normalize(light_position - uvs);
-    vec3 normal_sample = texture(normals, uvs).rgb;
-    vec2 sample_normals = vec2(remap(normal_sample.r, 0, 1, -1, 1), -remap(normal_sample.g, 0, 1, -1, 1));
+    vec4 normal_sample = texture(normals, uvs);
+    vec3 sample_normals = vec3(remap(normal_sample.r, 0, 1, -1, 1), -remap(normal_sample.g, 0, 1, -1, 1), remap(normal_sample.b, 0, 1, -1, 1));
+    vec3 world_position = vec3(
+        corrected_uvs.x + ((sample_normals.r * normal_sample.a) * screen_size.x),
+        corrected_uvs.y + ((sample_normals.g * normal_sample.a) * screen_size.y),
+        normal_sample.a);
+
+    float start_distance = distance(light_position.xyz, world_position);
+    vec3 sample_total = texture(tex,uvs).rgb;
+    vec3 sample_bonus = vec3(0,0,0);
+    float weight = 1;
+    vec3 sample_dir_to_light = normalize(light_position - world_position);
     float normal_influence = clamp(dot(sample_normals, sample_dir_to_light), 0, 1);
     if(normal_sample.rgb == vec3(0,0,0))
         normal_influence = 1;
+
     float dist_weight = clamp(1 - ((start_distance)/light_size), 0, 1);
     sample_total += light_color * ((dist_weight * normal_influence) * intensity);
+
     f_color = vec4(sample_total.r , sample_total.g , sample_total.b , 1.0);
 }

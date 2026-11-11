@@ -2,6 +2,7 @@ from enum import Enum
 
 import pygame as pg
 
+from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
@@ -20,6 +21,7 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
         self.background = Images.load(Images.TEST_ROOM_BACKGROUND)
         self.light_mask = Images.load(Images.TEST_SHADOW)
         self.normal_map = Images.load(Images.TEST_NORMALS)
+        self.light_z = 0.5
 
     def draw(self, renderer: Renderer, dt: float) -> None:
         # renderer(background)
@@ -28,6 +30,7 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
         renderer(self.light_mask, self.light_mask.get_rect(), draw_mode=1, fit=True)
         renderer(self.normal_map, self.normal_map.get_rect(), draw_mode=2, fit=True)
         renderer(self.prompt, self.prompt_rect, unlit=True)
+        GLRenderer.light_z = self.light_z
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_CANCEL in actions:
@@ -35,4 +38,9 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
             self.next_state = WerewolfState.MAIN_MENU
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
-        pass
+        # move mouse z position
+        if Action.UP in input_state.held_actions:
+            self.light_z += dt
+        if Action.DOWN in input_state.held_actions:
+            self.light_z -= dt
+        self.light_z = max(-1, min(1, self.light_z))
