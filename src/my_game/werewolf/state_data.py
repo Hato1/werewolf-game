@@ -11,6 +11,7 @@ class WerewolfState(StrEnum):
     PROLOGUE = auto()
     TEST_ROOM = auto()
     RENDER_TEST = auto()
+    OPTIONS_MENU = auto()
 
 
 @dataclass
