@@ -12,7 +12,7 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
 class ToggleButton:
-    def __init__(self, font, true, false, status: bool):
+    def __init__(self, font, true, false, *, status: bool):
         self.selected = False
         self.font = font
         self.pos = (0, 0)
@@ -29,7 +29,7 @@ class ToggleButton:
     def action(self):
         self.selected = not self.selected
 
-    def draw(self, renderer: Renderer, selected) -> None:
+    def draw(self, renderer: Renderer, *, selected) -> None:
         font_color = "white"
         if selected:
             font_color = "yellow"
@@ -53,7 +53,7 @@ class OptionsMenuButton:
         self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
         self.rect = self.surf.get_rect(topleft=self.pos)
 
-    def draw(self, renderer: Renderer, selected: bool) -> None:
+    def draw(self, renderer: Renderer, *, selected: bool) -> None:
         draw_pos = self.pos
         font_color = "white"
         if selected:
@@ -92,19 +92,19 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         self.title_rect = self.title_surface.get_rect(topleft=(50, 50))
 
         # buttons
-        self.buttons = [
-            [OptionsMenuButton(self.FONT, "Music"), ToggleButton(self.FONT, "On", "Off", status=True)],
-            [OptionsMenuButton(self.FONT, "Sound Effects"), ToggleButton(self.FONT, "On", "Off", status=True)],
-            [OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, "On", "Off", status=True)],
-            [OptionsMenuButton(self.FONT, "Exit"), None],
+        self.buttons: list[tuple[OptionsMenuButton, ToggleButton | None]] = [
+            (OptionsMenuButton(self.FONT, "Music"), ToggleButton(self.FONT, "On", "Off", status=True)),
+            (OptionsMenuButton(self.FONT, "Sound Effects"), ToggleButton(self.FONT, "On", "Off", status=True)),
+            (OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, "On", "Off", status=True)),
+            (OptionsMenuButton(self.FONT, "Exit"), None),
         ]
         self.button_x = 0
         self.button_y = 0
 
-        for i in range(len(self.buttons)):
-            self.buttons[i][0].set_pos((MENU_BUTTON_OFFSET_X, self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y)))
-            if self.buttons[i][1]:
-                self.buttons[i][1].set_pos(
+        for i, (button, toggle) in enumerate(self.buttons):
+            button.set_pos((MENU_BUTTON_OFFSET_X, self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y)))
+            if toggle:
+                toggle.set_pos(
                     (
                         MENU_BUTTON_OFFSET_X + self.MENU_BUTTON_OPTION_X,
                         self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y),
@@ -136,8 +136,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         renderer(self.background, renderer.rect, fit=True)
         renderer(self.title_surface, self.title_rect, unlit=True)
 
-        for i in range(len(self.buttons)):
-            self.buttons[i][0].draw(renderer, selected=self.button_y == i)
-            if self.buttons[i][1]:
-                temp = self.buttons[i][1]
-                temp.draw(renderer, selected=self.button_y == i and self.button_x == 1)
+        for i, (button, toggle) in enumerate(self.buttons):
+            button.draw(renderer, selected=self.button_y == i)
+            if toggle:
+                toggle.draw(renderer, selected=self.button_y == i and self.button_x == 1)
