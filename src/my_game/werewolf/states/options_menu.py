@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 
 import pygame as pg
@@ -13,7 +14,6 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 class ToggleButton:
     def __init__(self, font, true, false, *, status: bool):
-        self.selected = False
         self.font = font
         self.pos = (0, 0)
 
@@ -27,7 +27,8 @@ class ToggleButton:
         self.rect = self.surf.get_rect(topleft=self.pos)
 
     def action(self):
-        self.selected = not self.selected
+        self.status = not self.status
+        self.text = self.true if self.status else self.false
 
     def draw(self, renderer: Renderer, *, selected) -> None:
         font_color = "white"
@@ -95,9 +96,13 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         self.buttons: list[tuple[OptionsMenuButton, ToggleButton | None]] = [
             (OptionsMenuButton(self.FONT, "Music"), ToggleButton(self.FONT, "On", "Off", status=True)),
             (OptionsMenuButton(self.FONT, "Sound Effects"), ToggleButton(self.FONT, "On", "Off", status=True)),
-            (OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, "On", "Off", status=True)),
-            (OptionsMenuButton(self.FONT, "Exit"), None),
         ]
+        if sys.platform != "emscripten":
+            self.buttons.append(
+                (OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, "On", "Off", status=True))
+            )
+        self.buttons.append((OptionsMenuButton(self.FONT, "Exit"), None))
+
         self.button_x = 0
         self.button_y = 0
 
@@ -111,22 +116,45 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
                     )
                 )
 
-    def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
+    def handle_keyboard(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UP in actions and self.button_x == 0:
             self.button_y = (self.button_y - 1) % len(self.buttons)
 
         if Action.DOWN in actions and self.button_x == 0:
             self.button_y = (self.button_y + 1) % len(self.buttons)
 
+        if Action.RIGHT in actions and self.button_x == 0:
+            self.button_x = 1
+
+        if Action.LEFT in actions and self.button_x == 1:
+            self.button_x = 0
+
+        if Action.MOUSE_SELECT in actions:
+            for i, (button, toggle) in enumerate(self.buttons):
+                if toggle and toggle.rect.collidepoint(event.pos):
+                    self.button_y = i
+                    self.button_x = 1
+                    toggle.action()
+                if button and button.rect.collidepoint(event.pos):
+                    self.button_y = i
+                    self.button_x = 0
+                    if not toggle:
+                        self.done = True
+                        self.next_state = WerewolfState.MAIN_MENU
+
+    def handle_mouse(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
             if self.button_x == 0 and not self.buttons[self.button_y][1]:
                 self.done = True
                 self.next_state = WerewolfState.MAIN_MENU
+            elif self.button_x == 1:
+                for i, (_, toggle) in enumerate(self.buttons):
+                    if i == self.button_y and toggle:
+                        toggle.action()
 
-        if Action.MOUSE_SELECT in actions:
-            for button in self.buttons:
-                if button[0].rect.collidepoint(event.pos):
-                    pass
+    def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
+        self.handle_keyboard(actions, event)
+        self.handle_mouse(actions, event)
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         pass
