@@ -13,7 +13,7 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
 class ToggleButton:
-    def __init__(self, font, true, false, *, status: bool):
+    def __init__(self, font, *, true="On", false="Off", status: bool):
         self.font = font
         self.pos = (0, 0)
 
@@ -94,13 +94,11 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
 
         # buttons
         self.buttons: list[tuple[OptionsMenuButton, ToggleButton | None]] = [
-            (OptionsMenuButton(self.FONT, "Music"), ToggleButton(self.FONT, "On", "Off", status=True)),
-            (OptionsMenuButton(self.FONT, "Sound Effects"), ToggleButton(self.FONT, "On", "Off", status=True)),
+            (OptionsMenuButton(self.FONT, "Music"), ToggleButton(self.FONT, status=True)),
+            (OptionsMenuButton(self.FONT, "Sound Effects"), ToggleButton(self.FONT, status=True)),
         ]
         if sys.platform != "emscripten":
-            self.buttons.append(
-                (OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, "On", "Off", status=True))
-            )
+            self.buttons.append((OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, status=True)))
         self.buttons.append((OptionsMenuButton(self.FONT, "Exit"), None))
 
         self.button_x = 0
