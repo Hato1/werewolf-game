@@ -29,7 +29,7 @@ BACKGROUND_CHURCH_CEMETARY = PropData(
     name="Church Cemetary Background",
     description="The church cemetary background.",
     image=Images.BACKGROUND_CHURCH_CEMETARY,
-    size=(960, 540),
+    scale=2,
     clickable=False,
     depth=9999,
 )
@@ -38,7 +38,7 @@ BACKGROUND_INN = PropData(
     name="Inn Background",
     description="The inn background.",
     image=Images.BACKGROUND_INN,
-    size=(960, 540),
+    scale=2,
     clickable=False,
     depth=9999,
 )
@@ -74,7 +74,17 @@ BACKGROUND_WOODS = PropData(
     name="Woods Background",
     description="The woods background.",
     image=Images.BACKGROUND_WOODS,
-    size=(960, 540),
+    scale=2,
     clickable=False,
     depth=9999,
+)
+
+GRAVEYARD_CHAINS = PropData(
+    name="Graveyard Chains",
+    description="An interactable set of graveyard chains.",
+    image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
+    position=(400, 300),
+    scale=2,
+    clickable=True,
+    depth=500,
 )
