@@ -27,6 +27,9 @@ class Images(StrEnum):
     BACKGROUND_TOWN_HALL = "backgrounds/town_hall.png"
     BACKGROUND_WOODS = "backgrounds/woods.png"
 
+    # Props
+    INTERACTABLE_GRAVEYARD_CHAINS = "interactable_graveyard_chains.png"
+
     # Test and miscellaneous images
     TEST_BACKGROUND = "bgtest2.png"
     TEST_ROOM_BACKGROUND = "bg1.png"

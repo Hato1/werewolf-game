@@ -18,7 +18,7 @@ CHURCH_CEMETARY = RoomData(
 INN = RoomData(
     name="Inn Room",
     description="A room set in the inn.",
-    props=(props.BACKGROUND_INN,),
+    props=(props.BACKGROUND_INN, props.GRAVEYARD_CHAINS),
 )
 
 TOWN_CENTER = RoomData(
