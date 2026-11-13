@@ -5,6 +5,7 @@ from typing import ClassVar, Self
 
 import pygame as pg
 
+from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, PropData, RoomData
 
@@ -12,31 +13,123 @@ Point = tuple[int, int]
 Polygon = tuple[Point, ...]
 
 
+def split_frames(sheet: pg.Surface, frame_width: int) -> list[pg.Surface]:
+    """Split a horizontal sprite sheet into frames of the given width."""
+    width = sheet.get_width()
+    return [
+        sheet.subsurface(pg.Rect(x, 0, frame_width, sheet.get_height())).copy() for x in range(0, width, frame_width)
+    ]
+
+
 @dataclass
 class Character:
-    """Character represents an entity within the room that the player can converse with.
+    """Character represents an animated entity within the room.
+
+    Characters move according to the direction returned by `get_direction`. By default that
+    follows a preprogrammed path; subclasses (such as the player) can override it.
 
     Attributes:
         name: Character's display name.
         description: Character's description.
-        sprite: Pygame surface containing the character's visual representation.
-        position: Top-left coordinate of the character's sprite.
+        idle_frames: Animation frames shown while standing still.
+        walk_frames: Animation frames shown while moving.
+        position: Point at the bottom-centre of the character's feet.
+        speed: Movement speed in pixels per second.
+        path: Waypoints the character walks through in order.
+        loop: Whether to restart the path once the last waypoint is reached.
+        facing_left: Whether the sprite is mirrored to face left.
+        walking: Whether the character moved during the last update.
     """
+
+    SPEED = 200.0
+    FRAME_DURATION = 0.1
 
     name: str
     description: str
-    sprite: pg.Surface
-    position: Point
+    idle_frames: list[pg.Surface]
+    walk_frames: list[pg.Surface]
+    position: pg.Vector2
+    speed: float
+    path: tuple[Point, ...]
+    loop: bool
+    path_index: int = 0
+    facing_left: bool = False
+    walking: bool = False
+    frame_index: int = 0
+    frame_time: float = 0.0
 
     @classmethod
     def from_character_data(cls, data: CharacterData) -> Self:
-        character = cls(data.name, data.description, data.image.load(), data.position)
+        idle = data.image.load()
+        # Walk sheets are made of frames the same size as the idle frame.
+        frame_width = idle.get_width()
+        idle_frames = split_frames(idle, frame_width)
+        walk_frames = split_frames(data.walk_image.load(), frame_width) if data.walk_image else idle_frames
+        character = cls(
+            data.name,
+            data.description,
+            idle_frames,
+            walk_frames,
+            pg.Vector2(data.position),
+            data.speed,
+            data.path,
+            loop=data.loop,
+        )
         return character
+
+    @property
+    def frames(self) -> list[pg.Surface]:
+        return self.walk_frames if self.walking else self.idle_frames
+
+    @property
+    def sprite(self) -> pg.Surface:
+        sprite = self.frames[self.frame_index % len(self.frames)]
+        return pg.transform.flip(sprite, flip_x=True, flip_y=False) if self.facing_left else sprite
+
+    @property
+    def rect(self) -> pg.Rect:
+        return self.sprite.get_rect(midbottom=(round(self.position.x), round(self.position.y)))
+
+    def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
+        """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).
+
+        The default behaviour walks along `path`, scaling the final step so the character lands
+        exactly on each waypoint.
+        """
+        if self.path_index >= len(self.path):
+            if not (self.loop and self.path):
+                return pg.Vector2()
+            self.path_index = 0
+        delta = pg.Vector2(self.path[self.path_index]) - self.position
+        step = self.speed * dt
+        if delta.length() <= step:
+            self.path_index += 1
+            return delta / step if step else pg.Vector2()
+        return delta.normalize()
+
+    def update(self, bounds: pg.Rect, dt: float, input_state: InputState) -> None:
+        direction = self.get_direction(dt, input_state)
+        was_walking = self.walking
+        self.walking = direction.length_squared() > 0
+        if self.walking != was_walking:
+            self.frame_index = 0
+            self.frame_time = 0.0
+
+        if self.walking:
+            self.position += direction * self.speed * dt
+            if direction.x:
+                self.facing_left = direction.x < 0
+            self.position.x = min(max(self.position.x, bounds.left), bounds.right)
+            self.position.y = min(max(self.position.y, bounds.top), bounds.bottom)
+
+        self.frame_time += dt
+        while self.frame_time >= self.FRAME_DURATION:
+            self.frame_time -= self.FRAME_DURATION
+            self.frame_index = (self.frame_index + 1) % len(self.frames)
 
     def draw(self, renderer: Renderer) -> None:
         """Draw the character in the room."""
-        rect = self.sprite.get_rect(topleft=self.position)
-        renderer(self.sprite, rect)
+        renderer(self.sprite, self.rect)
 
 
 @dataclass
@@ -210,6 +303,11 @@ class Room:
         )
         cls.registry[data] = room
         return room
+
+    def update(self, bounds: pg.Rect, dt: float, input_state: InputState) -> None:
+        """Advance the room's characters."""
+        for character in self.characters:
+            character.update(bounds, dt, input_state)
 
     def draw(self, renderer: Renderer) -> None:
         """Draw the room and its contents."""

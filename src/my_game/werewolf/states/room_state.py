@@ -16,6 +16,7 @@ from my_game.werewolf.inputs import Action
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Prop, Room
+from my_game.werewolf.room.player import PLAYER, Player
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
@@ -33,6 +34,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         # By having only one message surface, we ensure that only one message is shown at a time.
         self.message_surface: pg.Surface | None = None
         self.message_expires_at = 0
+        self.player = Player.from_character_data(PLAYER)
 
     def change_room(self, room: RoomData) -> None:
         self.room.on_exit()
@@ -69,11 +71,14 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             self.change_room(rooms.WOODS)
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+        self.player.update(surface_rect, dt, input_state)
+        self.room.update(surface_rect, dt, input_state)
         if self.message_surface is not None and pg.time.get_ticks() >= self.message_expires_at:
             self.message_surface = None
 
     def draw(self, renderer: Renderer, dt: float) -> None:
         self.room.draw(renderer)
+        self.player.draw(renderer)
         if self.message_surface is not None:
             message_rect = self.message_surface.get_rect(
                 midbottom=(renderer.rect.centerx, renderer.rect.bottom - self.MESSAGE_DISPLAY_OFFSET)
