@@ -13,9 +13,9 @@ from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room import rooms
+from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.loaders import RoomData
-from my_game.werewolf.room.models import Room
+from my_game.werewolf.room.models import Prop, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
@@ -43,15 +43,18 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
         self.message_expires_at = pg.time.get_ticks() + self.MESSAGE_DURATION_MS
 
-    def on_prop_clicked(self, prop_description: str) -> None:
+    def on_prop_clicked(self, prop: Prop) -> None:
         """Hook for subclasses; by default the prop's description is shown."""
-        self.show_message(prop_description)
+        if prop.name == props.GRAVEYARD_CHAINS.name:
+            self.change_room(rooms.CHURCH_CEMETARY)
+        else:
+            self.show_message(prop.description)
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.MOUSE_SELECT in actions:
             prop = self.room.get_clicked_prop(event.pos)
             if prop is not None:
-                self.on_prop_clicked(prop.description)
+                self.on_prop_clicked(prop)
         elif Action.DEBUG_ROOM_1 in actions:
             self.change_room(rooms.CHURCH_CEMETARY)
         elif Action.DEBUG_ROOM_2 in actions:

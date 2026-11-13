@@ -6,9 +6,11 @@ from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.registry import STATE_REGISTRY
+from my_game.werewolf.room import rooms
 from my_game.werewolf.room.models import Prop, Room
 from my_game.werewolf.state_data import WerewolfState
 from my_game.werewolf.states.main_menu import MainMenu
+from my_game.werewolf.states.room_state import RoomState
 from my_game.werewolf.states.room_test import RoomTest
 
 
@@ -103,3 +105,17 @@ def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pyte
     ticks += 1
     room_state.update(pg.Rect(0, 0, *SCREEN_SIZE), 0, InputState(frozenset(), {}))
     assert room_state.message_surface is None
+
+
+def test_graveyard_chains_click_changes_to_church_cemetery() -> None:
+    pg.init()
+    pg.display.set_mode((1, 1))
+    room_state = RoomState(rooms.INN)
+    graveyard_chains = room_state.room.props[1]
+
+    room_state.handle_event(
+        {Action.MOUSE_SELECT},
+        pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=graveyard_chains.rect.center),
+    )
+
+    assert room_state.room.name == rooms.CHURCH_CEMETARY.name
