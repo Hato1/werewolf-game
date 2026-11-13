@@ -59,3 +59,7 @@ class Renderer:
             self.gl_renderer.blit_to_unlit(surface, target_rect)
         else:
             self.gl_renderer.blit_to_lit(surface, target_rect)
+        # reminder about drawing to the outlined layer!
+        # use self.gl_renderer.queue_outline_render_object(self.gl_renderer.create_outline_render_object(surface, intensity,z_index, offset, pixel_size))
+        # to draw a surface at a position with outline, z index, and other variables
+        # the queue is cleared every frame so you need to queue the render object each frame!

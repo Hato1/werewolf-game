@@ -148,12 +148,25 @@ class GLRenderer:
 
     # add an object to the draw queue. the queue is cleared after each frame.
     def queue_outline_render_object(self, object: OutlinedRenderObject):
+        """Add an outline render object to the outline pass. The queue is cleared after each frame.
+        Args:
+            object (OutlinedRenderObject): The object to add to the queue.
+        """
         self.outline_render_list.append(object)
 
     # create a render object to use with the draw queue.
     def create_outline_render_object(
         self, surf: pg.Surface, intensity: float, _z_index: int, offset: tuple, pixel_size: tuple
     ):
+        """Create an outline render object for drawing objects that need to have per-instance shader variables.
+
+        Args:
+            surf (pg.Surface): The surface to draw.
+            intensity (float): 0-1 Scale for the outline strength of the shader to draw.
+            z_index (int): The draw order of the object. Higher number will be drawn on top.
+            offset (tuple): Offset position in pixels.
+            pixel_size (tuple): Surface size in pixels.
+        """
         screen_size = self.pixel_to_screen_size(pixel_size)
         return OutlinedRenderObject(
             surf, intensity, _z_index, self.pixel_to_screen_offset(offset, screen_size), screen_size
