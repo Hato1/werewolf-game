@@ -14,6 +14,7 @@ PLAYER = CharacterData(
     image=Images.PLAYER_IDLE,
     position=(480, 480),
     walk_image=Images.PLAYER_WALK,
+    scale=2,
 )
 
 

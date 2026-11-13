@@ -20,6 +20,7 @@ class CharacterData:
     image: Images
     position: Point
     walk_image: Images | None = None
+    scale: float = 1.0
     speed: float = 200.0
     path: tuple[Point, ...] = ()
     loop: bool = False

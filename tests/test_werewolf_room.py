@@ -231,3 +231,17 @@ def test_room_builds_characters_from_room_data() -> None:
 
     assert room.characters[0].name == npc.name
     assert room.characters[0].position == pg.Vector2(5, 6)
+
+
+def test_character_scale_applies_to_all_frames() -> None:
+    pg.init()
+    pg.display.set_mode((1, 1))
+    base_data = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (0, 0), walk_image=Images.PLAYER_WALK)
+    scaled_data = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (0, 0), walk_image=Images.PLAYER_WALK, scale=2)
+    base = Character.from_character_data(base_data)
+    scaled = Character.from_character_data(scaled_data)
+
+    width, height = base.idle_frames[0].get_size()
+    assert scaled.idle_frames[0].get_size() == (width * 2, height * 2)
+    assert scaled.walk_frames[0].get_size() == (width * 2, height * 2)
+    assert len(scaled.walk_frames) == len(base.walk_frames)

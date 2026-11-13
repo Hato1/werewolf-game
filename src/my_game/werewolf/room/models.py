@@ -65,6 +65,11 @@ class Character:
         frame_width = idle.get_width()
         idle_frames = split_frames(idle, frame_width)
         walk_frames = split_frames(data.walk_image.load(), frame_width) if data.walk_image else idle_frames
+        if data.scale != 1.0:
+            idle_frames = [pg.transform.scale_by(f, data.scale) for f in idle_frames]
+            walk_frames = (
+                idle_frames if data.walk_image is None else [pg.transform.scale_by(f, data.scale) for f in walk_frames]
+            )
         character = cls(
             data.name,
             data.description,
