@@ -20,8 +20,8 @@ STUDIO = PropData(
     name="Studio Background",
     description="a tiny studio model.",
     image=Images.STUDIO,
-    position=(380, 200),
-    scale=0.1,
+    position=(800, 70),
+    scale=0.05,
     depth=0,
 )
 
@@ -83,7 +83,7 @@ GRAVEYARD_CHAINS = PropData(
     name="Graveyard Chains",
     description="An interactable set of graveyard chains.",
     image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
-    position=(400, 300),
+    position=(600, 300),
     scale=2,
     clickable=True,
     depth=500,

@@ -14,9 +14,9 @@ from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room import props, rooms
+from my_game.werewolf.room.characters import PLAYER
 from my_game.werewolf.room.loaders import RoomData
-from my_game.werewolf.room.models import Prop, Room
-from my_game.werewolf.room.player import PLAYER, Player
+from my_game.werewolf.room.models import Player, Prop, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 

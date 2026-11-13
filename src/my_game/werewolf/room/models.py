@@ -7,6 +7,7 @@ import pygame as pg
 
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
+from my_game.werewolf.inputs import Action
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, PropData, RoomData
 
 Point = tuple[int, int]
@@ -135,6 +136,17 @@ class Character:
     def draw(self, renderer: Renderer) -> None:
         """Draw the character in the room."""
         renderer(self.sprite, self.rect)
+
+
+class Player(Character):
+    """A character whose movement is driven by player input."""
+
+    def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
+        direction = pg.Vector2(
+            (Action.RIGHT in input_state) - (Action.LEFT in input_state),
+            (Action.DOWN in input_state) - (Action.UP in input_state),
+        )
+        return direction.normalize() if direction else direction
 
 
 @dataclass
