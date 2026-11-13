@@ -21,15 +21,15 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version-file: "pyproject.toml"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           # Pinning uv version is best practice to avoid unexpected breakages.
           version: "0.9.5"
@@ -39,7 +39,7 @@ jobs:
         run: uv sync --locked --all-extras --dev
 
       - name: Build executable with PyInstaller
-        run: |  # TODO: Use ini and/or load config from pyproject.toml.
+        run: |  # TODO: Load config from pyproject.toml.
               uv run python -m pygbag \
                 --PYBUILD=3.14 \
                 --app_name="werewolf" \
@@ -60,15 +60,15 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version-file: "pyproject.toml"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           # Pinning uv version is best practice to avoid unexpected breakages.
           version: "0.9.5"
@@ -83,7 +83,7 @@ jobs:
           Compress-Archive -Path dist/* -Destination windows_release.zip
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-executable-windows-zip
           path: windows_release.zip
@@ -94,15 +94,15 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version-file: "pyproject.toml"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           # Pinning uv version is best practice to avoid unexpected breakages.
           version: "0.9.5"
@@ -117,7 +117,7 @@ jobs:
           tar -czvf linux_release.tar.gz dist/*
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-executable-linux-zip
           path: linux_release.tar.gz
@@ -131,15 +131,15 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version-file: "pyproject.toml"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           # Pinning uv version is best practice to avoid unexpected breakages.
           version: "0.9.5"
@@ -160,7 +160,7 @@ jobs:
           tar -czvf macos_release.tar.gz dist/*.app dist/readme.txt
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-executable-macos-zip
           path: macos_release.tar.gz
@@ -173,37 +173,37 @@ jobs:
 
     steps:
       - name: Download windows executable for job windows-build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: release-executable-windows-zip
 
       - name: Download linux executable for job linux-build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: release-executable-linux-zip
 
       - name: Download macos executable for job macos-build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: release-executable-macos-zip
 
       - name: Upload zipped windows executable to release
-        uses: JasonEtco/upload-to-release@master
+        uses: softprops/action-gh-release@v3
         with:
-          args: windows_release.zip application/zip
+          args: windows_release.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload tarballed linux executable to release
-        uses: JasonEtco/upload-to-release@master
+        uses: softprops/action-gh-release@v3
         with:
-          args: linux_release.tar.gz application/zip
+          args: linux_release.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload tarballed macos executable to release
-        uses: JasonEtco/upload-to-release@master
+        uses: softprops/action-gh-release@v3
         with:
-          args: macos_release.tar.gz application/zip
+          args: macos_release.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
