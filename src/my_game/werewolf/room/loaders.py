@@ -51,6 +51,7 @@ class PropData:
     parallax: float = 0.0
     depth: int = 0
     baseline: int = 0
+    walk_to_interact: bool = False
 
 
 @dataclass(frozen=True)

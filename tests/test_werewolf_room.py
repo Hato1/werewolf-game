@@ -8,12 +8,23 @@ from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.registry import STATE_REGISTRY
 from my_game.werewolf.room import rooms
-from my_game.werewolf.room.loaders import CharacterData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, PropData, RoomData
 from my_game.werewolf.room.models import Character, Prop, Room
 from my_game.werewolf.state_data import WerewolfState
 from my_game.werewolf.states.main_menu import MainMenu
 from my_game.werewolf.states.room_state import RoomState
 from my_game.werewolf.states.room_test import RoomTest
+
+
+def finish_player_walk(room_state: RoomState) -> None:
+    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
+    idle: InputState = InputState(frozenset(), {})
+    assert room_state.player.target is not None
+    for _ in range(300):
+        room_state.update(bounds, 0.05, idle)
+        if room_state.player.target is None:
+            break
+    assert room_state.player.target is None
 
 
 def test_room_draws_visible_props_at_their_positions() -> None:
@@ -97,6 +108,8 @@ def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pyte
         pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=studio.rect.center),
     )
 
+    assert room_state.message_surface is None
+    finish_player_walk(room_state)
     assert room_state.message_surface is not None
     assert room_state.message_expires_at == ticks + room_state.MESSAGE_DURATION_MS
 
@@ -120,6 +133,8 @@ def test_graveyard_chains_click_changes_to_church_cemetery() -> None:
         pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=graveyard_chains.rect.center),
     )
 
+    assert room_state.room.name == rooms.INN.name
+    finish_player_walk(room_state)
     assert room_state.room.name == rooms.CHURCH_CEMETARY.name
 
 
@@ -245,3 +260,79 @@ def test_character_scale_applies_to_all_frames() -> None:
     assert scaled.idle_frames[0].get_size() == (width * 2, height * 2)
     assert scaled.walk_frames[0].get_size() == (width * 2, height * 2)
     assert len(scaled.walk_frames) == len(base.walk_frames)
+
+
+def make_walk_to_room_state(*, walk_to_interact: bool) -> tuple[RoomState, Prop]:
+    pg.init()
+    pg.display.set_mode((1, 1))
+    prop_data = PropData(
+        name="far prop",
+        description="A far away prop.",
+        image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
+        position=(100, 100),
+        walk_to_interact=walk_to_interact,
+    )
+    room_state = RoomState(RoomData("walk room", "A room for walking.", props=(prop_data,)))
+    return room_state, room_state.room.props[0]
+
+
+def click(room_state: RoomState, prop: Prop) -> None:
+    room_state.handle_event(
+        {Action.MOUSE_SELECT},
+        pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=prop.rect.center),
+    )
+
+
+def test_prop_data_walk_to_interact_defaults_to_false() -> None:
+    _, prop = make_walk_to_room_state(walk_to_interact=False)
+    assert not prop.walk_to_interact
+    _, prop = make_walk_to_room_state(walk_to_interact=True)
+    assert prop.walk_to_interact
+
+
+def test_prop_without_walk_to_interact_triggers_immediately() -> None:
+    room_state, prop = make_walk_to_room_state(walk_to_interact=False)
+
+    click(room_state, prop)
+
+    assert room_state.message_surface is not None
+    assert room_state.player.target is None
+
+
+def test_player_walks_to_prop_before_interacting() -> None:
+    room_state, prop = make_walk_to_room_state(walk_to_interact=True)
+    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
+    idle: InputState = InputState(frozenset(), {})
+    start = room_state.player.position.copy()
+
+    click(room_state, prop)
+    assert room_state.message_surface is None
+    assert room_state.player.target is not None
+
+    for _ in range(300):
+        room_state.update(bounds, 0.05, idle)
+        if room_state.message_surface is not None:
+            break
+
+    assert room_state.message_surface is not None
+    assert room_state.player.target is None
+    assert room_state.player.position != start
+    distance = room_state.player.position.distance_to(pg.Vector2(prop.rect.clamp(room_state.player.rect).center))
+    assert distance < start.distance_to(pg.Vector2(prop.rect.center))
+
+    position = room_state.player.position.copy()
+    room_state.update(bounds, 0.05, idle)
+    assert room_state.player.position == position
+
+
+def test_directional_input_cancels_walk_to_prop() -> None:
+    room_state, prop = make_walk_to_room_state(walk_to_interact=True)
+    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
+
+    click(room_state, prop)
+    room_state.update(bounds, 0.05, InputState(frozenset({Action.RIGHT}), {}))
+
+    assert room_state.player.target is None
+    for _ in range(300):
+        room_state.update(bounds, 0.05, InputState(frozenset(), {}))
+    assert room_state.message_surface is None

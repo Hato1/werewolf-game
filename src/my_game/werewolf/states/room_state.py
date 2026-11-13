@@ -37,6 +37,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.player = Player.from_character_data(PLAYER)
 
     def change_room(self, room: RoomData) -> None:
+        self.player.cancel_walk()
         self.room.on_exit()
         self.room = Room.from_room_data(room)
         self.room.on_enter()
@@ -55,7 +56,12 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.MOUSE_SELECT in actions:
             prop = self.room.get_clicked_prop(event.pos)
-            if prop is not None:
+            self.player.cancel_walk()
+            if prop is None:
+                return
+            if prop.walk_to_interact:
+                self.player.walk_to(prop.rect, lambda: self.on_prop_clicked(prop))
+            else:
                 self.on_prop_clicked(prop)
         elif Action.DEBUG_ROOM_1 in actions:
             self.change_room(rooms.CHURCH_CEMETARY)

@@ -1,5 +1,6 @@
 """Object representing a room in the game."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import ClassVar, Self
 
@@ -138,15 +139,59 @@ class Character:
         renderer(self.sprite, self.rect)
 
 
+@dataclass
 class Player(Character):
-    """A character whose movement is driven by player input."""
+    """A character whose movement is driven by player input.
+
+    The player can also be sent to walk up to a target rect, calling `on_arrive` once within
+    `INTERACT_DISTANCE` of it. Any directional input cancels the walk.
+    """
+
+    # How close (in pixels) the player's feet get to a target before stopping.
+    INTERACT_DISTANCE: ClassVar[int] = 20
+
+    target: pg.Rect | None = None
+    on_arrive: Callable[[], None] | None = None
+
+    def walk_to(self, target: pg.Rect, on_arrive: Callable[[], None]) -> None:
+        """Walk towards the target rect, then call `on_arrive`."""
+        self.target = target
+        self.on_arrive = on_arrive
+
+    def cancel_walk(self) -> None:
+        self.target = None
+        self.on_arrive = None
+
+    def vector_to_target(self) -> pg.Vector2:
+        """Return the vector from the player's feet to the nearest point on the target."""
+        if self.target is None:
+            return pg.Vector2()
+        nearest = pg.Vector2(
+            min(max(self.position.x, self.target.left), self.target.right),
+            min(max(self.position.y, self.target.top), self.target.bottom),
+        )
+        return nearest - self.position
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         direction = pg.Vector2(
             (Action.RIGHT in input_state) - (Action.LEFT in input_state),
             (Action.DOWN in input_state) - (Action.UP in input_state),
         )
-        return direction.normalize() if direction else direction
+        if direction:
+            self.cancel_walk()
+            return direction.normalize()
+        to_target = self.vector_to_target()
+        if self.target is None or to_target.length() <= self.INTERACT_DISTANCE:
+            return pg.Vector2()
+        return to_target.normalize()
+
+    def update(self, bounds: pg.Rect, dt: float, input_state: InputState) -> None:
+        super().update(bounds, dt, input_state)
+        if self.target is not None and self.vector_to_target().length() <= self.INTERACT_DISTANCE:
+            on_arrive = self.on_arrive
+            self.cancel_walk()
+            if on_arrive is not None:
+                on_arrive()
 
 
 @dataclass
@@ -223,6 +268,7 @@ class Prop:
         parallax: Parallax effect factor.
         depth: Rendering depth (higher values render on top).
         baseline: Reference point for prop positioning relative to its sprite.
+        walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
     """
 
     name: str
@@ -237,6 +283,7 @@ class Prop:
     parallax: float
     depth: int
     baseline: int
+    walk_to_interact: bool = False
 
     @classmethod
     def from_prop_data(cls, data: PropData) -> Self:
@@ -258,6 +305,7 @@ class Prop:
             data.parallax,
             data.depth,
             data.baseline,
+            data.walk_to_interact,
         )
         return prop
 

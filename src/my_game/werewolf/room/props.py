@@ -23,6 +23,7 @@ STUDIO = PropData(
     position=(800, 70),
     scale=0.05,
     depth=0,
+    walk_to_interact=True,
 )
 
 BACKGROUND_CHURCH_CEMETARY = PropData(
@@ -87,4 +88,5 @@ GRAVEYARD_CHAINS = PropData(
     scale=2,
     clickable=True,
     depth=500,
+    walk_to_interact=True,
 )
