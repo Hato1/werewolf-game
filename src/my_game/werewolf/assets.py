@@ -30,6 +30,10 @@ class Images(StrEnum):
     # Props
     INTERACTABLE_GRAVEYARD_CHAINS = "interactable_graveyard_chains.png"
 
+    # Characters (horizontal sprite sheets of equally sized frames)
+    PLAYER_IDLE = "characters/mc_idle.png"
+    PLAYER_WALK = "characters/mc_walk.png"
+
     # Test and miscellaneous images
     TEST_BACKGROUND = "bgtest2.png"
     TEST_ROOM_BACKGROUND = "bg1.png"

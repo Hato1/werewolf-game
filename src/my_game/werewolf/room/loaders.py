@@ -19,6 +19,11 @@ class CharacterData:
     description: str
     image: Images
     position: Point
+    walk_image: Images | None = None
+    scale: float = 1.0
+    speed: float = 200.0
+    path: tuple[Point, ...] = ()
+    loop: bool = False
 
 
 @dataclass(frozen=True)
@@ -46,6 +51,7 @@ class PropData:
     parallax: float = 0.0
     depth: int = 0
     baseline: int = 0
+    walk_to_interact: bool = False
 
 
 @dataclass(frozen=True)
