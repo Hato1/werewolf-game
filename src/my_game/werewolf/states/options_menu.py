@@ -53,7 +53,8 @@ class ToggleButton:
 
 
 class Option:
-    def __init__(self, font, text) -> None:
+    def __init__(self, font, text, key) -> None:
+        self.key = key
         self.text = text
         self.font = font
         self.pos = (0, 0)
@@ -86,18 +87,16 @@ class OptionsMenuButton:
 
     def save(self) -> SavedOptions:
         if self.button:
-            return SavedOptions(self.option.text, self.button.status, self.button.true, self.button.false)
+            return SavedOptions(self.option.key, self.button.status)
         else:
             junk = False
-            return SavedOptions(self.option.text, junk, "", "")
+            return SavedOptions(self.option.key, junk)
 
 
 @dataclass
 class SavedOptions:
-    name: str
+    key: str
     status: bool
-    true: str
-    false: str
 
 
 class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
@@ -123,12 +122,14 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
 
         # buttons
         self.buttons: list[OptionsMenuButton] = [
-            OptionsMenuButton(Option(self.FONT, "Music"), ToggleButton(self.FONT, status=True)),
-            OptionsMenuButton(Option(self.FONT, "Sound Effects"), ToggleButton(self.FONT, status=True)),
+            OptionsMenuButton(Option(self.FONT, "Music", "MUSIC"), ToggleButton(self.FONT, status=True)),
+            OptionsMenuButton(Option(self.FONT, "Sound Effects", "SOUND"), ToggleButton(self.FONT, status=True)),
         ]
         if sys.platform != "emscripten":
-            self.buttons.append(OptionsMenuButton(Option(self.FONT, "Lighting"), ToggleButton(self.FONT, status=True)))
-        self.buttons.append(OptionsMenuButton(Option(self.FONT, "Exit"), None))
+            self.buttons.append(
+                OptionsMenuButton(Option(self.FONT, "Lighting", "LIGHT"), ToggleButton(self.FONT, status=True))
+            )
+        self.buttons.append(OptionsMenuButton(Option(self.FONT, "Exit", "EXIT"), None))
 
         self.button_x = 0
         self.button_y = 0
@@ -143,6 +144,8 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
                     )
                 )
 
+        self.load()
+
     def save(self) -> None:
         button_list = []
         for sel in self.buttons:
@@ -152,11 +155,27 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
             with Path("settings").open("w") as settings:
                 settings.write(json.dumps(button_list))
 
+    def load(self) -> None:
+        saved_settings = []
+
+        if sys.platform != "emscripten":
+            with Path("settings").open("r") as settings:
+                saved_settings = json.loads(settings.read())
+
+        for setting in saved_settings:
+            for button in self.buttons:
+                if (
+                    button.button
+                    and setting.get("key") == button.option.key
+                    and setting.get("status") != button.button.status
+                ):
+                    button.button.action()
+
     def handle_keyboard(self, actions: set[Enum], event: pg.Event) -> None:
-        if Action.UP in actions and self.button_x == 0:
+        if Action.UP in actions:
             self.button_y = (self.button_y - 1) % len(self.buttons)
 
-        if Action.DOWN in actions and self.button_x == 0:
+        if Action.DOWN in actions:
             self.button_y = (self.button_y + 1) % len(self.buttons)
 
         if Action.RIGHT in actions and self.button_x == 0:
@@ -190,9 +209,14 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
                     if i == self.button_y and sel.button:
                         sel.button.action()
 
+    def normalize_menu(self) -> None:
+        if self.button_x == 1 and not self.buttons[self.button_y].button:
+            self.button_x = 0
+
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         self.handle_keyboard(actions, event)
         self.handle_mouse(actions, event)
+        self.normalize_menu()
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         pass
