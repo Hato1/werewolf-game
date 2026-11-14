@@ -1,5 +1,8 @@
+import json
 import sys
+from dataclasses import asdict, dataclass
 from enum import Enum
+from pathlib import Path
 
 import pygame as pg
 
@@ -39,12 +42,17 @@ class ToggleButton:
 
         renderer(self.surf, self.rect, unlit=True)
 
-    def set_pos(self, pos):
+    def set_pos(self, pos) -> None:
         self.pos = pos
         self.rect = self.surf.get_rect(topleft=pos)
+        text = '"Type:":"ToggleButton", '
+        text += '"Status:":"' + str(self.status) + '", '
+        text += '"True:":"' + self.true + '", '
+        text += '"False:":"' + self.false + '"'
+        return text
 
 
-class OptionsMenuButton:
+class Option:
     def __init__(self, font, text) -> None:
         self.text = text
         self.font = font
@@ -66,9 +74,30 @@ class OptionsMenuButton:
 
         renderer(self.surf, self.rect, unlit=True)
 
-    def set_pos(self, pos):
+    def set_pos(self, pos) -> None:
         self.pos = pos
         self.rect = self.surf.get_rect(topleft=pos)
+
+
+class OptionsMenuButton:
+    def __init__(self, option: Option, button: ToggleButton | None):
+        self.option = option
+        self.button = button
+
+    def save(self) -> SavedOptions:
+        if self.button:
+            return SavedOptions(self.option.text, self.button.status, self.button.true, self.button.false)
+        else:
+            junk = False
+            return SavedOptions(self.option.text, junk, "", "")
+
+
+@dataclass
+class SavedOptions:
+    name: str
+    status: bool
+    true: str
+    false: str
 
 
 class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
@@ -93,26 +122,35 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         self.title_rect = self.title_surface.get_rect(topleft=(50, 50))
 
         # buttons
-        self.buttons: list[tuple[OptionsMenuButton, ToggleButton | None]] = [
-            (OptionsMenuButton(self.FONT, "Music"), ToggleButton(self.FONT, status=True)),
-            (OptionsMenuButton(self.FONT, "Sound Effects"), ToggleButton(self.FONT, status=True)),
+        self.buttons: list[OptionsMenuButton] = [
+            OptionsMenuButton(Option(self.FONT, "Music"), ToggleButton(self.FONT, status=True)),
+            OptionsMenuButton(Option(self.FONT, "Sound Effects"), ToggleButton(self.FONT, status=True)),
         ]
         if sys.platform != "emscripten":
-            self.buttons.append((OptionsMenuButton(self.FONT, "Lighting"), ToggleButton(self.FONT, status=True)))
-        self.buttons.append((OptionsMenuButton(self.FONT, "Exit"), None))
+            self.buttons.append(OptionsMenuButton(Option(self.FONT, "Lighting"), ToggleButton(self.FONT, status=True)))
+        self.buttons.append(OptionsMenuButton(Option(self.FONT, "Exit"), None))
 
         self.button_x = 0
         self.button_y = 0
 
-        for i, (button, toggle) in enumerate(self.buttons):
-            button.set_pos((MENU_BUTTON_OFFSET_X, self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y)))
-            if toggle:
-                toggle.set_pos(
+        for i, sel in enumerate(self.buttons):
+            sel.option.set_pos((MENU_BUTTON_OFFSET_X, self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y)))
+            if sel.button:
+                sel.button.set_pos(
                     (
                         MENU_BUTTON_OFFSET_X + self.MENU_BUTTON_OPTION_X,
                         self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y),
                     )
                 )
+
+    def save(self) -> None:
+        button_list = []
+        for sel in self.buttons:
+            button_list.append(asdict(sel.save()))
+
+        if sys.platform != "emscripten":
+            with Path("settings").open("w") as settings:
+                settings.write(json.dumps(button_list))
 
     def handle_keyboard(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UP in actions and self.button_x == 0:
@@ -128,27 +166,29 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
             self.button_x = 0
 
         if Action.MOUSE_SELECT in actions:
-            for i, (button, toggle) in enumerate(self.buttons):
-                if toggle and toggle.rect.collidepoint(event.pos):
+            for i, sel in enumerate(self.buttons):
+                if sel.button and sel.button.rect.collidepoint(event.pos):
                     self.button_y = i
                     self.button_x = 1
-                    toggle.action()
-                if button and button.rect.collidepoint(event.pos):
+                    sel.button.action()
+                if sel.option and sel.option.rect.collidepoint(event.pos):
                     self.button_y = i
                     self.button_x = 0
-                    if not toggle:
+                    if not sel.button:
                         self.done = True
                         self.next_state = WerewolfState.MAIN_MENU
+                        self.save()
 
     def handle_mouse(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
-            if self.button_x == 0 and not self.buttons[self.button_y][1]:
+            if self.button_x == 0 and not self.buttons[self.button_y].button:
                 self.done = True
                 self.next_state = WerewolfState.MAIN_MENU
+                self.save()
             elif self.button_x == 1:
-                for i, (_, toggle) in enumerate(self.buttons):
-                    if i == self.button_y and toggle:
-                        toggle.action()
+                for i, sel in enumerate(self.buttons):
+                    if i == self.button_y and sel.button:
+                        sel.button.action()
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         self.handle_keyboard(actions, event)
@@ -162,7 +202,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         renderer(self.background, renderer.rect, fit=True)
         renderer(self.title_surface, self.title_rect, unlit=True)
 
-        for i, (button, toggle) in enumerate(self.buttons):
-            button.draw(renderer, selected=self.button_y == i)
-            if toggle:
-                toggle.draw(renderer, selected=self.button_y == i and self.button_x == 1)
+        for i, sel in enumerate(self.buttons):
+            sel.option.draw(renderer, selected=self.button_y == i)
+            if sel.button:
+                sel.button.draw(renderer, selected=self.button_y == i and self.button_x == 1)
