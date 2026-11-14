@@ -190,20 +190,20 @@ jobs:
       - name: Upload zipped windows executable to release
         uses: softprops/action-gh-release@v3
         with:
-          args: windows_release.zip
+          files: windows_release.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload tarballed linux executable to release
         uses: softprops/action-gh-release@v3
         with:
-          args: linux_release.tar.gz
+          files: linux_release.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload tarballed macos executable to release
         uses: softprops/action-gh-release@v3
         with:
-          args: macos_release.tar.gz
+          files: macos_release.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
