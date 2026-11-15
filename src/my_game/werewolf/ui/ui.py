@@ -7,15 +7,13 @@ from pygame_gui.core import ObjectID
 
 from my_game.constants import SCREEN_SIZE
 from my_game.core.renderer import Renderer
-from my_game.werewolf.assets import IMAGES_PATH, UI_PATH, Fonts
+from my_game.werewolf.assets import IMAGES_PATH, UI_PATH
 
 manager = pygame_gui.UIManager(SCREEN_SIZE, theme_path="../assets/ui/ui_theme.json")
 
 DATA_PATH = "src/my_game/werewolf/data"
 
 ui_clock = pg.time.Clock()
-
-FONT = Fonts.PICO8.load(10)
 
 portrait_size = (100, 150)
 inventory_button_size = (100, 100)
