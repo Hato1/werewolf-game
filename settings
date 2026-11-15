@@ -1,1 +1,1 @@
-[{"key": "MUSIC", "status": true}, {"key": "SOUND", "status": false}, {"key": "LIGHT", "status": true}, {"key": "EXIT", "status": false}]
+[{"key": "MUSIC", "status": false}, {"key": "SOUND", "status": true}, {"key": "LIGHT", "status": true}, {"key": "EXIT", "status": false}]
