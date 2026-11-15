@@ -18,22 +18,27 @@ from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
-SAVE_FILE = Path("settings.json")
+OPTIONS_FILE = Path("settings.json")
 
 
 class ToggleButton:
-    def __init__(self, font, *, true="On", false="Off", status: bool):
+    """Represents the state of a boolean toggle button."""
+
+    def __init__(self, font, *, status: bool, enabled_text="On", disabled_text="Off"):
         self.font = font
         self.pos = (0, 0)
 
         self.status = status
-        self.true = true
-        self.false = false
-        self.text = self.true if self.status else self.false
+        self.enabled_text: str = enabled_text
+        self.disabled_text: str = disabled_text
 
         # shapes
         self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
         self.rect = self.surf.get_rect(topleft=self.pos)
+
+    @property
+    def text(self) -> str:
+        return self.enabled_text if self.status else self.disabled_text
 
     def action(self, act_func: Callable | None):
         if act_func:
@@ -43,9 +48,7 @@ class ToggleButton:
             self.text = self.true if self.status else self.false
 
     def draw(self, renderer: Renderer, *, selected) -> None:
-        font_color = "white"
-        if selected:
-            font_color = "yellow"
+        font_color = "yellow" if selected else "white"
 
         self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color(font_color))
 
@@ -56,21 +59,24 @@ class ToggleButton:
         self.rect = self.surf.get_rect(topleft=pos)
         # text = '"Type:":"ToggleButton", '
         # text += '"Status:":"' + str(self.status) + '", '
-        # text += '"True:":"' + self.true + '", '
-        # text += '"False:":"' + self.false + '"'
+        # text += '"True:":"' + self.enabled_text + '", '
+        # text += '"False:":"' + self.disabled_text + '"'
         # return text
 
 
 class Option:
+    """Represents a single option in the options menu."""
+
     def __init__(self, font, text, key) -> None:
-        self.key = key
-        self.text = text
-        self.font = font
-        self.pos = (0, 0)
+        # key is the identifier for this option.
+        self.key: str = key
+        self.text: str = text
+        self.font: pg.Font = font
+        self.pos: tuple[int, int] = (0, 0)
 
         # shapes
-        self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
-        self.rect = self.surf.get_rect(topleft=self.pos)
+        self.surf: pg.Surface = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
+        self.rect: pg.Rect = self.surf.get_rect(topleft=self.pos)
 
     def draw(self, renderer: Renderer, *, selected: bool) -> None:
         draw_pos = self.pos
@@ -90,9 +96,11 @@ class Option:
 
 
 class OptionsMenuButton:
+    """Represents a button in the options menu, which may have an associated toggle button to change its state."""
+
     def __init__(self, option: Option, button: ToggleButton | None):
-        self.option = option
-        self.button = button
+        self.option: Option = option
+        self.button: ToggleButton | None = button
 
     def save(self) -> SavedOptions:
         if self.button:
@@ -104,6 +112,8 @@ class OptionsMenuButton:
 
 @dataclass
 class SavedOptions:
+    """Represents the saved state of an option in the options menu."""
+
     key: str
     status: bool
 
@@ -236,7 +246,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         json_settings = json.dumps(button_list)
 
         if sys.platform != "emscripten":
-            with SAVE_FILE.open("w") as settings:
+            with OPTIONS_FILE.open("w") as settings:
                 settings.write(json_settings)
         else:
             window.localStorage.setItem("settings", json_settings)
@@ -245,7 +255,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         saved_settings = []
 
         if sys.platform != "emscripten":
-            with SAVE_FILE.open("r") as settings:
+            with OPTIONS_FILE.open("r") as settings:
                 try:
                     saved_settings = json.loads(settings.read())
                 except json.JSONDecodeError:
