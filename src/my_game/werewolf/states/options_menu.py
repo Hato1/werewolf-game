@@ -8,7 +8,7 @@ from pathlib import Path
 import pygame as pg
 
 if __import__("sys").platform == "emscripten":
-    from platform import window
+    from platform import window  # type: ignore[attr-defined]
 
 from my_game.constants import MENU_ANTI_ALIAS, MENU_BUTTON_OFFSET_X, MENU_BUTTON_SPACING_Y, MENU_FONT_SIZE, SCREEN_SIZE
 from my_game.core.input_manager import InputState
@@ -17,6 +17,8 @@ from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
+
+SAVE_FILE = Path("settings.json")
 
 
 class ToggleButton:
@@ -52,11 +54,11 @@ class ToggleButton:
     def set_pos(self, pos) -> None:
         self.pos = pos
         self.rect = self.surf.get_rect(topleft=pos)
-        text = '"Type:":"ToggleButton", '
-        text += '"Status:":"' + str(self.status) + '", '
-        text += '"True:":"' + self.true + '", '
-        text += '"False:":"' + self.false + '"'
-        return text
+        # text = '"Type:":"ToggleButton", '
+        # text += '"Status:":"' + str(self.status) + '", '
+        # text += '"True:":"' + self.true + '", '
+        # text += '"False:":"' + self.false + '"'
+        # return text
 
 
 class Option:
@@ -234,7 +236,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         json_settings = json.dumps(button_list)
 
         if sys.platform != "emscripten":
-            with Path("settings").open("w") as settings:
+            with SAVE_FILE.open("w") as settings:
                 settings.write(json_settings)
         else:
             window.localStorage.setItem("settings", json_settings)
@@ -243,7 +245,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         saved_settings = []
 
         if sys.platform != "emscripten":
-            with Path("settings").open("r") as settings:
+            with SAVE_FILE.open("r") as settings:
                 try:
                     saved_settings = json.loads(settings.read())
                 except json.JSONDecodeError:
