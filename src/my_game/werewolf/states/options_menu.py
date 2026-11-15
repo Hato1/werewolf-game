@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pygame as pg
 
+if __import__("sys").platform == "emscripten":
+    from platform import window
+
 from my_game.constants import MENU_ANTI_ALIAS, MENU_BUTTON_OFFSET_X, MENU_BUTTON_SPACING_Y, MENU_FONT_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
@@ -150,17 +153,30 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         button_list = []
         for sel in self.buttons:
             button_list.append(asdict(sel.save()))
+        json_settings = json.dumps(button_list)
 
         if sys.platform != "emscripten":
             with Path("settings").open("w") as settings:
-                settings.write(json.dumps(button_list))
+                settings.write(json_settings)
+        else:
+            window.localStorage.setItem("settings", json_settings)
 
     def load(self) -> None:
         saved_settings = []
 
         if sys.platform != "emscripten":
             with Path("settings").open("r") as settings:
-                saved_settings = json.loads(settings.read())
+                try:
+                    saved_settings = json.loads(settings.read())
+                except json.JSONDecodeError:
+                    pass
+        else:
+            try:
+                settings = window.localStorage.getItem("settings")
+                if settings:
+                    saved_settings = json.loads(settings)
+            finally:
+                pass
 
         for setting in saved_settings:
             for button in self.buttons:
