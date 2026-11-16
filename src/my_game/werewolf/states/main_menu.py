@@ -1,4 +1,5 @@
 from enum import Enum
+import sys
 
 import pygame as pg
 
@@ -64,8 +65,9 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             MainMenuButton(self.FONT, "Start", WerewolfState.TEST_ROOM),
             MainMenuButton(self.FONT, "Load", WerewolfState.RENDER_TEST),
             MainMenuButton(self.FONT, "Options", WerewolfState.OPTIONS_MENU),
-            MainMenuButton(self.FONT, "Exit", None),
         ]
+        if sys.platform != "emscripten":
+            self.buttons.append(MainMenuButton(self.FONT, "Exit", None))
         self.button_index = 0
 
         for i in range(len(self.buttons)):
