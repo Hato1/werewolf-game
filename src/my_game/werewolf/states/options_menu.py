@@ -24,13 +24,14 @@ OPTIONS_FILE = Path("settings.json")
 class ToggleButton:
     """Represents the state of a boolean toggle button."""
 
-    def __init__(self, font, *, status: bool, enabled_text="On", disabled_text="Off"):
+    def __init__(self, font, *, status: bool, enabled_text="On", disabled_text="Off", restart=False):
         self.font = font
         self.pos = (0, 0)
 
         self.status = status
         self.enabled_text: str = enabled_text
         self.disabled_text: str = disabled_text
+        self.restart = restart
 
         # shapes
         self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
@@ -40,12 +41,11 @@ class ToggleButton:
     def text(self) -> str:
         return self.enabled_text if self.status else self.disabled_text
 
-    def action(self, act_func: Callable | None):
-        if act_func:
-            act_func()
+    def action(self, restart_func: Callable | None):
+        if self.restart and restart_func:
+            restart_func()
         else:
             self.status = not self.status
-            self.text = self.true if self.status else self.false
 
     def draw(self, renderer: Renderer, *, selected) -> None:
         font_color = "yellow" if selected else "white"
@@ -95,6 +95,14 @@ class Option:
         self.rect = self.surf.get_rect(topleft=pos)
 
 
+@dataclass
+class SavedOptions:
+    """Represents the saved state of an option in the options menu."""
+
+    key: str
+    status: bool
+
+
 class OptionsMenuButton:
     """Represents a button in the options menu, which may have an associated toggle button to change its state."""
 
@@ -108,14 +116,6 @@ class OptionsMenuButton:
         else:
             junk = False
             return SavedOptions(self.option.key, junk)
-
-
-@dataclass
-class SavedOptions:
-    """Represents the saved state of an option in the options menu."""
-
-    key: str
-    status: bool
 
 
 class RestartSubMenu:
@@ -216,7 +216,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         ]
         if sys.platform != "emscripten":
             self.buttons.append(
-                OptionsMenuButton(Option(self.FONT, "Lighting", "LIGHT"), ToggleButton(self.FONT, status=True))
+                OptionsMenuButton(Option(self.FONT, "Lighting", "LIGHT"), ToggleButton(self.FONT, status=True, restart=True))
             )
         self.buttons.append(OptionsMenuButton(Option(self.FONT, "Exit", "EXIT"), None))
 
@@ -255,11 +255,14 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         saved_settings = []
 
         if sys.platform != "emscripten":
-            with OPTIONS_FILE.open("r") as settings:
-                try:
-                    saved_settings = json.loads(settings.read())
-                except json.JSONDecodeError:
-                    pass
+            try:
+                with OPTIONS_FILE.open("r") as settings:
+                    try:
+                        saved_settings = json.loads(settings.read())
+                    except json.JSONDecodeError:
+                        pass
+            except FileNotFoundError:
+                pass
         else:
             try:
                 settings = window.localStorage.getItem("settings")
