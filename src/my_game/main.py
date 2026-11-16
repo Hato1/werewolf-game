@@ -3,6 +3,7 @@
 Asyncio is used for Pygbag (web) compatibility."""
 
 import asyncio
+import json
 import sys
 import types
 from pathlib import Path
@@ -23,6 +24,8 @@ from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
 from my_game.werewolf import registry as werewolf
 
+OPTIONS_FILE = Path("settings.json")
+
 logger = get_logger(__name__)
 
 # TODO: Allow configuration via command line arguments or something.
@@ -34,6 +37,20 @@ OPENGL = True
 # Pygbag does not support OPENGL.
 if sys.platform == "emscripten":
     OPENGL = False
+else:
+    try:
+        with OPTIONS_FILE.open("r") as settings:
+            try:
+                saved_settings = json.loads(settings.read())
+
+                for sel in saved_settings:
+                    if sel.get("key") == "LIGHT":
+                        OPENGL = sel.get("status")
+
+            except json.JSONDecodeError:
+                pass
+    except FileNotFoundError:
+        pass
 
 
 async def main():
@@ -41,6 +58,8 @@ async def main():
     initialize_logger(LogLevel.INFO)
     # Initialization
     pg.init()
+
+
 
     if OPENGL:
         # Set OpenGL context attributes for Pygame before creating the window.
