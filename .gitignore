@@ -178,3 +178,7 @@ cython_debug/
 
 # Pygbag
 *-pygbag.??*
+
+
+# Settings file for the werewolf game (temp?)
+settings.json
