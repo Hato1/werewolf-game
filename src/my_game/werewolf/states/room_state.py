@@ -18,6 +18,7 @@ from my_game.werewolf.room.characters import PLAYER
 from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Player, Prop, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
+from my_game.werewolf.ui.player_ui import UIPanel
 
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
@@ -35,6 +36,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_surface: pg.Surface | None = None
         self.message_expires_at = 0
         self.player = Player.from_character_data(PLAYER)
+        self.ui = UIPanel()
 
     def change_room(self, room: RoomData) -> None:
         self.player.cancel_walk()
@@ -54,6 +56,9 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             self.show_message(prop.description)
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
+        """Can also have custom functions passed in, if we want to do that later for some reason"""
+        self.ui.handle_mouse(actions, event)
+
         if Action.MOUSE_SELECT in actions:
             prop = self.room.get_clicked_prop(event.pos)
             self.player.cancel_walk()
@@ -90,3 +95,4 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
                 midbottom=(renderer.rect.centerx, renderer.rect.bottom - self.MESSAGE_DISPLAY_OFFSET)
             )
             renderer(self.message_surface, message_rect, unlit=True)
+        self.ui.draw(renderer)

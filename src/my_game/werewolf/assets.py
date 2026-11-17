@@ -46,9 +46,20 @@ class Images(StrEnum):
     TEST_CHURCH = "bg_church.png"
     TEST_CHURCH_NORMALS = "bg_church_normals.png"
 
+    # MC Portraits
+    MC_FACE_1 = "mc_face1.png"
+    MC_FACE_2 = "mc_face2.png"
+
+    # Inventory Sprites
+    INV_SHED_HOOK = "interactable_shed_hook.png"
+
     @cache
     def load(self) -> pg.Surface:
         return load_image(IMAGES_PATH / self.value)
+
+    @cache
+    def load_custom(self, file_name) -> pg.Surface:
+        return load_image(IMAGES_PATH / file_name)
 
 
 @unique
