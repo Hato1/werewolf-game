@@ -38,7 +38,7 @@ void main() {
     vec3 light_color = vec3(1, 0.75, 0.45);
 
     vec4 normal_sample = texture(normals, uvs);
-    vec3 sample_normals = vec3(remap(normal_sample.r, 0, 1, -1, 1), -remap(normal_sample.g, 0, 1, -1, 1), remap(normal_sample.b, 0, 1, -1, 1));
+    vec3 sample_normals = vec3(remap(normal_sample.r, 0, 1, -1, 1), -remap(normal_sample.g, 0, 1, -1, 1), -remap(normal_sample.b, 0, 1, -1, 1));
     vec3 world_position = vec3(
         corrected_uvs.x + ((sample_normals.r * normal_sample.a) * screen_size.x),
         corrected_uvs.y + ((sample_normals.g * normal_sample.a) * screen_size.y),
