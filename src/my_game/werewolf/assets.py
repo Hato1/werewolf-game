@@ -44,9 +44,20 @@ class Images(StrEnum):
     TEST_SHADER = "shader_test_image.png"
     TEST_SHADER_0 = "shader_test_image_0.png"
 
+    # MC Portraits
+    MC_FACE_1 = "mc_face1.png"
+    MC_FACE_2 = "mc_face2.png"
+
+    # Inventory Sprites
+    INV_SHED_HOOK = "interactable_shed_hook.png"
+
     @cache
     def load(self) -> pg.Surface:
         return load_image(IMAGES_PATH / self.value)
+
+    @cache
+    def load_custom(self, file_name) -> pg.Surface:
+        return load_image(IMAGES_PATH / file_name)
 
 
 @unique
