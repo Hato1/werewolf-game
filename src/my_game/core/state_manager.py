@@ -1,4 +1,4 @@
-"""This module contains the StateManager class and a abstract State class."""
+"""This module contains the StateManager class and a abstract State class. :)"""
 
 import asyncio
 from abc import ABC, abstractmethod
