@@ -14,9 +14,10 @@ from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
 
 DATA_FILE = Path("data.json")
-PORTRAIT_SIZE = (70, 105)
+PORTRAIT_SIZE = (70, 110)
 INVENTORY_SLOTS = 10
-INVENTORY_BUTTON_SIZE = (75, 75)
+INVENTORY_BUTTON_SIZE = (70, 70)
+UI_OFFSET = 5
 UI_SIZE = (SCREEN_SIZE[0], 125)
 UI_POSITION = (0, SCREEN_SIZE[1] - UI_SIZE[1])
 UI_RECT = pg.Rect(UI_POSITION[0], UI_POSITION[1], UI_SIZE[0], UI_SIZE[1])
@@ -57,12 +58,17 @@ class UIPanel:
         self.inventory_buttons: list[InventoryButton] = []
         for slot in range(INVENTORY_SLOTS):
             self.inventory_buttons.append(InventoryButton(slot))
+        self.text_panel = TextDisplayPanel()
+
+        self.second_portrait = SecondPortrait()
 
     def draw(self, renderer) -> None:
         renderer(self.bg_surf, self.bg_rect, unlit=True)
         self.portrait.draw(renderer)
         for inv_slot in self.inventory_buttons:
             inv_slot.draw(renderer)
+        self.text_panel.draw(renderer)
+        self.second_portrait.draw(renderer)
 
     def handle_mouse(self, actions: set[Enum], event: pg.Event, portrait_func=None, inv_func=None) -> None:
         """Allow a room state to pass in custom functions for portrait/inventory. Otherwise, use default functionality"""
@@ -72,14 +78,18 @@ class UIPanel:
                     portrait_func()
                 else:
                     print("Portrait button clicked")
+            elif self.second_portrait.get_rect().collidepoint(event.pos):
+                self.text_panel.toggle_display()
             else:
                 """check each inventory slot for mouse click"""
                 for inv_slot in self.inventory_buttons:
-                    if inv_slot.get_rect().collidepoint(event.pos):
-                        if inv_func is not None:
-                            inv_func()
-                        else:
-                            print(f"Inventory button {inv_slot.get_slot_number()} clicked")
+                    """buttons can be disabled independent of the panel being visible, so we need to check for both"""
+                    if inv_slot.button_enabled and not self.text_panel.visible:
+                        if inv_slot.get_rect().collidepoint(event.pos):
+                            if inv_func is not None:
+                                inv_func()
+                            else:
+                                print(f"Inventory button {inv_slot.get_slot_number()} clicked")
 
     def save_inventory(self) -> None:
         button_list = []
@@ -119,16 +129,42 @@ class UIPanel:
                 if button.inventory_slot == item["inv_slot"]:
                     button.add_item(item["item_name"])
 
+    """allow developers to enable/disable inventory wholesale, when needed"""
+
+    def set_inventory_enabled(self, inv_enabled) -> None:
+        for button in self.inventory_buttons:
+            button.set_button_enabled(inv_enabled)
+
 
 class PortraitButton:
     """represents the portrait button"""
 
     def __init__(self):
         self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
-        self.portrait_surf.fill("saddlebrown")
-        self.portrait_rect = pg.Rect(UI_POSITION[0] + 5, UI_POSITION[1] + 10, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1])
+        self.portrait_surf.fill("#b2972a")
+        self.portrait_rect = pg.Rect(UI_POSITION[0] + 5, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1])
 
         self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_1.load(), 1.1)
+        self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
+
+    def get_rect(self) -> pg.Rect:
+        """only need to return portrait_rect because it is the whole button"""
+        return self.portrait_rect
+
+    def draw(self, renderer) -> None:
+        renderer(self.portrait_surf, self.portrait_rect, unlit=True)
+        renderer(self.sprite, self.sprite_rect, unlit=True)
+
+
+class SecondPortrait:
+    def __init__(self):
+        self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
+        self.portrait_surf.fill("#b2972a")
+
+        self.xpos = UI_SIZE[0] - UI_OFFSET - PORTRAIT_SIZE[0]
+        self.portrait_rect = pg.Rect(self.xpos, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1])
+
+        self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_2.load(), 1.1)
         self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
 
     def get_rect(self) -> pg.Rect:
@@ -148,11 +184,18 @@ class InventoryButton:
         self.item_name: str = "Empty"
 
         """x position accounts for portrait position, all buttons that precede the current one, and their margins"""
-        self.xpos = UI_POSITION[0] + 5 + PORTRAIT_SIZE[0] + 5 + (self.inventory_slot * (INVENTORY_BUTTON_SIZE[0] + 5))
+        self.xpos = (
+            UI_POSITION[0]
+            + (7 * UI_OFFSET)
+            + PORTRAIT_SIZE[0]
+            + (self.inventory_slot * (INVENTORY_BUTTON_SIZE[0] + UI_OFFSET))
+        )
 
         self.inv_surf = pg.Surface(INVENTORY_BUTTON_SIZE)
         self.inv_surf.fill("saddlebrown")
-        self.inv_rect = pg.Rect(self.xpos, UI_POSITION[1] + 40, INVENTORY_BUTTON_SIZE[0], INVENTORY_BUTTON_SIZE[1])
+        self.inv_rect = pg.Rect(
+            self.xpos, UI_POSITION[1] + UI_OFFSET, INVENTORY_BUTTON_SIZE[0], INVENTORY_BUTTON_SIZE[1]
+        )
         # self.inv_surf.get_rect(bottomleft=(self.xpos, SCREEN_SIZE[1] - INVENTORY_BUTTON_SIZE[1])))
 
         self.item_image = item_image
@@ -164,6 +207,16 @@ class InventoryButton:
 
         self.selected = False
         self.item_active = False
+
+        self.button_enabled: bool = True
+
+    """toggle and set functions to enable/disable buttons. The latter is for when we want to enable/disable buttons en-masse"""
+
+    def toggle_button_enabled(self) -> None:
+        self.button_enabled = not self.button_enabled
+
+    def set_button_enabled(self, button_enabled) -> None:
+        self.button_enabled = button_enabled
 
     def get_slot_number(self) -> str:
         return f"{self.inventory_slot}"
@@ -213,3 +266,29 @@ class InventoryButton:
             return PlayerInventory(self.inventory_slot, self.item_name, item_active=self.item_active)
         else:
             return PlayerInventory(self.inventory_slot, "EMPTY", item_active=False)
+
+
+class TextDisplayPanel:
+    def __init__(self) -> None:
+        self.xpos = UI_POSITION[0] + PORTRAIT_SIZE[0] + (3 * UI_OFFSET)
+        self.ypos = UI_POSITION[1] - 50
+        self.width = SCREEN_SIZE[0] - (2 * PORTRAIT_SIZE[0]) - (6 * UI_OFFSET)
+        self.height = UI_SIZE[1] + 45
+
+        self.txt_surf = pg.Surface(size=(self.width, self.height))
+        self.txt_surf.fill("#b2972a")
+        self.txt_rect = pg.Rect(self.xpos, self.ypos, self.width, self.height)
+
+        self.txt_inner_surf = pg.Surface(size=(self.width - 10, self.height - 10))
+        self.txt_inner_surf.fill("saddlebrown")
+        self.txt_inner_rect = self.txt_inner_surf.get_rect(center=self.txt_rect.center)
+
+        self.visible = False
+
+    def toggle_display(self) -> None:
+        self.visible = not self.visible
+
+    def draw(self, renderer) -> None:
+        if self.visible:
+            renderer(self.txt_surf, self.txt_rect, unlit=True)
+            renderer(self.txt_inner_surf, self.txt_inner_rect, unlit=True)
