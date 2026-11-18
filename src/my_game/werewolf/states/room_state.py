@@ -90,9 +90,10 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def draw(self, renderer: Renderer, dt: float) -> None:
         self.room.draw(renderer)
         self.player.draw(renderer)
+        """render UI before message so messages can appear in text area, rather than behind it"""
+        self.ui.draw(renderer)
         if self.message_surface is not None:
             message_rect = self.message_surface.get_rect(
                 midbottom=(renderer.rect.centerx, renderer.rect.bottom - self.MESSAGE_DISPLAY_OFFSET)
             )
             renderer(self.message_surface, message_rect, unlit=True)
-        self.ui.draw(renderer)
