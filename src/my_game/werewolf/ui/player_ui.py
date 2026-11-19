@@ -49,6 +49,7 @@ class Inventory:
 
     # Placement of inventory slots/buttons.
     BUTTON_COLOR = pg.Color("saddlebrown")
+    BUTTON_SELECTED_COLOR = pg.Color("#D8A264")
     BUTTON_SIZE = pg.Vector2(70, 70)
     OFFSET_X = PORTRAIT_SIZE[0] + UI_OFFSET * 2
     OFFSET_Y = UI_OFFSET
@@ -62,7 +63,16 @@ class Inventory:
         button_background.fill(self.BUTTON_COLOR)
         self.button_background = button_background
 
+    def has_item(self, item: Prop) -> bool:
+        """Useful for avoiding duplicate items and confirming a player has an item to trigger an event"""
+        name_filter = filter(lambda p: p.name == item.name, self.inventory)
+        return bool(next(name_filter, False))
+
     def add_item(self, item: Prop) -> None:
+        """Don't duplicate items, just in case"""
+        if self.has_item(item):
+            return
+
         self.inventory.append(item)
 
     def remove_item(self, item: Prop) -> None:
@@ -96,6 +106,12 @@ class Inventory:
         if not self.visible:
             return
         for slot, item in enumerate(self.inventory):
+            """Selected Color should be different from unselected color"""
+            if self.selected:
+                self.button_background.fill(self.BUTTON_SELECTED_COLOR)
+            else:
+                self.button_background.fill(self.BUTTON_COLOR)
+
             background_rect = self.get_rect(slot)
             renderer(self.button_background, background_rect, unlit=True)
             sprite = item.get_inventory_sprite()
@@ -142,7 +158,7 @@ class UIPanel:
         self.text_panel.draw(renderer)
         self.second_portrait.draw(renderer)
 
-    def handle_mouse(self, actions: set[Enum], event: pg.Event, portrait_func=None, inv_func=None) -> None:
+    def handle_mouse(self, actions: set[Enum], event: pg.Event, portrait_func=None) -> None:
         """Allow a room state to pass in custom functions for portrait/inventory. Otherwise, use default functionality"""
         if Action.MOUSE_SELECT in actions:
             if self.portrait.get_rect().collidepoint(event.pos):
@@ -151,7 +167,7 @@ class UIPanel:
                 else:
                     logger.info("Portrait button clicked")
             elif self.second_portrait.get_rect().collidepoint(event.pos):
-                self.text_panel.toggle_display()
+                self.toggle_modes()
             else:
                 """check each inventory slot for mouse click"""
                 if self.inventory.visible:
@@ -167,6 +183,8 @@ class UIPanel:
             window.localStorage.setItem("beast_of_temerev_player_data", json_player_data)
 
     def load_inventory(self) -> None:
+        inventory_json = None
+
         if sys.platform == "emscripten":
             if player_data := window.localStorage.getItem(WEB_DATA_LOCATION):
                 inventory_json = player_data
@@ -192,6 +210,11 @@ class UIPanel:
             active (bool | None): If True, show inventory. If False, hide inventory. If None, toggle current state.
         """
         self.inventory.visible = active if active else not self.inventory.visible
+
+    def toggle_modes(self) -> None:
+        """because text panel toggle function would need to know about inventory visibility otherwise"""
+        self.toggle_inventory()
+        self.text_panel.toggle_display()
 
 
 class PortraitButton:

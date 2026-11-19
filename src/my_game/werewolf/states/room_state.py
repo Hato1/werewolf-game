@@ -23,7 +23,7 @@ from my_game.werewolf.ui.player_ui import UIPanel
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
     MESSAGE_DURATION_MS = 3000
-    MESSAGE_FONT_SIZE = 36
+    MESSAGE_FONT_SIZE = 32
     MESSAGE_COLOR = pg.Color("white")
     # Distance from bottom of the screen to display the message in pixels.
     MESSAGE_DISPLAY_OFFSET = 16
@@ -49,6 +49,12 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_expires_at = pg.time.get_ticks() + self.MESSAGE_DURATION_MS
 
     def on_prop_clicked(self, prop: Prop) -> None:
+        """inventory items added to player inventory, based on new pickup_on_click property"""
+        print(f"pickup_on_click:{prop.pickup_on_click}")
+        if prop.pickup_on_click:
+            self.ui.inventory.add_item(prop)
+            self.show_message(prop.description)
+
         """Hook for subclasses; by default the prop's description is shown."""
         if prop.name == props.GRAVEYARD_CHAINS.name:
             self.change_room(rooms.CHURCH_CEMETARY)
