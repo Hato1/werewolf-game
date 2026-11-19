@@ -40,11 +40,24 @@ class GLRenderer:
     LIGHT_MODE_POINT = 2
     light_z = 0.5
 
+    DEFAULT_POINT_LIGHT_DISABLED = (0.0, 0.0, 0.0, 0.0)
+    DEFAULT_POINT_LIGHT_ENABLED = (0.5, 0.5, 0.5, 1.0)
+    DEFAULT_POINT_LIGHT_COLOR = (1.0, 0.75, 0.45, 1.0)
+
     def __init__(self):
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.outline_render_list = []
         self.ctx.clear(0.33, 0.33, 0.33, 1)
+
+        # the shader skips lights with a radius less than or equal to 0
+        self.light_position_radius_array = []
+        self.light_color_intensity_array = []
+        self.light_flicker_intensity_array = []
+        for _i in range(6):
+            self.light_position_radius_array.append(self.DEFAULT_POINT_LIGHT_DISABLED)
+            self.light_color_intensity_array.append(self.DEFAULT_POINT_LIGHT_COLOR)
+            self.light_flicker_intensity_array.append(0.25)
         # shaders are instructions for the GPU to run.
         # these are essentially glsl files that im writing as
         # multiline strings.
@@ -199,14 +212,10 @@ class GLRenderer:
             1 / (self.lit_surface.size[1] * self.RENDER_SCALE[1]),
         ]
         # these arrays need to be populated otherwise the shader breaks!
-        p_r = [(0.5, 0.5, 0.5, 1.0)]  # position(x,y,z) and radius
-        c_i = [(1.0, 0.75, 0.45, 1.0)]  # color(r,g,b) and intensity (can be higher than 1)
-        for i in range(5):
-            p_r.append((0.1 * i, 0.1 * i, i * 0.2, 0.2))
-            c_i.append((i * 0.2, i * 0.1, i * 0.05, 1.0))
-        self.program["light_position_radius"] = p_r
-        self.program["light_color_intensity"] = c_i
-        # self.program['time'] = self.time
+        self.program["light_position_radius"] = self.light_position_radius_array
+        self.program["light_color_intensity"] = self.light_color_intensity_array
+        self.program["light_flicker_intensity"] = self.light_flicker_intensity_array
+        self.program["Time"] = self.TIME
         # render it
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
         frame_tex.release()
@@ -348,8 +357,48 @@ class GLRenderer:
         return [scaled[0] + (screen_size[0]) - 1, scaled[1] - screen_size[1] + 1]
 
     # set the light position of the lit shader.
-    def set_light_position(self, x: float, y: float):
-        self.program["light_position"] = (x, y, self.light_z)
+    def set_light_position(self, index: int, x: float, y: float, z: float = 1):
+        """Set the position of a light.
+
+        Args:
+            index (int): the index of a light to modify. 0-5 because we have 6 lights defined by the shader.
+            x (float): x position of a light in screen space
+            y (float): y position of light in screen space
+            z (float): z position of a light in screen space. 0 is close, 1 is further away. 1 is default because normal map alphas are used for distance, and I want the lights to work if we don't have time to make a depth mask for every room.
+        """
+        radius = self.light_position_radius_array[index][3]
+        self.light_position_radius_array[index] = (x, y, z, radius)
+
+    def set_light_radius(self, index: int, radius: float):
+        """Set the radius of a light.
+
+        Args:
+            index (int): the index of a light to modify. 0-5 because we have 6 lights defined by the shader.
+            radius (float): radius of a light, in relation to the window height. set to 0 to disable.
+        """
+        x = self.light_position_radius_array[index][0]
+        y = self.light_position_radius_array[index][1]
+        z = self.light_position_radius_array[index][2]
+        self.light_position_radius_array[index] = (x, y, z, radius)
+
+    def set_light_flicker_intensity(self, index: int, flicker: float = 0.25):
+        """Set the flicker amount of a light, which is a random modifier to the light's intensity. Intended to be used for flames.
+
+        Args:
+            index (int): the index of a light to modify. 0-5 because we have 6 lights defined by the shader.
+            flicker (float): influence the flicker has over the intensity, higher numbers are more erratic.
+        """
+        self.light_flicker_intensity_array[index] = flicker
+
+    def set_light_color_intensity(self, index: int, color: tuple = DEFAULT_POINT_LIGHT_COLOR, intensity: float = 1):
+        """Set the color and intensity of a light.
+
+        Args:
+            index (int): the index of a light to modify. 0-5 because we have 6 lights defined by the shader.
+            color (tuple): color of a light, the shader adds this color to the base lit surface.
+            intensity (float): intensity of a light, multiplies the color by this before it's added to the lit surface.
+        """
+        self.light_color_intensity_array[index] = (color[0], color[1], color[2], intensity)
 
     # draw a surface to the the unlit surface
     def blit_to_unlit(self, surf: pg.Surface, rect: pg.Rect):
@@ -400,7 +449,9 @@ class GLRenderer:
     def reset_lit_to_defaults(self):
         # self.set_light_size(0.5)
         # self.set_intensity(1)
-        # self.set_light_position(0.5, 0.2)
+        self.set_light_position(0, 0.5, 0.2, self.light_z)
+        for i in range(6):
+            self.set_light_radius(i, 0)
         # self.set_light_mode(self.LIGHT_MODE_POINT)
         # self.set_pixel_per_sample(1)
         # self.set_sample_count(128)
