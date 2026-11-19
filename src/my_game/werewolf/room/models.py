@@ -325,6 +325,11 @@ class Prop:
         rect = self.sprite.get_rect(topleft=self.position)
         renderer(self.sprite, rect)
 
+    def get_inventory_sprite(self) -> pg.Surface:
+        """Return the sprite used for the inventory."""
+        # TODO: Implement inventory-specific sprite handling if needed.
+        return self.sprite
+
 
 @dataclass
 class Room:
