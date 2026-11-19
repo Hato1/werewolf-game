@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pygame as pg
 
+from my_game.core.renderer import Renderer
+from my_game.werewolf.room.models import Prop
+
 if __import__("sys").platform == "emscripten":
     from platform import window  # type: ignore[attr-defined]
 
@@ -17,9 +20,9 @@ from my_game.werewolf.inputs import Action
 logger = get_logger(__name__)
 
 DATA_FILE = Path("data.json")
+WEB_DATA_LOCATION = "beast_of_temerev_player_data"
 PORTRAIT_SIZE = (70, 110)
-INVENTORY_SLOTS = 10
-INVENTORY_BUTTON_SIZE = (70, 70)
+# INVENTORY_SLOTS = 10
 UI_OFFSET = 5
 UI_SIZE = (SCREEN_SIZE[0], 125)
 UI_POSITION = (0, SCREEN_SIZE[1] - UI_SIZE[1])
@@ -41,6 +44,73 @@ class PlayerInventory:
     item_active: bool
 
 
+class Inventory:
+    """Stores and manages the player's inventory."""
+
+    # Placement of inventory slots/buttons.
+    BUTTON_COLOR = pg.Color("saddlebrown")
+    BUTTON_SIZE = pg.Vector2(70, 70)
+    OFFSET_X = PORTRAIT_SIZE[0] + UI_OFFSET * 2
+    OFFSET_Y = UI_OFFSET
+
+    def __init__(self) -> None:
+        self.inventory: list[Prop] = []
+        self.selected: Prop | None = None
+        self.visible = True
+
+        button_background = pg.Surface(self.BUTTON_SIZE)
+        button_background.fill(self.BUTTON_COLOR)
+        self.button_background = button_background
+
+    def add_item(self, item: Prop) -> None:
+        self.inventory.append(item)
+
+    def remove_item(self, item: Prop) -> None:
+        if item in self.inventory:
+            self.inventory.remove(item)
+
+    def get_selected_item(self) -> Prop | None:
+        return self.selected
+
+    def clear_selection(self) -> None:
+        self.selected = None
+
+    def get_rect(self, slot: int) -> pg.Rect:
+        return pg.Rect(
+            UI_POSITION[0] + self.OFFSET_X + slot * (self.BUTTON_SIZE.x + UI_OFFSET),
+            UI_POSITION[1] + self.OFFSET_Y,
+            self.BUTTON_SIZE.x,
+            self.BUTTON_SIZE.y,
+        )
+
+    def handle_mouse(self, pos: tuple[int, int]) -> None:
+        if not self.visible:
+            return
+        for i, item in enumerate(self.inventory):
+            if self.get_rect(i).collidepoint(pos):
+                logger.info("Inventory item clicked", item=item.name)
+                self.selected = item
+
+    def draw(self, renderer: Renderer) -> None:
+        # TODO: Do we want to draw empty inventory slots?
+        if not self.visible:
+            return
+        for slot, item in enumerate(self.inventory):
+            background_rect = self.get_rect(slot)
+            renderer(self.button_background, background_rect, unlit=True)
+            sprite = item.get_inventory_sprite()
+            image_rect = sprite.get_rect(center=background_rect.center)
+            renderer(sprite, image_rect, unlit=True)
+
+    # Convert the inventory to a JSON string for saving
+    # These methods should probably be part of Prop instead of here.
+    def to_json(self) -> str:
+        return json.dumps([asdict(item) for item in self.inventory])
+
+    def from_json(self, json_data: str) -> None:
+        self.inventory = [Prop(**item) for item in json.loads(json_data)]
+
+
 class UIPanel:
     """represents the UI and all elements contained within"""
 
@@ -58,18 +128,17 @@ class UIPanel:
 
         self.portrait = PortraitButton()
 
-        self.inventory_buttons: list[InventoryButton] = []
-        for slot in range(INVENTORY_SLOTS):
-            self.inventory_buttons.append(InventoryButton(slot))
+        self.inventory = Inventory()
+
         self.text_panel = TextDisplayPanel()
 
         self.second_portrait = SecondPortrait()
 
-    def draw(self, renderer) -> None:
+    def draw(self, renderer: Renderer) -> None:
         renderer(self.bg_surf, self.bg_rect, unlit=True)
         self.portrait.draw(renderer)
-        for inv_slot in self.inventory_buttons:
-            inv_slot.draw(renderer)
+        if self.inventory.visible:
+            self.inventory.draw(renderer)
         self.text_panel.draw(renderer)
         self.second_portrait.draw(renderer)
 
@@ -85,20 +154,11 @@ class UIPanel:
                 self.text_panel.toggle_display()
             else:
                 """check each inventory slot for mouse click"""
-                for inv_slot in self.inventory_buttons:
-                    """buttons can be disabled independent of the panel being visible, so we need to check for both"""
-                    if inv_slot.button_enabled and not self.text_panel.visible:
-                        if inv_slot.get_rect().collidepoint(event.pos):
-                            if inv_func is not None:
-                                inv_func()
-                            else:
-                                logger.info(f"Inventory button {inv_slot.get_slot_number()} clicked")
+                if self.inventory.visible:
+                    self.inventory.handle_mouse(event.pos)
 
     def save_inventory(self) -> None:
-        button_list = []
-        for sel in self.inventory_buttons:
-            button_list.append(asdict(sel.save_item()))
-        json_player_data = json.dumps(button_list)
+        json_player_data = self.inventory.to_json()
 
         if sys.platform != "emscripten":
             with DATA_FILE.open("w") as player_data:
@@ -107,36 +167,31 @@ class UIPanel:
             window.localStorage.setItem("beast_of_temerev_player_data", json_player_data)
 
     def load_inventory(self) -> None:
-        saved_player_data = []
-
-        if sys.platform != "emscripten":
-            try:
-                with DATA_FILE.open("r") as player_data:
-                    try:
-                        saved_player_data = json.loads(player_data.read())
-                    except json.JSONDecodeError:
-                        pass
-            except FileNotFoundError:
-                pass
+        if sys.platform == "emscripten":
+            if player_data := window.localStorage.getItem(WEB_DATA_LOCATION):
+                inventory_json = player_data
+            else:
+                logger.warning("Could not find inventory data in localStorage.")
+                return
         else:
             try:
-                player_data = window.localStorage.getItem("beast_of_temerev_player_data")
-                if player_data:
-                    saved_player_data = json.loads(player_data)
-            finally:
-                pass
+                with DATA_FILE.open("r") as player_data:
+                    inventory_json = player_data.read()
+            except FileNotFoundError:
+                logger.warning("Failed to load inventory, file not found.")
+                return
 
-        """leverage the add_item function to add items to the inventory based on loaded data"""
-        for item in saved_player_data:
-            for button in self.inventory_buttons:
-                if button.inventory_slot == item["inv_slot"]:
-                    button.add_item(item["item_name"])
+        self.inventory.from_json(inventory_json)
 
     """allow developers to enable/disable inventory wholesale, when needed"""
 
-    def set_inventory_enabled(self, inv_enabled) -> None:
-        for button in self.inventory_buttons:
-            button.set_button_enabled(inv_enabled)
+    def toggle_inventory(self, *, active: bool | None = None) -> None:
+        """Set inventory visibility and interactibility.
+
+        Args:
+            active (bool | None): If True, show inventory. If False, hide inventory. If None, toggle current state.
+        """
+        self.inventory.visible = active if active else not self.inventory.visible
 
 
 class PortraitButton:
@@ -145,7 +200,9 @@ class PortraitButton:
     def __init__(self):
         self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
         self.portrait_surf.fill("#b2972a")
-        self.portrait_rect = pg.Rect(UI_POSITION[0] + 5, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1])
+        self.portrait_rect = pg.Rect(
+            UI_POSITION[0] + UI_OFFSET, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1]
+        )
 
         self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_1.load(), 1.1)
         self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
@@ -177,98 +234,6 @@ class SecondPortrait:
     def draw(self, renderer) -> None:
         renderer(self.portrait_surf, self.portrait_rect, unlit=True)
         renderer(self.sprite, self.sprite_rect, unlit=True)
-
-
-class InventoryButton:
-    """represents the inventory button"""
-
-    def __init__(self, inventory_slot: int, item_image=None) -> None:
-        self.inventory_slot = inventory_slot
-        self.item_name: str = "Empty"
-
-        """x position accounts for portrait position, all buttons that precede the current one, and their margins"""
-        self.xpos = (
-            UI_POSITION[0]
-            + (7 * UI_OFFSET)
-            + PORTRAIT_SIZE[0]
-            + (self.inventory_slot * (INVENTORY_BUTTON_SIZE[0] + UI_OFFSET))
-        )
-
-        self.inv_surf = pg.Surface(INVENTORY_BUTTON_SIZE)
-        self.inv_surf.fill("saddlebrown")
-        self.inv_rect = pg.Rect(
-            self.xpos, UI_POSITION[1] + UI_OFFSET, INVENTORY_BUTTON_SIZE[0], INVENTORY_BUTTON_SIZE[1]
-        )
-        # self.inv_surf.get_rect(bottomleft=(self.xpos, SCREEN_SIZE[1] - INVENTORY_BUTTON_SIZE[1])))
-
-        self.item_image = item_image
-
-        """Confirmed that images can work when displayed in inventory. We will load images when loading data from save file"""
-        if self.item_image is not None:
-            self.sprite: pg.Surface = pg.transform.smoothscale(self.item_image, self.item_image.size)
-            self.sprite_rect = self.sprite.get_rect(center=self.inv_rect.center)
-
-        self.selected = False
-        self.item_active = False
-
-        self.button_enabled: bool = True
-
-    """toggle and set functions to enable/disable buttons. The latter is for when we want to enable/disable buttons en-masse"""
-
-    def toggle_button_enabled(self) -> None:
-        self.button_enabled = not self.button_enabled
-
-    def set_button_enabled(self, button_enabled) -> None:
-        self.button_enabled = button_enabled
-
-    def get_slot_number(self) -> str:
-        return f"{self.inventory_slot}"
-
-    def set_slot_number(self, slot_number: int) -> None:
-        self.inventory_slot = slot_number
-
-    def get_item(self) -> str:
-        return f"{self.item_name}"
-
-    def get_rect(self) -> pg.Rect:
-        return self.inv_rect
-
-    def draw(self, renderer) -> None:
-        renderer(self.inv_surf, self.inv_rect, unlit=True)
-        if self.item_image is not None:
-            renderer(self.sprite, self.sprite_rect, unlit=True)
-
-    """used for adding/updating inventory slot"""
-
-    def add_item(self, item_name: Images) -> None:
-        self.item_name = item_name
-        self.item_image = item_name.load()
-
-        self.sprite = pg.transform.smoothscale(self.item_image, self.item_image.size)
-        self.sprite_rect = self.sprite.get_rect(center=self.inv_rect.center)
-
-        self.save_item()
-
-    """Used for removing an item when a player is done with it"""
-
-    def remove_item(self) -> None:
-        self.item_name = "EMPTY"
-        self.item_image = None
-        self.save_item()
-
-    """control whether item is active, based on input"""
-
-    def use_item(self) -> None:
-        self.item_active = True
-
-    def stow_item(self) -> None:
-        self.item_active = False
-
-    def save_item(self):
-        if self.item_name != "EMPTY" and self.item_name is not None:
-            return PlayerInventory(self.inventory_slot, self.item_name, item_active=self.item_active)
-        else:
-            return PlayerInventory(self.inventory_slot, "EMPTY", item_active=False)
 
 
 class TextDisplayPanel:
