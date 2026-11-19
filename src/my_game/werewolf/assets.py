@@ -60,11 +60,6 @@ class Images(StrEnum):
     def load(self) -> pg.Surface:
         return load_image(IMAGES_PATH / self.value)
 
-    @cache
-    def load_custom(self, file_name) -> pg.Surface:
-        logger.error(f"Debug image loader called with file_name: {file_name}")
-        return load_image(IMAGES_PATH / file_name)
-
 
 @unique
 class Sounds(Enum):
