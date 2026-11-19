@@ -189,15 +189,23 @@ class GLRenderer:
         # self.program["mask"] = 1
         self.program["normals"] = 2
         # self.program["ignore_mask"] = True
-        mouse_position_on_screen = (
-            (pg.mouse.get_pos()[0] / self.lit_surface.size[0]),
-            (pg.mouse.get_pos()[1] / self.lit_surface.size[1]),
-        )
-        self.program["light_position"] = (mouse_position_on_screen[0], mouse_position_on_screen[1], self.light_z)
+        # mouse_position_on_screen = (
+        #    (pg.mouse.get_pos()[0] / self.lit_surface.size[0]),
+        #    (pg.mouse.get_pos()[1] / self.lit_surface.size[1]),
+        # )
+        # self.program["light_position"] = (mouse_position_on_screen[0], mouse_position_on_screen[1], self.light_z)
         self.program["screen_size"] = [
             1 / (self.lit_surface.size[0] * self.RENDER_SCALE[0]),
             1 / (self.lit_surface.size[1] * self.RENDER_SCALE[1]),
         ]
+        # these arrays need to be populated otherwise the shader breaks!
+        p_r = [(0.5, 0.5, 0.5, 1.0)]  # position(x,y,z) and radius
+        c_i = [(1.0, 0.75, 0.45, 1.0)]  # color(r,g,b) and intensity (can be higher than 1)
+        for i in range(5):
+            p_r.append((0.1 * i, 0.1 * i, i * 0.2, 0.2))
+            c_i.append((i * 0.2, i * 0.1, i * 0.05, 1.0))
+        self.program["light_position_radius"] = p_r
+        self.program["light_color_intensity"] = c_i
         # self.program['time'] = self.time
         # render it
         self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
@@ -390,13 +398,14 @@ class GLRenderer:
 
     # reset the lit material to default values
     def reset_lit_to_defaults(self):
-        self.set_light_size(0.5)
-        self.set_intensity(1)
-        self.set_light_position(0.5, 0.2)
+        # self.set_light_size(0.5)
+        # self.set_intensity(1)
+        # self.set_light_position(0.5, 0.2)
         # self.set_light_mode(self.LIGHT_MODE_POINT)
         # self.set_pixel_per_sample(1)
         # self.set_sample_count(128)
         # self.set_ignore_distance(do_ignore=False)
+        pass
 
     # scales a surface to fit based on current render scale and window scale
     def resize_surface_to_fit(self, surf: pg.Surface):
