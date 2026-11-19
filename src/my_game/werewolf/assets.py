@@ -196,7 +196,6 @@ class Images(StrEnum):
         logger.error(f"Debug image loader called with file_name: {file_name}")
         return load_image(IMAGES_PATH / file_name)
 
-
 @unique
 class Sounds(Enum):
     @cache

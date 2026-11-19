@@ -82,11 +82,12 @@ BACKGROUND_WOODS = PropData(
 
 GRAVEYARD_CHAINS = PropData(
     name="Graveyard Chains",
-    description="An interactable set of graveyard chains.",
+    description="Ponderously heavy iron chains",
     image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
     position=(300, 150),
     scale=1,
     clickable=True,
     depth=500,
     walk_to_interact=True,
+    pickup_on_click=True,
 )
