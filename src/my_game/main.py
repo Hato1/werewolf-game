@@ -59,8 +59,6 @@ async def main():
     # Initialization
     pg.init()
 
-
-
     if OPENGL:
         # Set OpenGL context attributes for Pygame before creating the window.
         # Without this the OpenGL context may not be created with the desired version and profile.
