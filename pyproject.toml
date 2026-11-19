@@ -26,6 +26,7 @@ dev = [
 
 [project.scripts]
 run-game = "my_game.main:run"
+room-editor = "my_game.werewolf.room_editor:run"
 
 # Including this to install project files into venv.
 [build-system]
