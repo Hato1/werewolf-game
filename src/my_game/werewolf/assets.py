@@ -7,6 +7,9 @@ from importlib.resources import files
 import pygame as pg
 
 from my_game.core.asset_manager import load_font, load_image, load_sound, read_text
+from my_game.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 ASSETS_PATH = files(__package__) / "assets"
 IMAGES_PATH = ASSETS_PATH / "textures"
@@ -57,6 +60,7 @@ class Images(StrEnum):
 
     @cache
     def load_custom(self, file_name) -> pg.Surface:
+        logger.error(f"Debug image loader called with file_name: {file_name}")
         return load_image(IMAGES_PATH / file_name)
 
 

@@ -10,8 +10,11 @@ if __import__("sys").platform == "emscripten":
     from platform import window  # type: ignore[attr-defined]
 
 from my_game.constants import SCREEN_SIZE
+from my_game.core.logger import get_logger
 from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
+
+logger = get_logger(__name__)
 
 DATA_FILE = Path("data.json")
 PORTRAIT_SIZE = (70, 110)
@@ -77,7 +80,7 @@ class UIPanel:
                 if portrait_func is not None:
                     portrait_func()
                 else:
-                    print("Portrait button clicked")
+                    logger.info("Portrait button clicked")
             elif self.second_portrait.get_rect().collidepoint(event.pos):
                 self.text_panel.toggle_display()
             else:
@@ -89,7 +92,7 @@ class UIPanel:
                             if inv_func is not None:
                                 inv_func()
                             else:
-                                print(f"Inventory button {inv_slot.get_slot_number()} clicked")
+                                logger.info(f"Inventory button {inv_slot.get_slot_number()} clicked")
 
     def save_inventory(self) -> None:
         button_list = []
@@ -237,9 +240,9 @@ class InventoryButton:
 
     """used for adding/updating inventory slot"""
 
-    def add_item(self, item_name: str) -> None:
+    def add_item(self, item_name: Images) -> None:
         self.item_name = item_name
-        self.item_image = Images.load_custom(item_name)
+        self.item_image = item_name.load()
 
         self.sprite = pg.transform.smoothscale(self.item_image, self.item_image.size)
         self.sprite_rect = self.sprite.get_rect(center=self.inv_rect.center)
