@@ -201,7 +201,7 @@ class InventoryButton:
         self.item_image = item_image
 
         """Confirmed that images can work when displayed in inventory. We will load images when loading data from save file"""
-        if item_image is not None:
+        if self.item_image is not None:
             self.sprite: pg.Surface = pg.transform.smoothscale(self.item_image, self.item_image.size)
             self.sprite_rect = self.sprite.get_rect(center=self.inv_rect.center)
 
