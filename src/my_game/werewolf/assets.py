@@ -43,6 +43,8 @@ class Images(StrEnum):
     TEST_UI_BACKGROUND = "ui_test_only.png"
     TEST_SHADER = "shader_test_image.png"
     TEST_SHADER_0 = "shader_test_image_0.png"
+    TEST_CHURCH = "bg_church.png"
+    TEST_CHURCH_NORMALS = "bg_church_normals.png"
 
     @cache
     def load(self) -> pg.Surface:
