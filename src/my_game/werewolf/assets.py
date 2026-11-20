@@ -7,6 +7,9 @@ from importlib.resources import files
 import pygame as pg
 
 from my_game.core.asset_manager import load_font, load_image, load_sound, read_text
+from my_game.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 ASSETS_PATH = files(__package__) / "assets"
 IMAGES_PATH = ASSETS_PATH / "textures"
@@ -45,6 +48,13 @@ class Images(StrEnum):
     TEST_SHADER_0 = "shader_test_image_0.png"
     TEST_CHURCH = "bg_church.png"
     TEST_CHURCH_NORMALS = "bg_church_normals.png"
+
+    # MC Portraits
+    MC_FACE_1 = "mc_face1.png"
+    MC_FACE_2 = "mc_face2.png"
+
+    # Inventory Sprites
+    INV_SHED_HOOK = "interactable_shed_hook.png"
 
     @cache
     def load(self) -> pg.Surface:

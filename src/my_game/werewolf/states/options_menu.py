@@ -216,7 +216,9 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         ]
         if sys.platform != "emscripten":
             self.buttons.append(
-                OptionsMenuButton(Option(self.FONT, "Lighting", "LIGHT"), ToggleButton(self.FONT, status=True, restart=True))
+                OptionsMenuButton(
+                    Option(self.FONT, "Lighting", "LIGHT"), ToggleButton(self.FONT, status=True, restart=True)
+                )
             )
         self.buttons.append(OptionsMenuButton(Option(self.FONT, "Exit", "EXIT"), None))
 
@@ -281,8 +283,9 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
                     button.button.action(None)
 
     def save_quit(self) -> None:
-        if self.buttons[self.button_y].button:
-            self.buttons[self.button_y].button.action(None)
+        button = self.buttons[self.button_y].button
+        if button:
+            button.action(None)
         self.save()
         self.quit = True
 

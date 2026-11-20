@@ -284,6 +284,7 @@ class Prop:
     depth: int
     baseline: int
     walk_to_interact: bool = False
+    pickup_on_click: bool = False
 
     @classmethod
     def from_prop_data(cls, data: PropData) -> Self:
@@ -306,6 +307,7 @@ class Prop:
             data.depth,
             data.baseline,
             data.walk_to_interact,
+            data.pickup_on_click,
         )
         return prop
 
@@ -324,6 +326,11 @@ class Prop:
             return
         rect = self.sprite.get_rect(topleft=self.position)
         renderer(self.sprite, rect)
+
+    def get_inventory_sprite(self) -> pg.Surface:
+        """Return the sprite used for the inventory."""
+        # TODO: Implement inventory-specific sprite handling if needed.
+        return self.sprite
 
 
 @dataclass
