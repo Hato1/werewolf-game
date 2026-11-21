@@ -25,7 +25,7 @@ class Action(Enum):
     DEBUG_ROOM_6 = auto()
     DEBUG_7 = auto()
     DEBUG_8 = auto()
-    DEBUG_9 = auto()
+    DEBUG_ADD_ITEM = auto()
 
     MOUSE_SCROLL = auto()
 
@@ -54,6 +54,7 @@ input_manager.bind(Action.DEBUG_ROOM_3, InputEvent.keyboard(pg.K_3))
 input_manager.bind(Action.DEBUG_ROOM_4, InputEvent.keyboard(pg.K_4))
 input_manager.bind(Action.DEBUG_ROOM_5, InputEvent.keyboard(pg.K_5))
 input_manager.bind(Action.DEBUG_ROOM_6, InputEvent.keyboard(pg.K_6))
+input_manager.bind(Action.DEBUG_ADD_ITEM, InputEvent.keyboard(pg.K_9))
 
 input_manager.bind(Action.MOUSE_SCROLL, InputEvent.mouse_button(pg.MOUSEWHEEL))
 

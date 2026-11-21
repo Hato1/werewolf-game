@@ -18,6 +18,7 @@ from my_game.werewolf.room.characters import PLAYER
 from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Player, Prop, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
+from my_game.werewolf.ui.player_ui import UIPanel
 
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
@@ -35,6 +36,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_surface: pg.Surface | None = None
         self.message_expires_at = 0
         self.player = Player.from_character_data(PLAYER)
+        self.ui = UIPanel()
 
     def change_room(self, room: RoomData) -> None:
         self.player.cancel_walk()
@@ -53,16 +55,22 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         else:
             self.show_message(prop.description)
 
+    def handle_mouse_select(self, pos: tuple[int, int]) -> None:
+        prop = self.room.get_clicked_prop(pos)
+        self.player.cancel_walk()
+        if prop is None:
+            return
+        if prop.walk_to_interact:
+            self.player.walk_to(prop.rect, lambda: self.on_prop_clicked(prop))
+        else:
+            self.on_prop_clicked(prop)
+
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
+        """Can also have custom functions passed in, if we want to do that later for some reason"""
+        self.ui.handle_mouse(actions, event)
+
         if Action.MOUSE_SELECT in actions:
-            prop = self.room.get_clicked_prop(event.pos)
-            self.player.cancel_walk()
-            if prop is None:
-                return
-            if prop.walk_to_interact:
-                self.player.walk_to(prop.rect, lambda: self.on_prop_clicked(prop))
-            else:
-                self.on_prop_clicked(prop)
+            self.handle_mouse_select(event.pos)
         elif Action.DEBUG_ROOM_1 in actions:
             self.change_room(rooms.CHURCH_CEMETARY)
         elif Action.DEBUG_ROOM_2 in actions:
@@ -75,6 +83,10 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             self.change_room(rooms.TOWN_HALL)
         elif Action.DEBUG_ROOM_6 in actions:
             self.change_room(rooms.WOODS)
+        elif Action.DEBUG_ADD_ITEM in actions:
+            # Example: Add a test item to the inventory
+            test_prop = Prop.from_prop_data(props.GRAVEYARD_CHAINS)
+            self.ui.inventory.add_item(test_prop)
 
     def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
         self.player.update(surface_rect, dt, input_state)
@@ -85,6 +97,8 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def draw(self, renderer: Renderer, dt: float) -> None:
         self.room.draw(renderer)
         self.player.draw(renderer)
+        # Render UI before message so messages can appear in text area, rather than behind it
+        self.ui.draw(renderer)
         if self.message_surface is not None:
             message_rect = self.message_surface.get_rect(
                 midbottom=(renderer.rect.centerx, renderer.rect.bottom - self.MESSAGE_DISPLAY_OFFSET)
