@@ -170,6 +170,24 @@ class Character:
         )
         return character
 
+    def to_dict(self) -> dict:
+        """Convert the character to its dictionary representation for use in save file"""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "position": self.position,
+            "facing_left": self.facing_left,
+            "idle_frames": self.idle_frames,
+            "walk_frames": self.walk_frames,
+            "speed": self.speed,
+            "path": self.path,
+            "loop": self.loop,
+            "path_index": self.path_index,
+            "walking": self.walking,
+            "frame_index": self.frame_index,
+            "frame_time": self.frame_time,
+        }
+
     @property
     def frames(self) -> list[pg.Surface]:
         return self.walk_frames if self.walking else self.idle_frames
@@ -351,6 +369,28 @@ class NamedPoint:
     def from_point_data(cls, data: NamedPointData) -> Self:
         return cls(data.name, data.position)
 
+    def to_dict(self) -> dict:
+        """Convert to a dict representation."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "sprite": self.sprite,
+            "position": self.position,
+            "visible": self.visible,
+            "clickable": self.clickable,
+            "hotspot": self.hotspot,
+            "scale": self.scale,
+            "size": self.size,
+            "parallax": self.parallax,
+            "depth": self.depth,
+            "baseline": self.baseline,
+            "walk_to_interact": self.walk_to_interact,
+            "pickup_on_click": self.pickup_on_click,
+        }
+
+    @property
+    def rect(self) -> pg.Rect:
+        return self.sprite.get_rect(topleft=self.position)
 
 @dataclass
 class Room:
@@ -394,6 +434,19 @@ class Room:
         )
         cls.registry[data] = room
         return room
+
+    def to_dict(self) -> dict:
+        """Room contains characters and props."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "props": [prop.to_dict() for prop in self.props],
+            "hotspots": self.hotspots,
+            "characters": [char.to_dict() for char in self.characters],
+            "regions": self.regions,
+            "points": self.points,
+            "walkable_areas": self.walkable_areas,
+        }
 
     def update(self, dt: float, input_state: InputState) -> None:
         """Advance the room's characters."""
