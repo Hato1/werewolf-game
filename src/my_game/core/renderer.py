@@ -93,24 +93,40 @@ class Renderer:
         screen = pg.display.set_mode(scaled_screen_size, self.options)
         return screen
 
-    def set_scale_factor(self, scale_factor: int) -> None:
+    def toggle_fullscreen(self) -> None:
+        """Toggle fullscreen mode."""
+        self.fullscreen = not self.fullscreen
+        if self.fullscreen:
+            self.options |= pg.FULLSCREEN
+            new_scale_factor = get_available_scales()[-1]
+        else:
+            self.options &= ~pg.FULLSCREEN
+            new_scale_factor = self.windowed_scale_factor
+        self.set_scale_factor(new_scale_factor, entering_fullscreen=self.fullscreen)
+
+    def set_scale_factor(self, scale_factor: int, *, entering_fullscreen: bool = False) -> None:
         """Change the resolution scale and recreate the screen.
 
         Args:
             scale_factor: New scale factor for resolution.
         """
-        if not self.fullscreen:
+        if not entering_fullscreen:
             self.windowed_scale_factor = scale_factor
-            self.scale_factor = scale_factor
-            new_width = SCREEN_SIZE[0] * scale_factor
-            new_height = SCREEN_SIZE[1] * scale_factor
-            self.screen = self.make_screen()
-            self.input_manager.set_screen_scale_factor(scale_factor)
-            if self.gl_renderer is not None:
-                # Recreate GLRenderer and set viewport to known size
-                self.gl_renderer = GLRenderer()
-                # Explicitly set viewport with calculated dimensions
-                self.gl_renderer.ctx.viewport = (0, 0, new_width, new_height)
+
+            if self.fullscreen:
+                logger.warning("Cannot change windowed scale factor while in fullscreen mode.")
+                return
+
+        self.scale_factor = scale_factor
+        new_width = SCREEN_SIZE[0] * scale_factor
+        new_height = SCREEN_SIZE[1] * scale_factor
+        self.screen = self.make_screen()
+        self.input_manager.set_screen_scale_factor(scale_factor)
+        if self.gl_renderer is not None:
+            # Recreate GLRenderer and set viewport to known size
+            self.gl_renderer = GLRenderer()
+            # Explicitly set viewport with calculated dimensions
+            self.gl_renderer.ctx.viewport = (0, 0, new_width, new_height)
 
     def fill(self, color: pg.Color | str) -> None:
         self.surface.fill(color)

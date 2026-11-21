@@ -17,11 +17,6 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 logger = get_logger(__name__)
 
 
-def on_fullscreen_change(_value) -> None:
-    """Toggle fullscreen mode."""
-    pg.display.toggle_fullscreen()
-
-
 class ExitButton:
     """Represents an exit button in the options menu."""
 
@@ -220,7 +215,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         self.add_button("music")
         self.add_button("sound effects")
         if sys.platform != "emscripten":
-            self.add_button("fullscreen", callback=on_fullscreen_change)
+            self.add_button("fullscreen", callback=self._on_fullscreen_change)
             self.add_button("resolution scale", get_available_scales(), callback=self._on_resolution_scale_change)
             self.add_button("lighting", restart_needed=True)
         self.buttons.append(ExitButton())
@@ -236,6 +231,11 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         """Store references for immediate setting changes."""
         super().enter(transition_data, renderer)
         self.renderer = renderer
+
+    def _on_fullscreen_change(self, value) -> None:
+        """Toggle fullscreen mode immediately."""
+        if self.renderer is not None:
+            self.renderer.toggle_fullscreen()
 
     def _on_resolution_scale_change(self, value: int) -> None:
         """Apply resolution scale change immediately."""
