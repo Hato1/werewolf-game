@@ -138,6 +138,8 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self,
         registry: StateRegistry[StateKey, Payload],
         input_manager: InputManager,
+        *,
+        force_cpu_renderer: bool = False,
     ):
         """Initialize the manager from a state's registry."""
 
@@ -151,7 +153,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.transition_data_factory = registry.transition_data_factory
         self.renderer = Renderer(
             input_manager=self.input_manager,
-            open_gl=settings.lighting,
+            open_gl=settings.lighting and not force_cpu_renderer,
             scale_factor=settings.resolution_scale,
             fullscreen=settings.fullscreen,
         )

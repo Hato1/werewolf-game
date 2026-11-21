@@ -50,7 +50,7 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         StateKey.ALPHA,
         TestTransitionData,
     )
-    manager = StateManager(registry, InputManager(Enum))
+    manager = StateManager(registry, InputManager(Enum), force_cpu_renderer=True)
 
     alpha = manager.current_state
     alpha.done = True
@@ -100,6 +100,7 @@ def test_state_manager_passes_held_actions_to_update(monkeypatch) -> None:
     manager = StateManager(
         StateRegistry({StateKey.TEST: TestState}, StateKey.TEST, TestTransitionData),
         input_manager,
+        force_cpu_renderer=True,
     )
     monkeypatch.setattr(
         pg.event,
