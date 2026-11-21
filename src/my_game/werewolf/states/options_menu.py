@@ -66,6 +66,11 @@ def suggest_resolution_scale():
     return scales[-1]
 
 
+def on_fullscreen_change(_value) -> None:
+    """Toggle fullscreen mode."""
+    pg.display.toggle_fullscreen()
+
+
 class ExitButton:
     """Represents an exit button in the options menu."""
 
@@ -96,8 +101,10 @@ class SelectorButton:
 
     FONT = Fonts.PICO8.load(MENU_FONT_SIZE)
     MENU_BUTTON_OPTION_X = 400 // 2
+    FONT_COLOR = pg.Color("white")
+    FONT_HIGHLIGHT_COLOR = pg.Color("yellow")
 
-    def __init__(self, name: str, *, options: Sequence[str | int], restart=False):
+    def __init__(self, name: str, *, options: Sequence[str | int], restart=False, callback: Callable | None = None):
         self.pos_key = (0, 0)
         self.pos_value = (self.MENU_BUTTON_OPTION_X, 0)
 
@@ -105,6 +112,7 @@ class SelectorButton:
         self.options = options
         self.selected_index: int = 0
         self.restart = restart
+        self.callback = callback
 
         # Mouseclick hitboxes. Keep these updated as text changes.
         self.key_rect: pg.Rect = pg.Rect()
@@ -119,21 +127,24 @@ class SelectorButton:
         """Get the current selected value."""
         return self.options[self.selected_index]
 
-    def cycle_next(self, restart_func: Callable | None) -> None:
-        """Move to the next option."""
-        self.selected_index = (self.selected_index + 1) % len(self.options)
+    def cycle(self, n: int, restart_func: Callable | None = None) -> None:
+        self.selected_index = (self.selected_index + n) % len(self.options)
+        if self.callback:
+            self.callback(self.value)
         if self.restart and restart_func:
             restart_func()
+
+    def cycle_next(self, restart_func: Callable | None) -> None:
+        """Move to the next option."""
+        self.cycle(1, restart_func)
 
     def cycle_prev(self, restart_func: Callable | None) -> None:
         """Move to the previous option."""
-        self.selected_index = (self.selected_index - 1) % len(self.options)
-        if self.restart and restart_func:
-            restart_func()
+        self.cycle(-1, restart_func)
 
     def draw_key(self, renderer: Renderer, *, color: pg.Color) -> None:
         draw_pos = self.pos_key
-        if color == pg.Color("yellow"):
+        if color == self.FONT_HIGHLIGHT_COLOR:
             draw_pos = self.pos_key[0] + 25, self.pos_key[1]
 
         surf = self.FONT.render(self.name, MENU_ANTI_ALIAS, color)
@@ -147,7 +158,7 @@ class SelectorButton:
         renderer(surf, self.value_rect, unlit=True)
 
     def draw(self, renderer: Renderer, *, selected: bool) -> None:
-        color = pg.Color("yellow") if selected else pg.Color("white")
+        color = self.FONT_HIGHLIGHT_COLOR if selected else self.FONT_COLOR
         self.draw_key(renderer, color=color)
         self.draw_value(renderer, color=color)
 
@@ -312,7 +323,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         self.add_button("music")
         self.add_button("sound effects")
         if sys.platform != "emscripten":
-            self.add_button("fullscreen", restart_needed=True)
+            self.add_button("fullscreen", callback=on_fullscreen_change)
             self.add_button("resolution scale", get_available_scales(), restart_needed=True)
             self.add_button("lighting", restart_needed=True)
         self.buttons.append(ExitButton())
@@ -325,9 +336,14 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         self.restart_submenu: RestartSubMenu | None = None
 
     def add_button(
-        self, text: str, options: Sequence[str | int] = ("off", "on"), *, restart_needed: bool = False
+        self,
+        text: str,
+        options: Sequence[str | int] = ("off", "on"),
+        *,
+        restart_needed: bool = False,
+        callback: Callable | None = None,
     ) -> None:
-        button = SelectorButton(text, options=options, restart=restart_needed)
+        button = SelectorButton(text, options=options, restart=restart_needed, callback=callback)
         self.buttons.append(button)
 
     @property
@@ -384,7 +400,6 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
 
         if Action.DOWN in actions:
             self.next_button()
-            pg.display.toggle_fullscreen()
 
         elif Action.RIGHT in actions:
             if isinstance(button, SelectorButton):
