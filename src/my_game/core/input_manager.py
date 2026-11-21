@@ -122,7 +122,7 @@ class InputManager[Action: Enum]:
 
     AXIS_DEADZONE = 0.2
 
-    def __init__(self, actions: type[Action]) -> None:
+    def __init__(self, actions: type[Action], *, screen_scale_factor: int = 1) -> None:
         """Initialize the InputManager with a set of actions.
 
         The actions arg is not used, but it is included for type checking and documentation purposes.
@@ -130,12 +130,18 @@ class InputManager[Action: Enum]:
         Args:
             actions (type[Action]): The Enum of possible actions that can be bound to inputs.
         """
+        # This is used to scale mouse input coordinates according to the screen resolution.
+        self.screen_scale_factor = screen_scale_factor
         self.bindings: defaultdict[InputEvent, set[Action]] = defaultdict(set)
         self.held_inputs: set[InputEvent] = set()
         self.axis_values: dict[int, float] = {}
         # Can leave this empty for now as pygame sends CONTROLLERDEVICEADDED events
         # for all connected controllers at start of program.
         self.controllers: dict[int, Controller] = {}
+
+    def set_screen_scale_factor(self, scale_factor: int) -> None:
+        """Set the screen scale factor for mouse input."""
+        self.screen_scale_factor = scale_factor
 
     def bind(
         self,
@@ -277,3 +283,9 @@ class InputManager[Action: Enum]:
                 input_event = InputEvent.mouse_motion(event.pos)
 
         return self.get_bound_actions(input_event) if input_event else set()
+
+    def fix_mouse_coordinates(self, event: pg.Event) -> pg.Event:
+        """Scale mouse coordinates according to the screen resolution."""
+        if event.type in (pg.MOUSEMOTION, pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP):
+            event.pos = (event.pos[0] // self.screen_scale_factor, event.pos[1] // self.screen_scale_factor)
+        return event

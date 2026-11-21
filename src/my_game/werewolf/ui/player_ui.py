@@ -21,10 +21,10 @@ logger = get_logger(__name__)
 
 DATA_FILE = Path("data.json")
 WEB_DATA_LOCATION = "beast_of_temerev_player_data"
-PORTRAIT_SIZE = (70, 110)
+PORTRAIT_SIZE = (70 // 2, 110 // 2)
 # INVENTORY_SLOTS = 10
-UI_OFFSET = 5
-UI_SIZE = (SCREEN_SIZE[0], 125)
+UI_OFFSET = 5 // 2
+UI_SIZE = (SCREEN_SIZE[0], 125 // 2)
 UI_POSITION = (0, SCREEN_SIZE[1] - UI_SIZE[1])
 UI_RECT = pg.Rect(UI_POSITION[0], UI_POSITION[1], UI_SIZE[0], UI_SIZE[1])
 
@@ -49,16 +49,20 @@ class Inventory:
 
     # Placement of inventory slots/buttons.
     BUTTON_COLOR = pg.Color("saddlebrown")
-    BUTTON_SIZE = pg.Vector2(70, 70)
-    OFFSET_X = PORTRAIT_SIZE[0] + UI_OFFSET * 2
     OFFSET_Y = UI_OFFSET
 
-    def __init__(self) -> None:
+    def __init__(self, width: int) -> None:
+        self.width = width
+        buffer = UI_OFFSET
+        max_inventory_slots = 10
+        button_size = (width - (max_inventory_slots - 1) * buffer) // max_inventory_slots
+        self.button_size = pg.Vector2(button_size, button_size)
+
         self.inventory: list[Prop] = []
         self.selected: Prop | None = None
         self.visible = True
 
-        button_background = pg.Surface(self.BUTTON_SIZE)
+        button_background = pg.Surface(self.button_size)
         button_background.fill(self.BUTTON_COLOR)
         self.button_background = button_background
 
@@ -76,11 +80,17 @@ class Inventory:
         self.selected = None
 
     def get_rect(self, slot: int) -> pg.Rect:
+        """Get the rect for an inventory slot, centered on screen."""
+        # Calculate total width of all inventory items plus spacing
+        total_width = len(self.inventory) * self.button_size.x + (len(self.inventory) - 1) * UI_OFFSET
+        # Calculate starting x position to center the inventory
+        start_x = (SCREEN_SIZE[0] - total_width) / 2
+
         return pg.Rect(
-            UI_POSITION[0] + self.OFFSET_X + slot * (self.BUTTON_SIZE.x + UI_OFFSET),
+            int(start_x) + slot * (self.button_size.x + UI_OFFSET),
             UI_POSITION[1] + self.OFFSET_Y,
-            self.BUTTON_SIZE.x,
-            self.BUTTON_SIZE.y,
+            self.button_size.x,
+            self.button_size.y,
         )
 
     def handle_mouse(self, pos: tuple[int, int]) -> None:
@@ -126,19 +136,19 @@ class UIPanel:
         self.bg_surf.fill(pg.Color("#1D0900"))
         self.bg_rect = UI_RECT
 
+        # Screen width is 480.
+        # Portrait is 65 = 59 + 4 border + 2 buffer
+        # With two portraits we're left with 480 - 2 * 63 = 350 pixels for the inventory and spacing.
         self.portrait = PortraitButton()
-
-        self.inventory = Inventory()
-
-        self.text_panel = TextDisplayPanel()
-
+        self.inventory = Inventory(width=350)
+        self.text_panel = TextDisplayPanel(width=354)
         self.second_portrait = SecondPortrait()
 
     def draw(self, renderer: Renderer) -> None:
         renderer(self.bg_surf, self.bg_rect, unlit=True)
-        self.portrait.draw(renderer)
         if self.inventory.visible:
             self.inventory.draw(renderer)
+        self.portrait.draw(renderer)
         self.text_panel.draw(renderer)
         self.second_portrait.draw(renderer)
 
@@ -198,13 +208,15 @@ class PortraitButton:
     """represents the portrait button"""
 
     def __init__(self):
-        self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
-        self.portrait_surf.fill("#b2972a")
-        self.portrait_rect = pg.Rect(
-            UI_POSITION[0] + UI_OFFSET, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1]
-        )
+        self.sprite: pg.Surface = Images.MC_FACE_1.load()
+        width, height = self.sprite.get_size()
 
-        self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_1.load(), 1.1)
+        buffer = 4
+        self.portrait_surf = pg.Surface((width + buffer, height + buffer))
+        self.portrait_surf.fill("#b2972a")
+
+        x, y = UI_POSITION[0], SCREEN_SIZE[1] - buffer - height
+        self.portrait_rect = self.portrait_surf.get_rect(topleft=(x, y))
         self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
 
     def get_rect(self) -> pg.Rect:
@@ -218,13 +230,15 @@ class PortraitButton:
 
 class SecondPortrait:
     def __init__(self):
-        self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
+        self.sprite: pg.Surface = Images.MC_FACE_2.load()
+        width, height = self.sprite.get_size()
+
+        buffer = 4
+        self.portrait_surf = pg.Surface((width + buffer, height + buffer))
         self.portrait_surf.fill("#b2972a")
 
-        self.xpos = UI_SIZE[0] - UI_OFFSET - PORTRAIT_SIZE[0]
-        self.portrait_rect = pg.Rect(self.xpos, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1])
-
-        self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_2.load(), 1.1)
+        x, y = SCREEN_SIZE[0] - buffer - width, SCREEN_SIZE[1] - buffer - height
+        self.portrait_rect = self.portrait_surf.get_rect(topleft=(x, y))
         self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
 
     def get_rect(self) -> pg.Rect:
@@ -237,17 +251,17 @@ class SecondPortrait:
 
 
 class TextDisplayPanel:
-    def __init__(self) -> None:
-        self.xpos = UI_POSITION[0] + PORTRAIT_SIZE[0] + (3 * UI_OFFSET)
-        self.ypos = UI_POSITION[1] - 50
-        self.width = SCREEN_SIZE[0] - (2 * PORTRAIT_SIZE[0]) - (6 * UI_OFFSET)
-        self.height = UI_SIZE[1] + 45
+    def __init__(self, width: int) -> None:
+        self.xpos = SCREEN_SIZE[0] // 2 - width // 2
+        self.width = width
+        self.height = Images.MC_FACE_1.load().get_height() + 4
+        self.ypos = SCREEN_SIZE[1] - self.height
 
         self.txt_surf = pg.Surface(size=(self.width, self.height))
         self.txt_surf.fill("#b2972a")
         self.txt_rect = pg.Rect(self.xpos, self.ypos, self.width, self.height)
 
-        self.txt_inner_surf = pg.Surface(size=(self.width - 10, self.height - 10))
+        self.txt_inner_surf = pg.Surface(size=(self.width - 4, self.height - 4))
         self.txt_inner_surf.fill("saddlebrown")
         self.txt_inner_rect = self.txt_inner_surf.get_rect(center=self.txt_rect.center)
 

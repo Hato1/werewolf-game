@@ -23,10 +23,10 @@ from my_game.werewolf.ui.player_ui import UIPanel
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
     MESSAGE_DURATION_MS = 3000
-    MESSAGE_FONT_SIZE = 36
+    MESSAGE_FONT_SIZE = 18
     MESSAGE_COLOR = pg.Color("white")
     # Distance from bottom of the screen to display the message in pixels.
-    MESSAGE_DISPLAY_OFFSET = 16
+    MESSAGE_DISPLAY_OFFSET = 8
 
     def __init__(self, room: RoomData) -> None:
         super().__init__()
@@ -88,9 +88,9 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             test_prop = Prop.from_prop_data(props.GRAVEYARD_CHAINS)
             self.ui.inventory.add_item(test_prop)
 
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
-        self.player.update(surface_rect, dt, input_state)
-        self.room.update(surface_rect, dt, input_state)
+    def update(self, dt: float, input_state: InputState) -> None:
+        self.player.update(dt, input_state)
+        self.room.update(dt, input_state)
         if self.message_surface is not None and pg.time.get_ticks() >= self.message_expires_at:
             self.message_surface = None
 

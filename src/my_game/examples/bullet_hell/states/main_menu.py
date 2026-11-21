@@ -21,7 +21,7 @@ class MainMenu(State[BulletHellState, BulletHellTransitionData]):
             self.done = True
             self.next_state = BulletHellState.GAME
 
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+    def update(self, dt: float, input_state: InputState) -> None:
         pass
 
     def draw(self, renderer: Renderer, dt: float) -> None:

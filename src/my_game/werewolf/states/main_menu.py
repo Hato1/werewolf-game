@@ -28,7 +28,7 @@ class MainMenuButton:
         font_color = "white"
         if selected:
             font_color = "yellow"
-            draw_pos = self.pos[0] + 25, self.pos[1]
+            draw_pos = self.pos[0] + 25 // 2, self.pos[1]
 
         self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color(font_color))
         self.rect = self.surf.get_rect(topleft=(draw_pos))
@@ -41,8 +41,8 @@ class MainMenuButton:
 
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
-    TITLE_FONT_SIZE = 60
-    MENU_BUTTON_OFFSET_Y = 200
+    TITLE_FONT_SIZE = 60 // 2
+    MENU_BUTTON_OFFSET_Y = 200 // 2
 
     def __init__(self) -> None:
         super().__init__()
@@ -56,18 +56,18 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self.TITLE_FONT = Fonts.PICO8.load(self.TITLE_FONT_SIZE)
 
         # title
-        title = "The Beast of \nTemerev"
+        title = "the beast of \ntemerev"
         self.title_surface = self.TITLE_FONT.render(title, MENU_ANTI_ALIAS, pg.Color("white"))
-        self.title_rect = self.title_surface.get_rect(topleft=(50, 50))
+        self.title_rect = self.title_surface.get_rect(topleft=(50 // 2, 50 // 2))
 
         # buttons
         self.buttons = [
-            MainMenuButton(self.FONT, "Start", WerewolfState.TEST_ROOM),
-            MainMenuButton(self.FONT, "Load", WerewolfState.RENDER_TEST),
-            MainMenuButton(self.FONT, "Options", WerewolfState.OPTIONS_MENU),
+            MainMenuButton(self.FONT, "start", WerewolfState.TEST_ROOM),
+            MainMenuButton(self.FONT, "load", WerewolfState.RENDER_TEST),
+            MainMenuButton(self.FONT, "options", WerewolfState.OPTIONS_MENU),
         ]
         if sys.platform != "emscripten":
-            self.buttons.append(MainMenuButton(self.FONT, "Exit", None))
+            self.buttons.append(MainMenuButton(self.FONT, "exit", None))
         self.button_index = 0
 
         for i in range(len(self.buttons)):
@@ -94,7 +94,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                     if not self.next_state:
                         self.quit = True
 
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+    def update(self, dt: float, input_state: InputState) -> None:
         pass
 
     def draw(self, renderer: Renderer, dt: float) -> None:

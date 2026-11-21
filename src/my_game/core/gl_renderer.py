@@ -49,6 +49,7 @@ class GLRenderer:
         self.ctx.enable(moderngl.BLEND)
         self.outline_render_list = []
         self.ctx.clear(0.33, 0.33, 0.33, 1)
+        self._setup_viewport()
 
         # the shader skips lights with a radius less than or equal to 0
         self.light_position_radius_array = []
@@ -97,6 +98,15 @@ class GLRenderer:
         self.mask_surface = pg.Surface(constants.SCREEN_SIZE, pg.SRCALPHA, 32)
         self.mask_surface.fill(pg.Color(0, 0, 0, 0))
         logger.warning("Initialised OpenGL renderer")
+
+    def _setup_viewport(self):
+        """Set the viewport to match the current framebuffer size."""
+        display_surface = pg.display.get_surface()
+        if display_surface:
+            width, height = display_surface.get_size()
+            self.ctx.viewport = (0, 0, width, height)
+            # Clear the screen to ensure clean rendering at new resolution
+            self.ctx.clear(0.33, 0.33, 0.33, 1)
 
     def create_render_objects(self):
         # scene_clamp = [1.0/self.RENDER_SCALE[0], 1.0/self.RENDER_SCALE[1]]

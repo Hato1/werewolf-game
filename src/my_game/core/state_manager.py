@@ -8,10 +8,11 @@ from enum import Enum
 
 import pygame as pg
 
-from my_game.core.gl_renderer import GLRenderer
+from my_game.constants import DEFAULT_CAPTION
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.logger import get_logger
 from my_game.core.renderer import Renderer
+from my_game.werewolf.settings import Settings
 
 logger = get_logger(__name__)
 
@@ -64,14 +65,13 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
 
     def enter(
         self,
-        surface_rect: pg.Rect,
         transition_data: Payload,
-        gl_renderer: GLRenderer | None,
+        renderer: Renderer,
     ) -> None:
         """Called when this state becomes the active state.
 
-        surface_rect: Rect representing the surface dimensions.
         transition_data: Data delivered from the previous state.
+        renderer: The renderer instance.
         """
         self.transition_data = transition_data
         self.start_time = pg.time.get_ticks() / 1000.0
@@ -87,10 +87,9 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         pass
 
     @abstractmethod
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState[Enum]) -> None:
+    def update(self, dt: float, input_state: InputState[Enum]) -> None:
         """Update game logic. Runs every frame.
 
-        surface_rect: Rect representing the surface dimensions.
         dt: Time in seconds since last frame.
         input_state: Frame-scoped held actions and action strengths.
         """
@@ -137,30 +136,32 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
 
     def __init__(
         self,
-        screen: pg.Surface,
-        gl_renderer: GLRenderer | None,
         registry: StateRegistry[StateKey, Payload],
         input_manager: InputManager,
-        caption: str,
     ):
         """Initialize the manager from a state's registry."""
 
-        self.screen: pg.Surface = screen
+        settings = Settings.from_persistent_storage()
+
         self.states = dict(registry.factories)
         self.current_state_id = registry.initial_state
         self.current_state = self.states[registry.initial_state]()
         self.input_manager: InputManager = input_manager
-        self.caption: str = caption  # Caption for the window.
+        self.caption: str = DEFAULT_CAPTION  # Caption for the window.
         self.transition_data_factory = registry.transition_data_factory
-        self.gl_renderer: GLRenderer | None = gl_renderer
-        self.renderer = Renderer(screen, gl_renderer)
+        self.renderer = Renderer(
+            input_manager=self.input_manager,
+            open_gl=settings.lighting,
+            scale_factor=settings.resolution_scale,
+            fullscreen=settings.fullscreen,
+        )
 
         self.quit: bool = False  # Set to True to exit program.
         self.clock: pg.Clock = pg.time.Clock()
         self.fps: float = 60.0  # Used to limit the framerate.
         self.show_fps: bool = True  # Display the framerate in the caption.
 
-        self.current_state.enter(self.screen.get_rect(), self.transition_data_factory(), self.gl_renderer)
+        self.current_state.enter(self.transition_data_factory(), self.renderer)
 
     def change_state(self, next_state: StateKey | None) -> None:
         """Exit the current state, enter the next one."""
@@ -178,9 +179,8 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
         self.current_state_id = next_state
         self.current_state = state_factory()
         self.current_state.enter(
-            self.screen.get_rect(),
             transition_data=transition_data,
-            gl_renderer=self.gl_renderer,
+            renderer=self.renderer,
         )
 
     def toggle_show_fps(self) -> None:
@@ -196,7 +196,8 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
                 self.quit = True
             else:
                 actions = self.input_manager.process_pygame_event(event)
-                self.current_state.handle_event(actions, event)
+                fixed_event = self.input_manager.fix_mouse_coordinates(event)
+                self.current_state.handle_event(actions, fixed_event)
 
     def update(self, dt: float):
         """Checks for state change and updates the current state.
@@ -211,7 +212,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
             self.change_state(self.current_state.next_state)
 
         input_state = self.input_manager.get_input_state()
-        self.current_state.update(self.screen.get_rect(), dt, input_state)
+        self.current_state.update(dt, input_state)
         self.current_state.draw(self.renderer, dt)
 
     async def main(self):
@@ -223,11 +224,7 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
             dt = self.clock.tick(self.fps) / 1000.0
             self.handle_events()
             self.update(dt)
-            if self.gl_renderer:
-                self.gl_renderer.update()
-            else:
-                pg.display.update()
-            pg.display.flip()
+            self.renderer.update()
             await asyncio.sleep(0)
 
             if self.show_fps:

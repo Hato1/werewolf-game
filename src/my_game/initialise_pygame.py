@@ -16,9 +16,9 @@ if sys.platform != "emscripten":
 
     pg_controller = importlib.import_module("pygame._sdl2.controller")
     pg_controller.init()
-    options = pg.SCALED | pg.HIDDEN | pg.RESIZABLE
+    options = pg.HIDDEN
 else:
-    options = pg.HIDDEN | pg.RESIZABLE
+    options = 0
 
 # Start hidden so assets can be loaded before the window is shown.
 # And it prevents window flickering on some platforms.
