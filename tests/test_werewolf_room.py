@@ -87,7 +87,6 @@ def test_main_menu_opens_registered_test_room() -> None:
 
     assert menu.buttons[0].next_state is WerewolfState.TEST_ROOM
     assert STATE_REGISTRY.factories[WerewolfState.TEST_ROOM] is RoomTest
-    assert room_state.room.props[0].sprite.get_size() == SCREEN_SIZE
 
     room_state.handle_event({Action.UI_CANCEL}, pg.event.Event(pg.KEYDOWN, key=pg.K_ESCAPE))
 

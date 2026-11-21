@@ -46,6 +46,8 @@ class Images(StrEnum):
     TEST_UI_BACKGROUND = "ui_test_only.png"
     TEST_SHADER = "shader_test_image.png"
     TEST_SHADER_0 = "shader_test_image_0.png"
+    TEST_CHURCH = "bg_church.png"
+    TEST_CHURCH_NORMALS = "bg_church_normals.png"
 
     # MC Portraits
     MC_FACE_1 = "mc_face1.png"
@@ -57,6 +59,11 @@ class Images(StrEnum):
     @cache
     def load(self) -> pg.Surface:
         return load_image(IMAGES_PATH / self.value)
+
+    @cache
+    def load_custom(self, file_name) -> pg.Surface:
+        logger.error(f"Debug image loader called with file_name: {file_name}")
+        return load_image(IMAGES_PATH / file_name)
 
 
 @unique
