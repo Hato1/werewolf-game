@@ -12,6 +12,7 @@ from my_game.constants import DEFAULT_CAPTION
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.logger import get_logger
 from my_game.core.renderer import Renderer
+from my_game.werewolf.settings import Settings
 
 logger = get_logger(__name__)
 
@@ -70,6 +71,7 @@ class State[StateKey: Hashable, Payload: TransitionData](ABC):
         """Called when this state becomes the active state.
 
         transition_data: Data delivered from the previous state.
+        renderer: The renderer instance.
         """
         self.transition_data = transition_data
         self.start_time = pg.time.get_ticks() / 1000.0
@@ -134,23 +136,25 @@ class StateManager[StateKey: Hashable, Payload: TransitionData]:
 
     def __init__(
         self,
-        screen: pg.Surface,
         registry: StateRegistry[StateKey, Payload],
         input_manager: InputManager,
-        *,
-        open_gl: bool,
-        scale_factor: int,
     ):
         """Initialize the manager from a state's registry."""
+
+        settings = Settings.from_persistent_storage()
 
         self.states = dict(registry.factories)
         self.current_state_id = registry.initial_state
         self.current_state = self.states[registry.initial_state]()
         self.input_manager: InputManager = input_manager
-        self.input_manager.set_screen_scale_factor(scale_factor)
         self.caption: str = DEFAULT_CAPTION  # Caption for the window.
         self.transition_data_factory = registry.transition_data_factory
-        self.renderer = Renderer(screen, open_gl=open_gl, scale_factor=scale_factor)
+        self.renderer = Renderer(
+            input_manager=self.input_manager,
+            open_gl=settings.lighting,
+            scale_factor=settings.resolution_scale,
+            fullscreen=settings.fullscreen,
+        )
 
         self.quit: bool = False  # Set to True to exit program.
         self.clock: pg.Clock = pg.time.Clock()

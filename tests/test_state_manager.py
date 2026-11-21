@@ -45,13 +45,12 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
             assert transition_data.previous_state is StateKey.ALPHA
             assert transition_data.score == 42
 
-    screen = pg.display.set_mode((64, 64))
     registry = StateRegistry(
         {StateKey.ALPHA: Alpha, StateKey.BETA: Beta},
         StateKey.ALPHA,
         TestTransitionData,
     )
-    manager = StateManager(screen, registry, InputManager(Enum), open_gl=False, scale_factor=1)
+    manager = StateManager(registry, InputManager(Enum))
 
     alpha = manager.current_state
     alpha.done = True
@@ -98,13 +97,9 @@ def test_state_manager_passes_held_actions_to_update(monkeypatch) -> None:
     input_manager = InputManager(Action)
     input_manager.bind(Action.MOVE, InputEvent.keyboard(pg.K_w))
     input_manager.bind(Action.ANALOG_MOVE, InputEvent.controller_axis(pg.CONTROLLER_AXIS_LEFTX))
-    screen = pg.display.set_mode((64, 64))
     manager = StateManager(
-        screen,
         StateRegistry({StateKey.TEST: TestState}, StateKey.TEST, TestTransitionData),
         input_manager,
-        open_gl=False,
-        scale_factor=1,
     )
     monkeypatch.setattr(
         pg.event,

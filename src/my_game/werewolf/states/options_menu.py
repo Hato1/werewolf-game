@@ -1,69 +1,20 @@
-import json
 import sys
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Self
 
 import pygame as pg
 
-from my_game.core.logger import get_logger
-
-if __import__("sys").platform == "emscripten":
-    from platform import window  # type: ignore[attr-defined]
-
 from my_game.constants import MENU_ANTI_ALIAS, MENU_BUTTON_OFFSET_X, MENU_BUTTON_SPACING_Y, MENU_FONT_SIZE, SCREEN_SIZE
 from my_game.core.input_manager import InputState
-from my_game.core.renderer import Renderer
+from my_game.core.logger import get_logger
+from my_game.core.renderer import Renderer, get_available_scales
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
+from my_game.werewolf.settings import Settings
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 logger = get_logger(__name__)
-
-OPTIONS_FILE = Path("settings.json")
-
-
-def get_available_scales() -> list[int]:
-    """Get list of available resolution scales that fit in the user's display."""
-    if sys.platform == "emscripten":
-        return [1]
-
-    try:
-        # TODO: Don't default to the first display size blindly, consider all available displays.
-        display_info = pg.display.get_desktop_sizes()[0]
-    except pg.error:
-        display_info = (3840, 2160)
-        logger.exception(f"Failed to get display info. Defaulting to {display_info}.")
-
-    max_width = display_info[0]
-    max_height = display_info[1]
-
-    base_width = SCREEN_SIZE[0]
-    base_height = SCREEN_SIZE[1]
-
-    available_scales = []
-    scale = 0
-    while True:
-        scale += 1
-        scaled_width = base_width * scale
-        scaled_height = base_height * scale
-        if scaled_width <= max_width and scaled_height <= max_height:
-            available_scales.append(scale)
-        else:
-            break
-
-    return available_scales if available_scales else [1]
-
-
-def suggest_resolution_scale():
-    """Suggest a sane resolution scale based on available display scales."""
-    scales = get_available_scales()
-    if len(scales) > 2:  # noqa: PLR2004
-        return scales[-2]
-    return scales[-1]
 
 
 def on_fullscreen_change(_value) -> None:
@@ -170,62 +121,6 @@ class SelectorButton:
         return self.key_rect.collidepoint(pos) or self.value_rect.collidepoint(pos)
 
 
-@dataclass
-class Settings:
-    """Represents the overall settings for the options menu."""
-
-    lighting: bool = field(default_factory=lambda: sys.platform != "emscripten")
-    fullscreen: bool = False
-    resolution_scale: int = field(default_factory=suggest_resolution_scale)
-    sound_effects: bool = True
-    music: bool = True
-
-    @classmethod
-    def from_persistent_storage_desktop(cls) -> Self:
-        try:
-            with OPTIONS_FILE.open("r") as settings_file:
-                saved_settings = json.loads(settings_file.read())
-        except FileNotFoundError:
-            return cls()
-        except json.JSONDecodeError:
-            return cls()
-        else:
-            s = saved_settings[0]
-            return cls(**s)
-
-    @classmethod
-    def from_persistent_storage_emscripten(cls) -> Self:
-        settings = window.localStorage.getItem(OPTIONS_FILE.stem)  # pyright: ignore[reportPossiblyUnboundVariable]
-        if settings:
-            try:
-                saved_settings = json.loads(settings)
-            except json.JSONDecodeError:
-                return cls()
-            else:
-                return cls(**saved_settings)
-        return cls()
-
-    @classmethod
-    def from_persistent_storage(cls) -> Self:
-        if sys.platform == "emscripten":
-            return cls.from_persistent_storage_emscripten()
-        else:
-            return cls.from_persistent_storage_desktop()
-
-    def to_persistent_storage_desktop(self) -> None:
-        with OPTIONS_FILE.open("w") as settings_file:
-            json.dump([asdict(self)], settings_file, indent=4)
-
-    def to_persistent_storage_emscripten(self) -> None:
-        window.localStorage.setItem(OPTIONS_FILE.stem, json.dumps(asdict(self)))  # pyright: ignore[reportPossiblyUnboundVariable]
-
-    def to_persistent_storage(self) -> None:
-        if sys.platform == "emscripten":
-            self.to_persistent_storage_emscripten()
-        else:
-            self.to_persistent_storage_desktop()
-
-
 class RestartSubMenu:
     FONT = Fonts.PICO8.load(MENU_FONT_SIZE)
 
@@ -318,13 +213,15 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
 
         self.settings = Settings.from_persistent_storage()
 
+        self.renderer: Renderer | None = None
+
         # buttons
         self.buttons: list[SelectorButton | ExitButton] = []
         self.add_button("music")
         self.add_button("sound effects")
         if sys.platform != "emscripten":
             self.add_button("fullscreen", callback=on_fullscreen_change)
-            self.add_button("resolution scale", get_available_scales(), restart_needed=True)
+            self.add_button("resolution scale", get_available_scales(), callback=self._on_resolution_scale_change)
             self.add_button("lighting", restart_needed=True)
         self.buttons.append(ExitButton())
 
@@ -334,6 +231,16 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
         # restart menu
         self.restart_question = False
         self.restart_submenu: RestartSubMenu | None = None
+
+    def enter(self, transition_data, renderer: Renderer) -> None:
+        """Store references for immediate setting changes."""
+        super().enter(transition_data, renderer)
+        self.renderer = renderer
+
+    def _on_resolution_scale_change(self, value: int) -> None:
+        """Apply resolution scale change immediately."""
+        if self.renderer is not None:
+            self.renderer.set_scale_factor(value)
 
     def add_button(
         self,

@@ -1,8 +1,10 @@
+from enum import Enum
+
 import pygame as pg
 import pytest
 
 from my_game.constants import SCREEN_SIZE
-from my_game.core.input_manager import InputState
+from my_game.core.input_manager import InputManager, InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
@@ -26,7 +28,8 @@ def finish_player_walk(room_state: RoomState) -> None:
 
 
 def test_room_draws_visible_props_at_their_positions() -> None:
-    renderer = Renderer(pg.Surface((8, 8)), open_gl=False, scale_factor=1)
+    input_manager = InputManager(Enum)
+    renderer = Renderer(input_manager=input_manager, open_gl=False, scale_factor=1, fullscreen=False)
     sprite = pg.Surface((2, 2))
     sprite.fill(pg.Color("red"))
     prop = Prop(
@@ -52,7 +55,8 @@ def test_room_draws_visible_props_at_their_positions() -> None:
 
 
 def test_hidden_props_are_not_drawn() -> None:
-    renderer = Renderer(pg.Surface((8, 8)), open_gl=False, scale_factor=1)
+    input_manager = InputManager(Enum)
+    renderer = Renderer(input_manager=input_manager, open_gl=False, scale_factor=1, fullscreen=False)
     sprite = pg.Surface((2, 2))
     sprite.fill(pg.Color("red"))
     prop = Prop(
