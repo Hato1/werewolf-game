@@ -94,7 +94,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                     if not self.next_state:
                         self.quit = True
 
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+    def update(self, dt: float, input_state: InputState) -> None:
         pass
 
     def draw(self, renderer: Renderer, dt: float) -> None:

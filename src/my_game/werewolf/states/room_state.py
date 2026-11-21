@@ -88,9 +88,9 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             test_prop = Prop.from_prop_data(props.GRAVEYARD_CHAINS)
             self.ui.inventory.add_item(test_prop)
 
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
-        self.player.update(surface_rect, dt, input_state)
-        self.room.update(surface_rect, dt, input_state)
+    def update(self, dt: float, input_state: InputState) -> None:
+        self.player.update(dt, input_state)
+        self.room.update(dt, input_state)
         if self.message_surface is not None and pg.time.get_ticks() >= self.message_expires_at:
             self.message_surface = None
 

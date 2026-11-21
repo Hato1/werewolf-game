@@ -2,13 +2,16 @@
 
 import pygame as pg
 
+from my_game.constants import SCREEN_SIZE
 from my_game.core.gl_renderer import GLRenderer
 
 
 class Renderer:
-    def __init__(self, surface: pg.Surface, gl_renderer: GLRenderer | None) -> None:
-        self.surface = surface
-        self.gl_renderer = gl_renderer
+    def __init__(self, screen: pg.Surface, *, open_gl: bool, scale_factor: int) -> None:
+        self.screen = screen
+        self.surface = pg.Surface(SCREEN_SIZE)
+        self.gl_renderer = GLRenderer() if open_gl else None
+        self.scale_factor = scale_factor
 
     @property
     def rect(self) -> pg.Rect:
@@ -23,6 +26,16 @@ class Renderer:
         if self.gl_renderer is not None:
             return self.gl_renderer.resize_surface_to_fit(surface)
         return pg.transform.scale(surface, self.surface.get_size())
+
+    def update(self) -> None:
+        surf = self.surface.copy()
+        surf = pg.transform.scale_by(surf, self.scale_factor)
+        self.screen.blit(surf, (0, 0))
+        if self.gl_renderer:
+            self.gl_renderer.update()
+        else:
+            pg.display.update()
+        pg.display.flip()
 
     def __call__(
         self,
@@ -50,6 +63,7 @@ class Renderer:
         draw_mask = 1
 
         if self.gl_renderer is None:
+            # surface, target_rect = self.scale(surface, target_rect)
             self.surface.blit(surface, target_rect)
         elif draw_mode == draw_mask:
             self.gl_renderer.blit_to_light_mask(surface, target_rect)

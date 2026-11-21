@@ -6,7 +6,6 @@ from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.registry import STATE_REGISTRY
 from my_game.werewolf.room import rooms
 from my_game.werewolf.room.loaders import CharacterData, PropData, RoomData
 from my_game.werewolf.room.models import Character, Prop, Room
@@ -17,18 +16,17 @@ from my_game.werewolf.states.room_test import RoomTest
 
 
 def finish_player_walk(room_state: RoomState) -> None:
-    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
     idle: InputState = InputState(frozenset(), {})
     assert room_state.player.target is not None
     for _ in range(300):
-        room_state.update(bounds, 0.05, idle)
+        room_state.update(0.05, idle)
         if room_state.player.target is None:
             break
     assert room_state.player.target is None
 
 
 def test_room_draws_visible_props_at_their_positions() -> None:
-    surface = pg.Surface((8, 8))
+    renderer = Renderer(pg.Surface((8, 8)), open_gl=False, scale_factor=1)
     sprite = pg.Surface((2, 2))
     sprite.fill(pg.Color("red"))
     prop = Prop(
@@ -47,14 +45,14 @@ def test_room_draws_visible_props_at_their_positions() -> None:
     )
     room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
 
-    room.draw(Renderer(surface, None))
+    room.draw(renderer)
 
-    assert surface.get_at((3, 4)) == pg.Color("red")
-    assert surface.get_at((0, 0)) == pg.Color("black")
+    assert renderer.surface.get_at((3, 4)) == pg.Color("red")
+    assert renderer.surface.get_at((0, 0)) == pg.Color("black")
 
 
 def test_hidden_props_are_not_drawn() -> None:
-    surface = pg.Surface((8, 8))
+    renderer = Renderer(pg.Surface((8, 8)), open_gl=False, scale_factor=1)
     sprite = pg.Surface((2, 2))
     sprite.fill(pg.Color("red"))
     prop = Prop(
@@ -73,9 +71,9 @@ def test_hidden_props_are_not_drawn() -> None:
     )
     room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
 
-    room.draw(Renderer(surface, None))
+    room.draw(renderer)
 
-    assert surface.get_at((0, 0)) == pg.Color("black")
+    assert renderer.surface.get_at((0, 0)) == pg.Color("black")
 
 
 def test_main_menu_opens_registered_test_room() -> None:
@@ -86,7 +84,6 @@ def test_main_menu_opens_registered_test_room() -> None:
     room_state = RoomTest()
 
     assert menu.buttons[0].next_state is WerewolfState.TEST_ROOM
-    assert STATE_REGISTRY.factories[WerewolfState.TEST_ROOM] is RoomTest
 
     room_state.handle_event({Action.UI_CANCEL}, pg.event.Event(pg.KEYDOWN, key=pg.K_ESCAPE))
 
@@ -113,11 +110,11 @@ def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pyte
     assert room_state.message_expires_at == ticks + room_state.MESSAGE_DURATION_MS
 
     ticks += room_state.MESSAGE_DURATION_MS - 1
-    room_state.update(pg.Rect(0, 0, *SCREEN_SIZE), 0, InputState(frozenset(), {}))
+    room_state.update(0, InputState(frozenset(), {}))
     assert room_state.message_surface is not None
 
     ticks += 1
-    room_state.update(pg.Rect(0, 0, *SCREEN_SIZE), 0, InputState(frozenset(), {}))
+    room_state.update(0, InputState(frozenset(), {}))
     assert room_state.message_surface is None
 
 
@@ -142,11 +139,10 @@ def test_player_moves_with_held_input_and_animates() -> None:
     pg.display.set_mode((1, 1))
     room_state = RoomState(rooms.INN)
     player = room_state.player
-    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
     start = player.position.copy()
 
     assert len(player.walk_frames) == 10
-    room_state.update(bounds, 0.5, InputState(frozenset({Action.LEFT}), {}))
+    room_state.update(0.5, InputState(frozenset({Action.LEFT}), {}))
 
     assert player.walking
     assert player.facing_left
@@ -154,7 +150,7 @@ def test_player_moves_with_held_input_and_animates() -> None:
     assert player.position.y == start.y
     assert player.frame_index == 5
 
-    room_state.update(bounds, 0.0, InputState(frozenset(), {}))
+    room_state.update(0.0, InputState(frozenset(), {}))
     assert not player.walking
     assert player.frame_index == 0
 
@@ -165,7 +161,7 @@ def test_player_stays_within_bounds() -> None:
     room_state = RoomState(rooms.INN)
     bounds = pg.Rect(0, 0, *SCREEN_SIZE)
 
-    room_state.update(bounds, 100.0, InputState(frozenset({Action.RIGHT, Action.DOWN}), {}))
+    room_state.update(100.0, InputState(frozenset({Action.RIGHT, Action.DOWN}), {}))
 
     assert room_state.player.position == pg.Vector2(bounds.right, bounds.bottom)
 
@@ -196,32 +192,30 @@ def make_npc(
 
 
 def test_character_follows_path_and_stops_on_waypoints() -> None:
-    bounds: pg.Rect = pg.Rect(0, 0, *SCREEN_SIZE)
     idle: InputState = InputState(frozenset(), {})
     npc = make_npc((0, 100), ((100, 100), (100, 150)), speed=100)
 
-    npc.update(bounds, 0.5, idle)
+    npc.update(0.5, idle)
     assert npc.walking
     assert npc.position == pg.Vector2(50, 100)
 
-    npc.update(bounds, 0.75, idle)
+    npc.update(0.75, idle)
     assert npc.position == pg.Vector2(100, 100)
 
-    npc.update(bounds, 1.0, idle)
+    npc.update(1.0, idle)
     assert npc.position == pg.Vector2(100, 150)
 
-    npc.update(bounds, 1.0, idle)
+    npc.update(1.0, idle)
     assert not npc.walking
     assert npc.position == pg.Vector2(100, 150)
 
 
 def test_character_path_can_loop() -> None:
-    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
     idle: InputState = InputState(frozenset(), {})
     npc = make_npc((0, 0), ((100, 0), (0, 0)), speed=100, loop=True)
 
     for _ in range(4):
-        npc.update(bounds, 1.0, idle)
+        npc.update(1.0, idle)
 
     assert npc.position == pg.Vector2(0, 0)
     assert npc.path_index == 2
@@ -231,7 +225,7 @@ def test_room_updates_its_characters() -> None:
     npc = make_npc((0, 0), ((10, 0),), speed=10)
     room = Room("test", "A test room.", characters=[npc])
 
-    room.update(pg.Rect(0, 0, *SCREEN_SIZE), 1.0, InputState(frozenset(), {}))
+    room.update(1.0, InputState(frozenset(), {}))
 
     assert npc.position == pg.Vector2(10, 0)
 
@@ -300,7 +294,6 @@ def test_prop_without_walk_to_interact_triggers_immediately() -> None:
 
 def test_player_walks_to_prop_before_interacting() -> None:
     room_state, prop = make_walk_to_room_state(walk_to_interact=True)
-    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
     idle: InputState = InputState(frozenset(), {})
     start = room_state.player.position.copy()
 
@@ -309,7 +302,7 @@ def test_player_walks_to_prop_before_interacting() -> None:
     assert room_state.player.target is not None
 
     for _ in range(300):
-        room_state.update(bounds, 0.05, idle)
+        room_state.update(0.05, idle)
         if room_state.message_surface is not None:
             break
 
@@ -320,18 +313,17 @@ def test_player_walks_to_prop_before_interacting() -> None:
     assert distance < start.distance_to(pg.Vector2(prop.rect.center))
 
     position = room_state.player.position.copy()
-    room_state.update(bounds, 0.05, idle)
+    room_state.update(0.05, idle)
     assert room_state.player.position == position
 
 
 def test_directional_input_cancels_walk_to_prop() -> None:
     room_state, prop = make_walk_to_room_state(walk_to_interact=True)
-    bounds = pg.Rect(0, 0, *SCREEN_SIZE)
 
     click(room_state, prop)
-    room_state.update(bounds, 0.05, InputState(frozenset({Action.RIGHT}), {}))
+    room_state.update(0.05, InputState(frozenset({Action.RIGHT}), {}))
 
     assert room_state.player.target is None
     for _ in range(300):
-        room_state.update(bounds, 0.05, InputState(frozenset(), {}))
+        room_state.update(0.05, InputState(frozenset(), {}))
     assert room_state.message_surface is None

@@ -4,7 +4,6 @@ from typing import Self
 
 import pygame as pg
 
-from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
@@ -141,16 +140,16 @@ class Game(State[BulletHellState, BulletHellTransitionData]):
         self.monsters: list[Monster]
         self.player: Player
         self.score: float = 0.0
+        self.screen_rect: pg.Rect
 
-    def enter(
-        self, surface_rect: pg.Rect, transition_data: BulletHellTransitionData, gl_renderer: GLRenderer | None
-    ) -> None:
-        super().enter(surface_rect, transition_data=transition_data, gl_renderer=gl_renderer)
+    def enter(self, transition_data: BulletHellTransitionData, renderer: Renderer) -> None:
+        super().enter(transition_data=transition_data, renderer=renderer)
         self.monster_meter = 0
         self.monster_interval = self.DEFAULT_MONSTER_INTERVAL
         self.monsters = []
-        self.player = Player(pg.Vector2(surface_rect.center))
+        self.player = Player(pg.Vector2(renderer.rect.center))
         self.score = 0.0
+        self.screen_rect = renderer.rect
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
@@ -199,9 +198,9 @@ class Game(State[BulletHellState, BulletHellTransitionData]):
         self.monster_interval -= self.MONSTER_INTERVAL_DECREASE_RATE * dt
         self.monster_interval = max(self.monster_interval, self.MINIMUM_MONSTER_INTERVAL)
 
-    def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
-        self.update_monster_spawner(surface_rect, dt)
-        self.update_player_movement(surface_rect, dt, input_state)
+    def update(self, dt: float, input_state: InputState) -> None:
+        self.update_monster_spawner(self.screen_rect, dt)
+        self.update_player_movement(self.screen_rect, dt, input_state)
 
         # Iterate in reverse order to safely remove monsters while iterating
         for monster in self.monsters[::-1]:
