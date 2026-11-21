@@ -70,7 +70,7 @@ def list_slots(max_slots: int = 3) -> list:
                     "slot": i,
                     "empty": False,
                     "timestamp": data.get("timestamp") if data is not None else None,
-                    "chapter": data.get("current_chapter") if data is not None else None,
+                    "chapter": data.get("current_chapter") if data is not None else 0,
                 }
             )
         else:
