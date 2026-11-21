@@ -81,9 +81,14 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
             return
         if self.renderer.gl_renderer is None:
             return
+        # Convert screen-space mouse coordinates to internal game coordinates
+        # by dividing by the render scale factor
+        mouse_x = pg.mouse.get_pos()[0] / self.renderer.scale_factor
+        mouse_y = pg.mouse.get_pos()[1] / self.renderer.scale_factor
+
         mouse_position_on_screen = (
-            (pg.mouse.get_pos()[0] / self.renderer.gl_renderer.lit_surface.size[0]),
-            (pg.mouse.get_pos()[1] / self.renderer.gl_renderer.lit_surface.size[1]),
+            (mouse_x / self.renderer.gl_renderer.lit_surface.size[0]),
+            (mouse_y / self.renderer.gl_renderer.lit_surface.size[1]),
         )
         self.renderer.gl_renderer.set_light_position(
             self.editing_light_index, mouse_position_on_screen[0], mouse_position_on_screen[1], self.light_z
