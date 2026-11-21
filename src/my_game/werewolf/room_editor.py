@@ -23,7 +23,7 @@ from my_game.werewolf.room import characters, props, rooms
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, Polygon, PropData, RoomData
 
 ROOMS_PATH = Path(__file__).parent / "room" / "rooms.py"
-VIEW_SIZE = (960, 540)
+VIEW_SIZE = (960, 416)
 POLYGON_DEFAULT = ((100, 100), (240, 100), (240, 200))
 MIN_POLYGON_POINTS = 2
 
