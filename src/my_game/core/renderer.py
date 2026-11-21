@@ -79,7 +79,7 @@ class Renderer:
             self.options |= pg.FULLSCREEN
             self.scale_factor = get_available_scales()[-1]
         self.screen = self.make_screen()
-        self.input_manager.set_screen_scale_factor(scale_factor)
+        self.input_manager.set_screen_scale_factor(self.scale_factor)
 
         self.surface = pg.Surface(SCREEN_SIZE)
         self.gl_renderer = GLRenderer() if open_gl else None
