@@ -49,17 +49,20 @@ class Inventory:
 
     # Placement of inventory slots/buttons.
     BUTTON_COLOR = pg.Color("saddlebrown")
-    # BUTTON_SIZE = pg.Vector2(70 // 2, 70 // 2)
-    BUTTON_SIZE = pg.Vector2(33, 33)
     OFFSET_Y = UI_OFFSET
 
-    def __init__(self, x_offset: int) -> None:
-        self.x_offset = x_offset
+    def __init__(self, width: int) -> None:
+        self.width = width
+        buffer = UI_OFFSET
+        max_inventory_slots = 10
+        button_size = (width - (max_inventory_slots - 1) * buffer) // max_inventory_slots
+        self.button_size = pg.Vector2(button_size, button_size)
+
         self.inventory: list[Prop] = []
         self.selected: Prop | None = None
         self.visible = True
 
-        button_background = pg.Surface(self.BUTTON_SIZE)
+        button_background = pg.Surface(self.button_size)
         button_background.fill(self.BUTTON_COLOR)
         self.button_background = button_background
 
@@ -77,11 +80,17 @@ class Inventory:
         self.selected = None
 
     def get_rect(self, slot: int) -> pg.Rect:
+        """Get the rect for an inventory slot, centered on screen."""
+        # Calculate total width of all inventory items plus spacing
+        total_width = len(self.inventory) * self.button_size.x + (len(self.inventory) - 1) * UI_OFFSET
+        # Calculate starting x position to center the inventory
+        start_x = (SCREEN_SIZE[0] - total_width) / 2
+
         return pg.Rect(
-            UI_POSITION[0] + self.x_offset + UI_OFFSET + slot * (self.BUTTON_SIZE.x + UI_OFFSET),
+            int(start_x) + slot * (self.button_size.x + UI_OFFSET),
             UI_POSITION[1] + self.OFFSET_Y,
-            self.BUTTON_SIZE.x,
-            self.BUTTON_SIZE.y,
+            self.button_size.x,
+            self.button_size.y,
         )
 
     def handle_mouse(self, pos: tuple[int, int]) -> None:
@@ -127,20 +136,19 @@ class UIPanel:
         self.bg_surf.fill(pg.Color("#1D0900"))
         self.bg_rect = UI_RECT
 
+        # Screen width is 480.
+        # Portrait is 65 = 59 + 4 border + 2 buffer
+        # With two portraits we're left with 480 - 2 * 63 = 350 pixels for the inventory and spacing.
         self.portrait = PortraitButton()
-
-        x_offset = self.portrait.get_rect().width
-        self.inventory = Inventory(x_offset=x_offset)
-
-        self.text_panel = TextDisplayPanel()
-
+        self.inventory = Inventory(width=350)
+        self.text_panel = TextDisplayPanel(width=354)
         self.second_portrait = SecondPortrait()
 
     def draw(self, renderer: Renderer) -> None:
         renderer(self.bg_surf, self.bg_rect, unlit=True)
-        self.portrait.draw(renderer)
         if self.inventory.visible:
             self.inventory.draw(renderer)
+        self.portrait.draw(renderer)
         self.text_panel.draw(renderer)
         self.second_portrait.draw(renderer)
 
@@ -243,17 +251,17 @@ class SecondPortrait:
 
 
 class TextDisplayPanel:
-    def __init__(self) -> None:
-        self.xpos = UI_POSITION[0] + PORTRAIT_SIZE[0] + (3 * UI_OFFSET)
-        self.ypos = UI_POSITION[1] - 50
-        self.width = SCREEN_SIZE[0] - (2 * PORTRAIT_SIZE[0]) - (6 * UI_OFFSET)
-        self.height = UI_SIZE[1] + 45
+    def __init__(self, width: int) -> None:
+        self.xpos = SCREEN_SIZE[0] // 2 - width // 2
+        self.width = width
+        self.height = Images.MC_FACE_1.load().get_height() + 4
+        self.ypos = SCREEN_SIZE[1] - self.height
 
         self.txt_surf = pg.Surface(size=(self.width, self.height))
         self.txt_surf.fill("#b2972a")
         self.txt_rect = pg.Rect(self.xpos, self.ypos, self.width, self.height)
 
-        self.txt_inner_surf = pg.Surface(size=(self.width - 10, self.height - 10))
+        self.txt_inner_surf = pg.Surface(size=(self.width - 4, self.height - 4))
         self.txt_inner_surf.fill("saddlebrown")
         self.txt_inner_rect = self.txt_inner_surf.get_rect(center=self.txt_rect.center)
 
