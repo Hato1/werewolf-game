@@ -49,11 +49,12 @@ class Inventory:
 
     # Placement of inventory slots/buttons.
     BUTTON_COLOR = pg.Color("saddlebrown")
-    BUTTON_SIZE = pg.Vector2(70 // 2, 70 // 2)
-    OFFSET_X = PORTRAIT_SIZE[0] + UI_OFFSET * 2
+    # BUTTON_SIZE = pg.Vector2(70 // 2, 70 // 2)
+    BUTTON_SIZE = pg.Vector2(33, 33)
     OFFSET_Y = UI_OFFSET
 
-    def __init__(self) -> None:
+    def __init__(self, x_offset: int) -> None:
+        self.x_offset = x_offset
         self.inventory: list[Prop] = []
         self.selected: Prop | None = None
         self.visible = True
@@ -77,7 +78,7 @@ class Inventory:
 
     def get_rect(self, slot: int) -> pg.Rect:
         return pg.Rect(
-            UI_POSITION[0] + self.OFFSET_X + slot * (self.BUTTON_SIZE.x + UI_OFFSET),
+            UI_POSITION[0] + self.x_offset + UI_OFFSET + slot * (self.BUTTON_SIZE.x + UI_OFFSET),
             UI_POSITION[1] + self.OFFSET_Y,
             self.BUTTON_SIZE.x,
             self.BUTTON_SIZE.y,
@@ -128,7 +129,8 @@ class UIPanel:
 
         self.portrait = PortraitButton()
 
-        self.inventory = Inventory()
+        x_offset = self.portrait.get_rect().width
+        self.inventory = Inventory(x_offset=x_offset)
 
         self.text_panel = TextDisplayPanel()
 
@@ -198,13 +200,15 @@ class PortraitButton:
     """represents the portrait button"""
 
     def __init__(self):
-        self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
-        self.portrait_surf.fill("#b2972a")
-        self.portrait_rect = pg.Rect(
-            UI_POSITION[0] + UI_OFFSET, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1]
-        )
+        self.sprite: pg.Surface = Images.MC_FACE_1.load()
+        width, height = self.sprite.get_size()
 
-        self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_1.load(), 1.1)
+        buffer = 4
+        self.portrait_surf = pg.Surface((width + buffer, height + buffer))
+        self.portrait_surf.fill("#b2972a")
+
+        x, y = UI_POSITION[0], SCREEN_SIZE[1] - buffer - height
+        self.portrait_rect = self.portrait_surf.get_rect(topleft=(x, y))
         self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
 
     def get_rect(self) -> pg.Rect:
@@ -218,13 +222,15 @@ class PortraitButton:
 
 class SecondPortrait:
     def __init__(self):
-        self.portrait_surf = pg.Surface(PORTRAIT_SIZE)
+        self.sprite: pg.Surface = Images.MC_FACE_2.load()
+        width, height = self.sprite.get_size()
+
+        buffer = 4
+        self.portrait_surf = pg.Surface((width + buffer, height + buffer))
         self.portrait_surf.fill("#b2972a")
 
-        self.xpos = UI_SIZE[0] - UI_OFFSET - PORTRAIT_SIZE[0]
-        self.portrait_rect = pg.Rect(self.xpos, UI_POSITION[1] + UI_OFFSET, PORTRAIT_SIZE[0], PORTRAIT_SIZE[1])
-
-        self.sprite: pg.Surface = pg.transform.scale_by(Images.MC_FACE_2.load(), 1.1)
+        x, y = SCREEN_SIZE[0] - buffer - width, SCREEN_SIZE[1] - buffer - height
+        self.portrait_rect = self.portrait_surf.get_rect(topleft=(x, y))
         self.sprite_rect = self.sprite.get_rect(center=self.portrait_rect.center)
 
     def get_rect(self) -> pg.Rect:
