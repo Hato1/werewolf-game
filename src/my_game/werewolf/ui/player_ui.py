@@ -21,10 +21,10 @@ logger = get_logger(__name__)
 
 DATA_FILE = Path("data.json")
 WEB_DATA_LOCATION = "beast_of_temerev_player_data"
-PORTRAIT_SIZE = (70, 110)
+PORTRAIT_SIZE = (70 // 2, 110 // 2)
 # INVENTORY_SLOTS = 10
-UI_OFFSET = 5
-UI_SIZE = (SCREEN_SIZE[0], 125)
+UI_OFFSET = 5 // 2
+UI_SIZE = (SCREEN_SIZE[0], 125 // 2)
 UI_POSITION = (0, SCREEN_SIZE[1] - UI_SIZE[1])
 UI_RECT = pg.Rect(UI_POSITION[0], UI_POSITION[1], UI_SIZE[0], UI_SIZE[1])
 
@@ -49,7 +49,7 @@ class Inventory:
 
     # Placement of inventory slots/buttons.
     BUTTON_COLOR = pg.Color("saddlebrown")
-    BUTTON_SIZE = pg.Vector2(70, 70)
+    BUTTON_SIZE = pg.Vector2(70 // 2, 70 // 2)
     OFFSET_X = PORTRAIT_SIZE[0] + UI_OFFSET * 2
     OFFSET_Y = UI_OFFSET
 

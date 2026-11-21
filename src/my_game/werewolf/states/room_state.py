@@ -23,10 +23,10 @@ from my_game.werewolf.ui.player_ui import UIPanel
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
     MESSAGE_DURATION_MS = 3000
-    MESSAGE_FONT_SIZE = 36
+    MESSAGE_FONT_SIZE = 18
     MESSAGE_COLOR = pg.Color("white")
     # Distance from bottom of the screen to display the message in pixels.
-    MESSAGE_DISPLAY_OFFSET = 16
+    MESSAGE_DISPLAY_OFFSET = 8
 
     def __init__(self, room: RoomData) -> None:
         super().__init__()
