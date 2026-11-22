@@ -32,9 +32,9 @@ float remap(float value, float min1, float max1, float min2, float max2) {
   return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 }
 
+//simplex noise function i got from https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 
-//simplex noise function i got from https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 float snoise(vec2 v){
   const vec4 C = vec4(0.211324865405187, 0.366025403784439,
            -0.577350269189626, 0.024390243902439);
@@ -61,9 +61,47 @@ float snoise(vec2 v){
   g.yz = a0.yz * x12.xz + h.yz * x12.yw;
   return 130.0 * dot(m, g);
 }
+//end public code used
 
 float evaluate_flicker(float light_intensity, float flicker_amount, int index){
     return mix(light_intensity,light_intensity * remap(snoise(vec2(Time,index * 16.0)), -1, 1, 0, 1), flicker_amount); //
+}
+
+vec3 direction_light(){
+    vec2 sample_dir = vec2(-screen_size.y, -screen_size.y);
+    if(light_position != vec2(0,0) && !static_direction){
+        sample_dir = -normalize(uvs - light_position) * screen_size;
+    }
+    float start_distance = distance(light_position, uvs);
+    vec3 sample_total = texture(tex,uvs).rgb;
+    vec3 sample_bonus = vec3(0,0,0);
+    float weight = 1;
+
+    for(int i = 0; i < sample_count; i++){
+        vec2 sample_pos = uvs + ((sample_dir) * (i * px_per_sample));
+        float distance = distance(sample_pos, light_position);
+        vec2 sample_dir_to_light = normalize(light_position - sample_pos);
+        if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7 && !static_direction){
+            //end early
+            float percent_left = 1 - (i / (sample_count));
+            sample_bonus += texture(mask, sample_pos).rgb * percent_left;
+            if(ignore_mask)
+                sample_bonus += vec3(sample_total.x, sample_total.y, sample_total.z) * percent_left;
+            break;
+        }
+        vec3 sample = texture(mask, sample_pos).rgb;
+        if(ignore_mask)
+            sample = texture(tex, sample_pos).rgb;
+        //sample_total += vec3(light_size - (distance), 0 ,0);
+        float dist_weight = clamp(1 - ((distance + start_distance)/light_size), 0, 1);
+        sample_bonus += vec3(sample.x, sample.y, sample.z) * weight / (i + 1);
+        if(!static_direction && !ignore_distance)
+            weight = mix(0, 1, dist_weight);
+        else
+            weight *= 0.99;
+    }
+    sample_total += sample_bonus * intensity;
+    return sample_total;
 }
 
 vec3 process_light(int index, vec2 uvs){
