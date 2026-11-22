@@ -112,6 +112,11 @@ class RoomViewport(CTkFrame):
         self.room_canvas.bind("<Button-1>", self._on_canvas_press)
         self.room_canvas.bind("<B1-Motion>", self._on_canvas_drag)
         self.room_canvas.bind("<ButtonRelease-1>", self._on_canvas_release)
+        self.room_canvas.bind("<Up>", self._on_arrow_key)
+        self.room_canvas.bind("<Down>", self._on_arrow_key)
+        self.room_canvas.bind("<Left>", self._on_arrow_key)
+        self.room_canvas.bind("<Right>", self._on_arrow_key)
+        self.room_canvas.focus_set()
 
         self.draw_room(master.current_room)
 
@@ -168,6 +173,44 @@ class RoomViewport(CTkFrame):
         """Handle canvas mouse release - finalize drag."""
         self.drag_start = None
         self.drag_start_prop_position = None
+
+    def _on_arrow_key(self, event: object) -> None:
+        """Handle arrow key press - nudge selected prop by 1 pixel."""
+        if self.selected_prop_index is None:
+            return
+
+        current_room = self.master.current_room  # type: ignore[attr-defined]
+        if self.selected_prop_index >= len(current_room.props):
+            return
+
+        keysym: str = event.keysym  # type: ignore[attr-defined]
+        delta_x = 0
+        delta_y = 0
+
+        if keysym == "Up":
+            delta_y = -1
+        elif keysym == "Down":
+            delta_y = 1
+        elif keysym == "Left":
+            delta_x = -1
+        elif keysym == "Right":
+            delta_x = 1
+
+        old_prop = current_room.props[self.selected_prop_index]
+        new_position = (old_prop.position[0] + delta_x, old_prop.position[1] + delta_y)
+        new_prop = replace(old_prop, position=new_position)
+
+        new_props = (
+            *current_room.props[: self.selected_prop_index],
+            new_prop,
+            *current_room.props[self.selected_prop_index + 1 :],
+        )
+
+        updated_room = replace(current_room, props=new_props)
+        room_name = self.room_select_menu.get()
+        self.master.room_data[room_name] = updated_room  # type: ignore[attr-defined]
+
+        self.draw_room(updated_room)
 
     def get_prop_image(self, prop: PropData) -> ImageTk.PhotoImage:
         image = Image.open(prop.image.get_path())
@@ -247,7 +290,7 @@ class RoomViewport(CTkFrame):
 
 class MainTabview(CTkTabview):
     def __init__(self, master: RoomEditor, on_prop_select: Callable[[str], None]) -> None:
-        super().__init__(master)
+        super().__init__(master, command=self.clear_selection)
 
         # Props tab
         props = [p.name for p in master.current_room.props]
@@ -273,6 +316,10 @@ class MainTabview(CTkTabview):
 
         self.scrollable_character_frame.pack(fill="both", expand=True)
         self.character_selector.pack(fill="both", expand=True)
+
+    def clear_selection(self) -> None:
+        self.prop_selector.set("")
+        self.character_selector.set("")
 
 
 class RoomEditor(CTk):
