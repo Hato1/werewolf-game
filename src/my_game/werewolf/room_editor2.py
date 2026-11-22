@@ -1,3 +1,5 @@
+from collections.abc import Callable
+from dataclasses import replace
 from tkinter.constants import LEFT, NW, TOP
 
 from customtkinter import (
@@ -19,19 +21,22 @@ from customtkinter import (
     set_appearance_mode,
     set_default_color_theme,
     set_widget_scaling,
-    set_window_scaling,
 )
 from PIL import Image, ImageTk
 
-from my_game.werewolf.assets import Images
 from my_game.werewolf.room import rooms
 from my_game.werewolf.room.editor_data import named_values
 from my_game.werewolf.room.loaders import PropData, RoomData
 
+DEFAULT_THEME = "dark-blue"
+NATIVE_WINDOW_RESOLUTION = (480, 208)
+MULTIPLIER = 5  # Adjust this if you want to scale the room canvas size
+SCALED_WINDOW_RESOLUTION = (NATIVE_WINDOW_RESOLUTION[0] * MULTIPLIER, NATIVE_WINDOW_RESOLUTION[1] * MULTIPLIER)
+
 
 def run() -> None:
     set_appearance_mode("Dark")
-    set_default_color_theme("dark-blue")
+    set_default_color_theme(DEFAULT_THEME)
     DrawEngine.preferred_drawing_method = "polygon_shapes"
 
     new_instance: bool = True
@@ -41,50 +46,35 @@ def run() -> None:
         new_instance = app.new_instance_requested
 
 
-class RoomEditor(CTk):
-    SPACING = 20
-    DEFAULT_SCALING = "200%"
+class LeftSidebar(CTkFrame):
     LOGO_SIZE = (100, 100)
     LOGO_PATH = "src/my_game/werewolf/assets/textures/studio-light.png"
 
-    NATIVE_WINDOW_RESOLUTION = (480, 208)
-    MULTIPLIER = 5  # Adjust this if you want to scale the room canvas size
+    def __init__(
+        self,
+        master: CTk,
+        width: int,
+        on_theme_change: Callable[[str], None] | None = None,
+        on_scaling_change: Callable[[str], None] | None = None,
+    ) -> None:
+        super().__init__(master, width=width, corner_radius=0)
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._change_scaling_event(self.DEFAULT_SCALING)
+        self.on_theme_change = on_theme_change or (lambda x: None)
+        self.on_scaling_change = on_scaling_change or (lambda x: None)
 
-        # Load rooms
-        self.room_data = named_values(rooms, RoomData)
-        if not self.room_data:
-            raise ValueError("No RoomData definitions were found in rooms.py.")
-        current_room = next(iter(self.room_data.values()))
-
-        # configure window
-        self.title("Room Editor")
-
-        self.new_instance_requested: bool = False
-        self.photo_images: list[ImageTk.PhotoImage] = []  # Keep references to prevent garbage collection
-
-        ### create left sidebar frame with widgets ###
-        self.sidebar_frame = CTkFrame(self, width=140, corner_radius=0)
         logo_image = CTkImage(Image.open(self.LOGO_PATH).convert("RGBA"), size=self.LOGO_SIZE)
-        self.logo = CTkLabel(self.sidebar_frame, image=logo_image, text="")
-        self.logo_label = CTkLabel(self.sidebar_frame, text="Room Editor", font=CTkFont(size=20, weight="bold"))
+        self.logo = CTkLabel(self, image=logo_image, text="")
+        self.logo_label = CTkLabel(self, text="Room Editor", font=CTkFont(size=20, weight="bold"))
         # Theme selection for the UI
-        self.theme_label = CTkLabel(self.sidebar_frame, text="Theme:", anchor="w")
-        self.theme_optionmenu = CTkOptionMenu(
-            self.sidebar_frame, values=ThemeManager._built_in_themes, command=self._change_theme_event
-        )
+        self.theme_label = CTkLabel(self, text="Theme:", anchor="w")
+        self.theme_optionmenu = CTkOptionMenu(self, values=ThemeManager._built_in_themes, command=self.on_theme_change)
+        self.theme_optionmenu.set(ThemeManager._currently_loaded_theme or DEFAULT_THEME)
         # Scaling options for the UI
-        self.scaling_label = CTkLabel(self.sidebar_frame, text="UI Scaling:", anchor="w")
-        self.scaling_optionmenu = CTkOptionMenu(
-            self.sidebar_frame, values=["100%", "150%", "200%"], command=self._change_scaling_event
-        )
+        self.scaling_label = CTkLabel(self, text="UI Scaling:", anchor="w")
+        self.scaling_optionmenu = CTkOptionMenu(self, values=["100%", "150%", "200%"], command=self.on_scaling_change)
         widget_scaling = round(ScalingTracker.widget_scaling * 100)
         self.scaling_optionmenu.set(f"{widget_scaling}%")
 
-        self.sidebar_frame.pack(side="left", fill="y")
         self.logo.pack(side="top", fill="x", padx=5, pady=5)
         self.logo_label.pack(side="top", fill="x", padx=0, pady=0)
         self.theme_label.pack(side="top", fill="x", padx=20, pady=(10, 0))
@@ -92,33 +82,21 @@ class RoomEditor(CTk):
         self.scaling_label.pack(side="top", fill="x", padx=20, pady=(10, 0))
         self.scaling_optionmenu.pack(side="top", fill="x", padx=20, pady=(0, 10))
 
-        ### create main tabview ###
-        self.main_tabview = CTkTabview(self)
-        self.main_tabview.pack(side="right", fill="both", expand=True, padx=0, pady=(0, 5))
 
-        # Props tab
-        props = [p.name for p in current_room.props]
-        self.prop_frame = self.main_tabview.add(f"Props ({len(props)})")
-        self.scrollable_frame = CTkScrollableFrame(self.prop_frame)
-        self.prop_selector = CTkSegmentedButton(self.scrollable_frame, values=props, orientation="vertical")
+class RoomViewport(CTkFrame):
+    def __init__(self, master: RoomEditor, on_room_change: Callable[[str], None]) -> None:
+        super().__init__(master)
 
-        self.scrollable_frame.pack(fill="both", expand=True)
-        self.prop_selector.pack(fill="both", expand=True)
-
-        # Character tab
-        characters = [c.name for c in current_room.characters]
-        self.character_frame = self.main_tabview.add(f"Characters ({len(characters)})")
-        self.scrollable_character_frame = CTkScrollableFrame(self.character_frame)
-        self.character_selector = CTkSegmentedButton(self.scrollable_frame, values=characters, orientation="vertical")
-
-        self.scrollable_character_frame.pack(fill="both", expand=True)
-        self.character_selector.pack(fill="both", expand=True)
+        self.photo_images: list[ImageTk.PhotoImage] = []  # Keep references to prevent garbage collection
+        self.selected_prop_index: int | None = None
+        self.drag_start: tuple[int, int] | None = None
+        self.drag_start_prop_position: tuple[float, float] | None = None
 
         ### Room Viewport ###
         self.room_top_menu = CTkFrame(self)
         self.room_select_label = CTkLabel(self.room_top_menu, text="Room select:", anchor="w")
         self.room_select_menu = CTkOptionMenu(
-            self.room_top_menu, dynamic_resizing=False, values=list(self.room_data), command=self._change_room
+            self.room_top_menu, dynamic_resizing=False, values=list(master.room_data), command=on_room_change
         )
 
         self.room_top_menu.pack(side=TOP, fill="x")
@@ -126,46 +104,78 @@ class RoomEditor(CTk):
         self.room_select_menu.pack(side=LEFT, padx=20, pady=(10, 10))
 
         self.room_canvas = CTkCanvas(
-            width=self.NATIVE_WINDOW_RESOLUTION[0] * self.MULTIPLIER,
-            height=self.NATIVE_WINDOW_RESOLUTION[1] * self.MULTIPLIER,
+            self,
+            width=SCALED_WINDOW_RESOLUTION[0],
+            height=SCALED_WINDOW_RESOLUTION[1],
         )
         self.room_canvas.pack(side=LEFT, anchor="nw")
+        self.room_canvas.bind("<Button-1>", self._on_canvas_press)
+        self.room_canvas.bind("<B1-Motion>", self._on_canvas_drag)
+        self.room_canvas.bind("<ButtonRelease-1>", self._on_canvas_release)
 
-        self._draw_room(current_room)
+        self.draw_room(master.current_room)
 
-    def _open_ctktoplevel_event(self) -> None:
-        toplevel = CTkToplevel(self)
-        toplevel.geometry(f"{500}x{250}")
-        toplevel.resizable(width=True, height=True)
-        toplevel.title("CTkToplevel")
+    def get_current_room_name(self) -> str:
+        return self.room_select_menu.get()
 
-    def _open_input_dialog_event(self) -> None:
-        dialog = CTkInputDialog(title="CTkInputDialog", text="Description of requested input")
-        dialog.get_input()
+    def _on_canvas_press(self, event: object) -> None:
+        """Handle canvas mouse press - record drag start position."""
+        if self.selected_prop_index is None:
+            return
 
-    def _change_scaling_event(self, new_scaling: str) -> None:
-        new_scaling_float = int(new_scaling.replace("%", "")) / 100
-        set_widget_scaling(new_scaling_float)
-        # Updating the window scaling resizes the window accordingly.
-        set_window_scaling(new_scaling_float)
+        current_room = self.master.current_room  # type: ignore[attr-defined]
+        if self.selected_prop_index >= len(current_room.props):
+            return
 
-    def _change_theme_event(self, new_theme: str) -> None:
-        set_default_color_theme(new_theme)
-        self.new_instance_requested = True
-        self.destroy()
+        self.drag_start = (event.x, event.y)  # type: ignore[attr-defined]
+        prop = current_room.props[self.selected_prop_index]
+        self.drag_start_prop_position = prop.position
 
-    def _get_image_size(self, image: Images, scale: float = 1) -> tuple[int, int]:
-        """Return the size of the given image as a (width, height) tuple."""
-        pil_image = image.load()
-        return (int(pil_image.size[0] * scale), int(pil_image.size[1] * scale))
+    def _on_canvas_drag(self, event: object) -> None:
+        """Handle canvas mouse drag - update prop position in real-time."""
+        if self.drag_start is None or self.drag_start_prop_position is None or self.selected_prop_index is None:
+            return
+
+        current_room = self.master.current_room  # type: ignore[attr-defined]
+        if self.selected_prop_index >= len(current_room.props):
+            return
+
+        event_x: int = event.x  # type: ignore[attr-defined]
+        event_y: int = event.y  # type: ignore[attr-defined]
+
+        delta_x = round((event_x - self.drag_start[0]) / MULTIPLIER)
+        delta_y = round((event_y - self.drag_start[1]) / MULTIPLIER)
+
+        new_x = self.drag_start_prop_position[0] + delta_x
+        new_y = self.drag_start_prop_position[1] + delta_y
+
+        old_prop = current_room.props[self.selected_prop_index]
+        new_prop = replace(old_prop, position=(new_x, new_y))
+
+        new_props = (
+            *current_room.props[: self.selected_prop_index],
+            new_prop,
+            *current_room.props[self.selected_prop_index + 1 :],
+        )
+
+        updated_room = replace(current_room, props=new_props)
+        room_name = self.room_select_menu.get()
+        self.master.room_data[room_name] = updated_room  # type: ignore[attr-defined]
+
+        self.draw_room(updated_room)
+
+    def _on_canvas_release(self, event: object) -> None:
+        """Handle canvas mouse release - finalize drag."""
+        self.drag_start = None
+        self.drag_start_prop_position = None
 
     def get_prop_image(self, prop: PropData) -> ImageTk.PhotoImage:
         image = Image.open(prop.image.get_path())
         size = prop.size or (int(image.size[0] * prop.scale), int(image.size[1] * prop.scale))
-        scaled_size = (size[0] * self.MULTIPLIER, size[1] * self.MULTIPLIER)
+        scaled_size = (size[0] * MULTIPLIER, size[1] * MULTIPLIER)
         return ImageTk.PhotoImage(image.resize(scaled_size))
 
-    def _draw_room(self, room: RoomData) -> None:
+    def draw_room(self, room: RoomData) -> None:
         """Draw room content in depth order using scaled canvas coordinates."""
         self.room_canvas.delete("all")
         self.photo_images.clear()
@@ -176,7 +186,7 @@ class RoomEditor(CTk):
         for index, prop in enumerate(props):
             image = self.get_prop_image(prop)
             self.photo_images.append(image)
-            corrected_position = (prop.position[0] * self.MULTIPLIER, prop.position[1] * self.MULTIPLIER)
+            corrected_position = (prop.position[0] * MULTIPLIER, prop.position[1] * MULTIPLIER)
             self.room_canvas.create_image(
                 *corrected_position,
                 image=image,
@@ -234,40 +244,112 @@ class RoomEditor(CTk):
         #         tags=("content", f"points:{index}"),
         #     )
 
-    def _change_room(self, new_room: str) -> None:
+
+class MainTabview(CTkTabview):
+    def __init__(self, master: RoomEditor, on_prop_select: Callable[[str], None]) -> None:
+        super().__init__(master)
+
+        # Props tab
+        props = [p.name for p in master.current_room.props]
+        self.prop_frame = self.add(f"Props ({len(props)})")
+        self.scrollable_frame = CTkScrollableFrame(self.prop_frame)
+        self.prop_selector = CTkSegmentedButton(
+            self.scrollable_frame,
+            values=props,
+            orientation="vertical",
+            command=on_prop_select,
+        )
+
+        self.scrollable_frame.pack(fill="both", expand=True)
+        self.prop_selector.pack(fill="both", expand=True)
+
+        # Character tab
+        characters = [c.name for c in master.current_room.characters]
+        self.character_frame = self.add(f"Characters ({len(characters)})")
+        self.scrollable_character_frame = CTkScrollableFrame(self.character_frame)
+        self.character_selector = CTkSegmentedButton(
+            self.scrollable_character_frame, values=characters, orientation="vertical"
+        )
+
+        self.scrollable_character_frame.pack(fill="both", expand=True)
+        self.character_selector.pack(fill="both", expand=True)
+
+
+class RoomEditor(CTk):
+    SPACING = 20
+    DEFAULT_SCALING = "200%"
+
+    LEFT_SIDEBAR_WIDTH = 140
+    RIGHT_SIDEBAR_WIDTH = 140
+
+    def __init__(self) -> None:
+        super().__init__()
+        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 1000)
+        default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.5)
+        self.geometry(f"{default_width}x{default_height}")
+        self._change_scaling_event(self.DEFAULT_SCALING)
+
+        # Load rooms
+        self.room_data = named_values(rooms, RoomData)
+        if not self.room_data:
+            raise ValueError("No RoomData definitions were found in rooms.py.")
+        self._default_room = next(iter(self.room_data.values()))
+
+        # configure window
+        self.title("Room Editor")
+
+        self.new_instance_requested: bool = False
+
+        ### create left sidebar frame with widgets ###
+        self.sidebar_frame = LeftSidebar(
+            self,
+            width=self.LEFT_SIDEBAR_WIDTH,
+            on_theme_change=self._change_theme_event,
+            on_scaling_change=self._change_scaling_event,
+        )
+        self.room_viewport = RoomViewport(self, on_room_change=self._change_room_event)
+        self.main_tabview = MainTabview(self, on_prop_select=self.prop_select_event)
+
+        self.sidebar_frame.pack(side="left", fill="y")
+        self.room_viewport.pack(side="left", fill="both", expand=False)
+        self.main_tabview.pack(side="right", fill="both", expand=True, padx=0, pady=(0, 5))
+
+    @property
+    def current_room(self) -> RoomData:
+        if hasattr(self, "room_viewport"):
+            return self.room_data[self.room_viewport.get_current_room_name()]
+        else:
+            return self._default_room
+
+    def _open_ctktoplevel_event(self) -> None:
+        toplevel = CTkToplevel(self)
+        toplevel.geometry(f"{500}x{250}")
+        toplevel.resizable(width=True, height=True)
+        toplevel.title("CTkToplevel")
+
+    def _open_input_dialog_event(self) -> None:
+        dialog = CTkInputDialog(title="CTkInputDialog", text="Description of requested input")
+        dialog.get_input()
+
+    def _change_scaling_event(self, new_scaling: str) -> None:
+        new_scaling_float = int(new_scaling.replace("%", "")) / 100
+        set_widget_scaling(new_scaling_float)
+        # Updating the window scaling resizes the window accordingly.
+        # set_window_scaling(new_scaling_float)
+
+    def _change_theme_event(self, new_theme: str) -> None:
+        set_default_color_theme(new_theme)
+        self.new_instance_requested = True
+        self.destroy()
+
+    def _change_room_event(self, new_room: str) -> None:
         """Switch the preview and content tree to the chosen room."""
         # self._refresh_tree()
-        self._draw_room(self.room_data[new_room])
+        self.room_viewport.draw_room(self.room_data[new_room])
 
-    # def _canvas_press(self, event: Event) -> None:
-    #     """Select the topmost tagged item and begin dragging movable content."""
-    #     self.drag_origin = (event.x, event.y)
-
-    # def _canvas_drag(self, event: Event) -> None:
-    #     """Move the selected prop or character in room-coordinate increments."""
-    #     selected_item = "bank"
-    #     if self.drag_origin is None or selected_item is None:
-    #         return
-    #     kind, index = self.selection
-    #     if kind not in {"props", "characters"}:
-    #         return
-    #     delta_x = round((event.x - self.drag_origin[0]) / (VIEW_SCALE * self.scale))
-    #     delta_y = round((event.y - self.drag_origin[1]) / (VIEW_SCALE * self.scale))
-    #     target = self.drag_position[0] + delta_x, self.drag_position[1] + delta_y
-    #     self._set_content_position(kind, index, target)
-
-    # def _canvas_release(self, event: Event) -> None:
-    #     """Finish a drag and refresh the tree and form with the final position."""
-    #     if self.selection is not None:
-    #         kind, index = self.selection
-    #         if kind in {"props", "characters"} and self.drag_origin is not None and self.drag_position is not None:
-    #             target = (
-    #                 self.drag_position[0] + round((event.x - self.drag_origin[0]) / (VIEW_SCALE * self.scale)),
-    #                 self.drag_position[1] + round((event.y - self.drag_origin[1]) / (VIEW_SCALE * self.scale)),
-    #             )
-    #             if target != getattr(self.room, kind)[index].position:
-    #                 self._set_content_position(kind, index, target)
-    #         self._refresh_tree()
-    #         self.tree.selection_set(f"{self.selection[0]}:{self.selection[1]}")
-    #         self._refresh_form()
-    #     self.drag_origin = None
+    def prop_select_event(self, selected_prop: str) -> None:
+        current_room = self.current_room
+        for i, prop in enumerate(current_room.props):
+            if prop.name == selected_prop:
+                self.room_viewport.selected_prop_index = i
+                break
