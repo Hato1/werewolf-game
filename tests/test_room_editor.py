@@ -1,8 +1,10 @@
 import ast
+import importlib.util
 import signal
 import tkinter as tk
 from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import Mock, call
@@ -12,8 +14,9 @@ import pytest
 from my_game.werewolf import room_editor
 from my_game.werewolf.assets import Images
 from my_game.werewolf.room import characters, rooms
+from my_game.werewolf.room.editor_data import restore_value, update_room_source
 from my_game.werewolf.room.loaders import HotspotData, RoomData
-from my_game.werewolf.room_editor import RoomEditor, _restore_value, update_room_source
+from my_game.werewolf.room_editor import RoomEditor
 
 
 def test_update_room_source_replaces_multiple_rooms_and_preserves_other_source() -> None:
@@ -60,12 +63,36 @@ def test_update_room_source_appends_new_room_assignment() -> None:
     )
 
 
+def test_generated_room_source_round_trips_all_content(tmp_path: Path) -> None:
+    hotspot = HotspotData("Door", "A door.", ((1, 2), (3, 4), (5, 6)))
+    prop = replace(rooms.INN.props[1], position=(25, 30), hotspot=hotspot)
+    room_data = RoomData(
+        name="Edited room",
+        description="A room with editor content.",
+        props=(prop,),
+        hotspots=(hotspot,),
+        characters=(characters.PLAYER,),
+        regions=(((10, 20), (30, 40), (50, 60)),),
+        points=((70, 80),),
+        walkable_areas=(((0, 0), (100, 0), (100, 100)),),
+    )
+    path = tmp_path / "edited_rooms.py"
+    path.write_text(update_room_source('"""Rooms."""\n', {"EDITED_ROOM": room_data}), encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("edited_rooms", path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.EDITED_ROOM == room_data
+
+
 def test_restore_value_parses_polygon_coordinates_as_tuples() -> None:
-    assert _restore_value("[[1, 2], [3, 4]]", ((0, 0),), "polygon") == ((1, 2), (3, 4))
+    assert restore_value("[[1, 2], [3, 4]]", ((0, 0),), "polygon") == ((1, 2), (3, 4))
 
 
 def test_restore_value_parses_embedded_hotspots() -> None:
-    hotspot = _restore_value(
+    hotspot = restore_value(
         '{"name": "Door", "description": "A door.", "polygon": [[1, 2], [3, 4]]}',
         None,
         "hotspot",
@@ -76,14 +103,14 @@ def test_restore_value_parses_embedded_hotspots() -> None:
 
 
 def test_restore_value_handles_optional_room_fields() -> None:
-    assert _restore_value("null", None, "size") is None
-    assert _restore_value("[640, 360]", None, "size") == (640, 360)
-    assert _restore_value("PLAYER_WALK", None, "walk_image") is Images.PLAYER_WALK
+    assert restore_value("null", None, "size") is None
+    assert restore_value("[640, 360]", None, "size") == (640, 360)
+    assert restore_value("PLAYER_WALK", None, "walk_image") is Images.PLAYER_WALK
 
 
 def test_restore_value_updates_existing_hotspots() -> None:
     original = HotspotData("Old", "Old hotspot.")
-    updated = _restore_value(
+    updated = restore_value(
         '{"name": "New", "description": "Updated.", "polygon": [[10, 20], [30, 40]]}',
         original,
         "hotspot",
@@ -139,6 +166,27 @@ def test_new_geometry_is_inside_room(kind: str, monkeypatch: pytest.MonkeyPatch)
     assert all(0 <= x < 480 and 0 <= y < 208 for x, y in points)
     if kind == "points":
         assert content == (240, 104)
+
+
+@pytest.mark.parametrize("kind", ["points", "props"])
+def test_apply_content_fields_updates_room(kind: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    editor = RoomEditor.__new__(RoomEditor)
+    editor.room_key = "TEST"
+    prop = rooms.INN.props[1]
+    editor.room_data = {"TEST": RoomData(name="Test", description="", points=((10, 20),), props=(prop,))}
+    editor.selection = (kind, 0)
+    field_name = "coordinates" if kind == "points" else "position"
+    editor.form_vars = {field_name: Mock(get=Mock(return_value="[40, 50]"))}
+    editor.form_texts = {}
+    editor.tree = Mock(spec=room_editor.ttk.Treeview)
+    monkeypatch.setattr(editor, "_refresh_tree", Mock())
+    monkeypatch.setattr(editor, "_refresh_form", Mock())
+    monkeypatch.setattr(editor, "_draw_room", Mock())
+
+    editor._apply_content_fields()
+
+    assert editor.room.points == (((40, 50) if kind == "points" else (10, 20)),)
+    assert editor.room.props[0].position == ((40, 50) if kind == "props" else prop.position)
 
 
 def test_preview_scales_content_and_overlays(monkeypatch: pytest.MonkeyPatch) -> None:

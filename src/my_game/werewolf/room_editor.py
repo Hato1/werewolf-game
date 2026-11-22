@@ -1,25 +1,27 @@
 """Desktop editor for the werewolf game's declarative room definitions."""
 
-import ast
 import base64
 import io
 import json
-import re
 import signal
 import tkinter as tk
-from collections.abc import Callable
 from dataclasses import fields, is_dataclass, replace
-from enum import Enum
 from functools import partial
 from pathlib import Path
 from tkinter import messagebox, ttk
-from types import ModuleType
 from typing import Any
 
 import pygame as pg
 
 from my_game.werewolf.assets import IMAGES_PATH, Images
 from my_game.werewolf.room import characters, props, rooms
+from my_game.werewolf.room.editor_data import (
+    json_value,
+    named_values,
+    replace_room_contents,
+    restore_value,
+    update_room_source,
+)
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, Polygon, PropData, RoomData
 
 ROOMS_PATH = Path(__file__).parent / "room" / "rooms.py"
@@ -32,209 +34,6 @@ MIN_POLYGON_POINTS = 2
 CONTENT_FIELDS = ("props", "characters", "hotspots", "regions", "points", "walkable_areas")
 
 
-def _named_values(module: ModuleType, value_type: type) -> dict[str, Any]:
-    return {
-        name: value
-        for name, value in vars(module).items()
-        if not name.startswith("_") and isinstance(value, value_type)
-    }
-
-
-def _json_value(value: Any) -> Any:
-    if isinstance(value, Enum):
-        return value.name
-    if is_dataclass(value):
-        return {field.name: _json_value(getattr(value, field.name)) for field in fields(value)}
-    if isinstance(value, tuple):
-        return [_json_value(item) for item in value]
-    return value
-
-
-def _catalog_reference(value: Any) -> str | None:
-    for module_name, module in (("props", props), ("characters", characters)):
-        for name, catalog_item in vars(module).items():
-            if isinstance(catalog_item, type(value)) and catalog_item == value:
-                return f"{module_name}.{name}"
-    return None
-
-
-def _python_expression(value: Any, indent: int = 0, *, use_catalog: bool = True) -> str:
-    if use_catalog and (reference := _catalog_reference(value)) is not None:
-        return reference
-    if isinstance(value, Images):
-        return f"Images.{value.name}"
-    if is_dataclass(value):
-        padding = " " * (indent + 4)
-        arguments = [
-            f"{padding}{field.name}={_python_expression(getattr(value, field.name), indent + 4)},"
-            for field in fields(value)
-        ]
-        return f"{type(value).__name__}(\n" + "\n".join(arguments) + f"\n{' ' * indent})"
-    if isinstance(value, tuple):
-        if not value:
-            return "()"
-        elements = ", ".join(_python_expression(item, indent) for item in value)
-        return f"({elements}{',' if len(value) == 1 else ''})"
-    return repr(value)
-
-
-def _set_import(source: str, module_name: str, names: set[str]) -> str:
-    tree = ast.parse(source)
-    import_node = next(
-        (
-            node
-            for node in tree.body
-            if isinstance(node, ast.ImportFrom) and node.module == module_name and node.level == 0
-        ),
-        None,
-    )
-    lines = source.splitlines()
-    import_line = f"from {module_name} import {', '.join(sorted(names))}"
-    if import_node is not None:
-        end_line = import_node.end_lineno or import_node.lineno
-        lines[import_node.lineno - 1 : end_line] = [import_line]
-        return "\n".join(lines) + "\n"
-
-    insert_at = 0
-    if (
-        tree.body
-        and isinstance(tree.body[0], ast.Expr)
-        and isinstance(tree.body[0].value, ast.Constant)
-        and isinstance(tree.body[0].value.value, str)
-    ):
-        insert_at = tree.body[0].end_lineno or tree.body[0].lineno
-    lines.insert(insert_at, import_line)
-    return "\n".join(lines) + "\n"
-
-
-def _find_room_assignments(tree: ast.Module) -> dict[str, ast.stmt]:
-    assignments: dict[str, ast.stmt] = {}
-    for node in tree.body:
-        targets = (
-            node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, ast.AnnAssign) else []
-        )
-        for target in targets:
-            if isinstance(target, ast.Name):
-                assignments[target.id] = node
-    return assignments
-
-
-def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
-    """Replace selected room assignments while preserving the rest of rooms.py."""
-    tree = ast.parse(source)
-    assignments = _find_room_assignments(tree)
-    lines = source.splitlines()
-    replacements: list[tuple[int, int, list[str]]] = []
-    additions: list[str] = []
-    for name, room_data in updates.items():
-        statement = f"{name} = {_python_expression(room_data, use_catalog=False)}"
-        if name in assignments:
-            node = assignments[name]
-            replacements.append((node.lineno - 1, node.end_lineno or node.lineno, statement.splitlines()))
-        else:
-            additions.extend(["", statement])
-    for start, end, statement_lines in sorted(replacements, reverse=True):
-        lines[start:end] = statement_lines
-    lines.extend(additions)
-    updated = "\n".join(lines).rstrip() + "\n"
-
-    if "Images." in updated:
-        updated = _set_import(updated, "my_game.werewolf.assets", {"Images"})
-
-    used_types = {
-        data_type.__name__
-        for data_type in (CharacterData, HotspotData, PropData, RoomData)
-        if re.search(rf"\b{data_type.__name__}\(", updated)
-    }
-    if used_types:
-        updated = _set_import(updated, "my_game.werewolf.room.loaders", used_types)
-
-    if "characters." in updated:
-        updated = _set_import(
-            updated, "my_game.werewolf.room", {"characters", "props"} if "props." in updated else {"characters"}
-        )
-    elif "props." not in updated:
-        updated = re.sub(r"^from my_game\.werewolf\.room import props\s*\n", "", updated, flags=re.MULTILINE)
-
-    ast.parse(updated)
-    return updated
-
-
-def _restore_boolean(raw_value: str) -> bool:
-    normalized = raw_value.strip().lower()
-    if normalized not in {"true", "false"}:
-        raise ValueError("Enter true or false.")
-    return normalized == "true"
-
-
-def _restore_tuple(raw_value: str) -> tuple[Any, ...]:
-    def tuples(value: Any) -> Any:
-        if isinstance(value, list):
-            return tuple(tuples(item) for item in value)
-        return value
-
-    return tuples(json.loads(raw_value))
-
-
-def _restore_hotspot(raw_value: str) -> HotspotData | None:
-    value = json.loads(raw_value)
-    if value is None:
-        return None
-    return HotspotData(
-        name=value["name"],
-        description=value["description"],
-        polygon=tuple(tuple(point) for point in value.get("polygon", ())),
-    )
-
-
-def _restore_optional(raw_value: str, field_name: str) -> Any:
-    normalized = raw_value.strip()
-    if normalized.lower() in {"null", "none"}:
-        return None
-    if field_name in {"size", "path", "position", "polygon"}:
-        return _restore_tuple(raw_value)
-    if field_name in {"image", "walk_image"}:
-        return Images[normalized]
-    raise ValueError(f"Unsupported field value for {field_name}.")
-
-
-def _restore_value(raw_value: str, current: Any, field_name: str) -> Any:
-    if isinstance(current, Images):
-        return Images[raw_value.strip()]
-    if isinstance(current, tuple):
-        return _restore_tuple(raw_value)
-    if field_name == "hotspot":
-        return _restore_hotspot(raw_value)
-    if current is None:
-        return _restore_optional(raw_value, field_name)
-    converters: dict[type, Callable[[str], Any]] = {
-        bool: _restore_boolean,
-        int: int,
-        float: float,
-        str: str,
-    }
-    converter = converters.get(type(current))
-    if converter is None:
-        raise ValueError(f"Unsupported field value for {field_name}.")
-    return converter(raw_value)
-
-
-def _replace_room_contents(room: RoomData, kind: str, values: tuple[Any, ...]) -> RoomData:
-    if kind == "props":
-        return replace(room, props=values)
-    if kind == "characters":
-        return replace(room, characters=values)
-    if kind == "hotspots":
-        return replace(room, hotspots=values)
-    if kind == "regions":
-        return replace(room, regions=values)
-    if kind == "points":
-        return replace(room, points=values)
-    if kind == "walkable_areas":
-        return replace(room, walkable_areas=values)
-    raise ValueError(f"Unknown room content field: {kind}")
-
-
 class RoomEditor:
     """Tkinter room editor with a live room preview and editable data fields."""
 
@@ -243,7 +42,7 @@ class RoomEditor:
         self.root.title("Werewolf Room Editor")
         self.root.minsize(1360, 720)
 
-        self.room_definitions = _named_values(rooms, RoomData)
+        self.room_definitions = named_values(rooms, RoomData)
         if not self.room_definitions:
             raise ValueError("No RoomData definitions were found in rooms.py.")
         self.original_definitions = dict(self.room_definitions)
@@ -273,9 +72,11 @@ class RoomEditor:
 
     @property
     def room(self) -> RoomData:
+        """Return the editable definition for the currently selected room."""
         return self.room_data[self.room_key]
 
     def _build_ui(self) -> None:
+        """Create the room preview, editor controls and status line."""
         self._build_header()
         body = ttk.Frame(self.root, padding=(8, 0, 8, 8))
         body.pack(fill=tk.BOTH, expand=True)
@@ -291,6 +92,7 @@ class RoomEditor:
         ttk.Label(self.root, textvariable=self.status, anchor=tk.W, padding=(8, 0, 8, 8)).pack(fill=tk.X)
 
     def _build_header(self) -> None:
+        """Create the room selector and save button."""
         header = ttk.Frame(self.root, padding=8)
         header.pack(fill=tk.X)
         ttk.Label(header, text="Room").pack(side=tk.LEFT)
@@ -300,6 +102,7 @@ class RoomEditor:
         ttk.Button(header, text="Save room definitions", command=self._save).pack(side=tk.LEFT)
 
     def _build_sidebar(self, body: ttk.Frame) -> None:
+        """Create room fields, the content tree and the selected-item form."""
         sidebar = ttk.Frame(body, padding=(12, 0, 0, 0), width=380)
         sidebar.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         sidebar.pack_propagate(flag=False)
@@ -369,6 +172,7 @@ class RoomEditor:
         self.room_selector.set(self.room_key)
 
     def _change_room(self, _event: tk.Event) -> None:
+        """Switch the preview and content tree to the chosen room."""
         _ = _event
         key = self.room_selector.get()
         if key in self.room_data:
@@ -378,6 +182,7 @@ class RoomEditor:
             self._draw_room()
 
     def _refresh_tree(self) -> None:
+        """Rebuild the room properties and content tree from editable data."""
         self.tree.delete(*self.tree.get_children())
         self.room_name.set(self.room.name)
         self.room_description.set(self.room.description)
@@ -390,13 +195,18 @@ class RoomEditor:
         self._refresh_catalog()
 
     def _refresh_catalog(self) -> None:
-        values = {**_named_values(props, PropData), **_named_values(characters, CharacterData)}
+        """Populate the catalog with reusable prop and character definitions."""
+        values: dict[str, PropData | CharacterData] = {
+            **named_values(props, PropData),
+            **named_values(characters, CharacterData),
+        }
         self.catalog_items = values
         self.catalog["values"] = list(values)
         if values and not self.catalog.get():
             self.catalog.set(next(iter(values)))
 
     def _draw_room(self) -> None:
+        """Draw room content in depth order using scaled canvas coordinates."""
         self.canvas.delete("all")
         for index, prop in sorted(enumerate(self.room.props), key=lambda item: item[1].depth, reverse=True):
             size = prop.size or self._scaled_size(prop.image, prop.scale)
@@ -456,6 +266,7 @@ class RoomEditor:
             )
 
     def _draw_polygon(self, kind: str, index: int, polygon: Polygon, color: str) -> None:
+        """Draw a tagged geometry overlay in the scaled preview."""
         if len(polygon) < MIN_POLYGON_POINTS:
             return
         self.canvas.create_polygon(
@@ -470,10 +281,12 @@ class RoomEditor:
         return pg.image.load(str(IMAGES_PATH / image.value)).get_size()
 
     def _scaled_size(self, image: Images, scale: float) -> tuple[int, int]:
+        """Return the sprite dimensions in room coordinates."""
         width, height = self._image_size(image)
         return max(1, round(width * scale)), max(1, round(height * scale))
 
     def _get_photo(self, image: Images, size: tuple[int, int]) -> tk.PhotoImage:
+        """Load and cache a Tk image scaled to the requested canvas dimensions."""
         key = image, size
         if key not in self.image_cache:
             surface = pg.image.load(str(IMAGES_PATH / image.value))
@@ -485,6 +298,7 @@ class RoomEditor:
         return self.image_cache[key]
 
     def _canvas_press(self, event: tk.Event) -> None:
+        """Select the topmost tagged item and begin dragging movable content."""
         overlapping = self.canvas.find_overlapping(event.x, event.y, event.x, event.y)
         for canvas_item in reversed(overlapping):
             for tag in self.canvas.gettags(canvas_item):
@@ -502,6 +316,7 @@ class RoomEditor:
         self._draw_room()
 
     def _canvas_drag(self, event: tk.Event) -> None:
+        """Move the selected prop or character in room-coordinate increments."""
         if self.selection is None or self.drag_origin is None or self.drag_position is None:
             return
         kind, index = self.selection
@@ -513,6 +328,7 @@ class RoomEditor:
         self._set_content_position(kind, index, target)
 
     def _canvas_release(self, event: tk.Event) -> None:
+        """Finish a drag and refresh the tree and form with the final position."""
         if self.selection is not None:
             kind, index = self.selection
             if kind in {"props", "characters"} and self.drag_origin is not None and self.drag_position is not None:
@@ -529,12 +345,14 @@ class RoomEditor:
         self.drag_position = None
 
     def _set_content_position(self, kind: str, index: int, position: tuple[int, int]) -> None:
+        """Replace a movable item at its new position and redraw the preview."""
         values = list(getattr(self.room, kind))
         values[index] = replace(values[index], position=position)
-        self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))
+        self.room_data[self.room_key] = replace_room_contents(self.room, kind, tuple(values))
         self._draw_room()
 
     def _tree_select(self, _event: tk.Event) -> None:
+        """Update the preview and form when the tree selection changes."""
         _ = _event
         selection = self.tree.selection()
         if not selection or ":" not in selection[0]:
@@ -545,6 +363,7 @@ class RoomEditor:
         self._select_content(kind, int(index))
 
     def _select_content(self, kind: str, index: int) -> None:
+        """Synchronize the selection without retriggering the tree callback."""
         self.selection = (kind, index)
         item_id = f"{kind}:{index}"
         if self.tree.selection() != (item_id,):
@@ -553,6 +372,7 @@ class RoomEditor:
         self._draw_room()
 
     def _refresh_form(self) -> None:
+        """Build property controls appropriate to the selected content type."""
         for widget in self.form_frame.winfo_children():
             widget.destroy()
         self.form_vars.clear()
@@ -579,7 +399,7 @@ class RoomEditor:
                 self.form_vars[data_field.name] = image_var
             elif data_field.name in {"description", "hotspot"}:
                 text = tk.Text(self.form_frame, width=24, height=3, wrap=tk.WORD)
-                raw = _json_value(current) if data_field.name == "hotspot" else current
+                raw = json_value(current) if data_field.name == "hotspot" else current
                 text.insert("1.0", json.dumps(raw) if data_field.name == "hotspot" else str(raw))
                 text.grid(row=row, column=1, sticky=tk.EW, pady=2)
                 self.form_texts[data_field.name] = text
@@ -596,15 +416,17 @@ class RoomEditor:
 
     @staticmethod
     def _field_text(value: Any) -> str:
+        """Represent a field value for a single-line text input."""
         if isinstance(value, Images):
             return value.name
         if isinstance(value, tuple):
-            return json.dumps(_json_value(value))
+            return json.dumps(json_value(value))
         if value is None:
             return "null"
         return str(value)
 
     def _apply_room_fields(self) -> None:
+        """Apply the room name and description without changing its contents."""
         self.room_data[self.room_key] = replace(
             self.room,
             name=self.room_name.get(),
@@ -614,46 +436,40 @@ class RoomEditor:
         self._draw_room()
 
     def _apply_content_fields(self) -> None:
+        """Parse and apply the selected item's form values to the editable room."""
         if self.selection is None:
             return
         kind, index = self.selection
         values = list(getattr(self.room, kind))
         current = values[index]
-        changes: dict[str, Any] = {}
-        if not is_dataclass(current):
-            try:
-                values[index] = _restore_value(self.form_vars["coordinates"].get(), current, "coordinates")
-            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-                messagebox.showerror("Invalid room data", str(error), parent=self.root)
-                return
-            self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))
-            self._refresh_tree()
-            self.tree.selection_set(f"{kind}:{index}")
-            self._refresh_form()
-            self._draw_room()
-            return
-        if not isinstance(current, (CharacterData, HotspotData, PropData)):
+        if is_dataclass(current) and not isinstance(current, (CharacterData, HotspotData, PropData)):
             raise TypeError(f"Unsupported room content type: {type(current).__name__}")
         try:
-            for name, variable in self.form_vars.items():
-                if name in {field.name for field in fields(current)}:
-                    original = getattr(current, name)
-                    raw = variable.get()
-                    changes[name] = raw if isinstance(original, bool) else _restore_value(raw, original, name)
-            for name, text in self.form_texts.items():
-                raw = text.get("1.0", tk.END).strip()
-                changes[name] = _restore_value(raw, getattr(current, name), name)
-            values[index] = replace(current, **changes)
+            if not isinstance(current, (CharacterData, HotspotData, PropData)):
+                values[index] = restore_value(self.form_vars["coordinates"].get(), current, "coordinates")
+            else:
+                changes: dict[str, Any] = {}
+                field_names = {field.name for field in fields(current)}
+                for name, variable in self.form_vars.items():
+                    if name in field_names:
+                        original = getattr(current, name)
+                        raw = variable.get()
+                        changes[name] = raw if isinstance(original, bool) else restore_value(raw, original, name)
+                for name, text in self.form_texts.items():
+                    raw = text.get("1.0", tk.END).strip()
+                    changes[name] = restore_value(raw, getattr(current, name), name)
+                values[index] = replace(current, **changes)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             messagebox.showerror("Invalid room data", str(error), parent=self.root)
             return
-        self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))
+        self.room_data[self.room_key] = replace_room_contents(self.room, kind, tuple(values))
         self._refresh_tree()
         self.tree.selection_set(f"{kind}:{index}")
         self._refresh_form()
         self._draw_room()
 
     def _add_catalog_item(self, kind: str) -> None:
+        """Add the selected reusable prop or character definition."""
         name = self.catalog.get()
         item = self.catalog_items.get(name)
         expected = PropData if kind == "props" else CharacterData
@@ -662,11 +478,12 @@ class RoomEditor:
             return
         values = list(getattr(self.room, kind))
         values.append(item)
-        self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))
+        self.room_data[self.room_key] = replace_room_contents(self.room, kind, tuple(values))
         self._refresh_tree()
         self._select_content(kind, len(values) - 1)
 
     def _add_geometry(self, kind: str) -> None:
+        """Add an editable hotspot, point, region or walkable area."""
         values = list(getattr(self.room, kind))
         if kind == "hotspots":
             values.append(HotspotData(name="New hotspot", description="", polygon=POLYGON_DEFAULT))
@@ -674,23 +491,25 @@ class RoomEditor:
             values.append((ROOM_VIEW_SIZE[0] // 2, ROOM_VIEW_SIZE[1] // 2))
         else:
             values.append(POLYGON_DEFAULT)
-        self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))
+        self.room_data[self.room_key] = replace_room_contents(self.room, kind, tuple(values))
         self._refresh_tree()
         self._select_content(kind, len(values) - 1)
 
     def _delete_selected(self) -> None:
+        """Remove the selected content from the current room."""
         if self.selection is None:
             return
         kind, index = self.selection
         values = list(getattr(self.room, kind))
         del values[index]
-        self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))
+        self.room_data[self.room_key] = replace_room_contents(self.room, kind, tuple(values))
         self.selection = None
         self._refresh_tree()
         self._refresh_form()
         self._draw_room()
 
     def _save(self) -> None:
+        """Write changed room definitions to the room module."""
         updates = {name: data for name, data in self.room_data.items() if data != self.original_definitions.get(name)}
         if not updates:
             self.status.set("No changes to save.")
