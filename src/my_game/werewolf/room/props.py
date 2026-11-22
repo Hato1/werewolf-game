@@ -17,7 +17,7 @@ BACKGROUND = PropData(
 )
 
 STUDIO = PropData(
-    name="Studio Background",
+    name="Studio",
     description="a tiny studio model.",
     image=Images.STUDIO,
     position=(800 // 2, 70 // 2),

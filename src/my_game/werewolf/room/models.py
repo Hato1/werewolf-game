@@ -52,6 +52,7 @@ class Character:
     idle_frames: list[pg.Surface]
     walk_frames: list[pg.Surface]
     position: pg.Vector2
+    depth: int
     speed: float
     path: tuple[Point, ...]
     loop: bool
@@ -79,6 +80,7 @@ class Character:
             idle_frames,
             walk_frames,
             pg.Vector2(data.position),
+            data.depth,
             data.speed,
             data.path,
             loop=data.loop,

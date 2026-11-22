@@ -6,6 +6,7 @@ readme = "README.md"
 # Use Python 3.14 as it's the latest pygbag supports at the time of writing.
 requires-python = "==3.14.*"
 dependencies = [
+    "customtkinter>=6.0.0",
     "moderngl>=5.13.0",
     "pygame-ce>=2.5.8",
     "pygame-gui>=0.6.14",
@@ -27,6 +28,7 @@ dev = [
 [project.scripts]
 run-game = "my_game.main:run"
 room-editor = "my_game.werewolf.room_editor:run"
+room-editor2 = "my_game.werewolf.room_editor2:run"
 
 # Including this to install project files into venv.
 [build-system]
