@@ -23,7 +23,9 @@ from my_game.werewolf.room import characters, props, rooms
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, Polygon, PropData, RoomData
 
 ROOMS_PATH = Path(__file__).parent / "room" / "rooms.py"
-VIEW_SIZE = (960, 416)
+ROOM_VIEW_SIZE = (480, 208)
+VIEW_SCALE = 2
+VIEW_SIZE = (ROOM_VIEW_SIZE[0] * VIEW_SCALE, ROOM_VIEW_SIZE[1] * VIEW_SCALE)
 POLYGON_DEFAULT = ((100, 100), (240, 100), (240, 200))
 MIN_POLYGON_POINTS = 2
 
@@ -398,28 +400,28 @@ class RoomEditor:
         self.canvas.delete("all")
         for index, prop in sorted(enumerate(self.room.props), key=lambda item: item[1].depth, reverse=True):
             size = prop.size or self._scaled_size(prop.image, prop.scale)
-            photo = self._get_photo(prop.image, size)
+            photo = self._get_photo(prop.image, (size[0] * VIEW_SCALE, size[1] * VIEW_SCALE))
             self.canvas.create_image(
-                prop.position,
+                (prop.position[0] * VIEW_SCALE, prop.position[1] * VIEW_SCALE),
                 image=photo,
                 anchor=tk.NW,
                 tags=("content", f"props:{index}"),
             )
             if self.selection == ("props", index):
                 self.canvas.create_rectangle(
-                    prop.position[0],
-                    prop.position[1],
-                    prop.position[0] + size[0],
-                    prop.position[1] + size[1],
+                    prop.position[0] * VIEW_SCALE,
+                    prop.position[1] * VIEW_SCALE,
+                    (prop.position[0] + size[0]) * VIEW_SCALE,
+                    (prop.position[1] + size[1]) * VIEW_SCALE,
                     outline="#ffcc00",
                     width=2,
                 )
 
         for index, character in enumerate(self.room.characters):
             size = self._scaled_size(character.image, character.scale)
-            photo = self._get_photo(character.image, size)
+            photo = self._get_photo(character.image, (size[0] * VIEW_SCALE, size[1] * VIEW_SCALE))
             self.canvas.create_image(
-                character.position,
+                (character.position[0] * VIEW_SCALE, character.position[1] * VIEW_SCALE),
                 image=photo,
                 anchor=tk.S,
                 tags=("content", f"characters:{index}"),
@@ -428,10 +430,10 @@ class RoomEditor:
                 rect = self.canvas.bbox(f"characters:{index}")
                 if rect is None:
                     rect = (
-                        character.position[0] - size[0] // 2,
-                        character.position[1] - size[1],
-                        character.position[0] + size[0] // 2,
-                        character.position[1],
+                        character.position[0] * VIEW_SCALE - size[0] * VIEW_SCALE // 2,
+                        (character.position[1] - size[1]) * VIEW_SCALE,
+                        character.position[0] * VIEW_SCALE + size[0] * VIEW_SCALE // 2,
+                        character.position[1] * VIEW_SCALE,
                     )
                 self.canvas.create_rectangle(rect, outline="#ffcc00", width=2)
 
@@ -442,7 +444,7 @@ class RoomEditor:
         for index, area in enumerate(self.room.walkable_areas):
             self._draw_polygon("walkable_areas", index, area, "#ffffff")
         for index, point in enumerate(self.room.points):
-            x, y = point
+            x, y = point[0] * VIEW_SCALE, point[1] * VIEW_SCALE
             self.canvas.create_oval(
                 x - 5,
                 y - 5,
@@ -457,7 +459,7 @@ class RoomEditor:
         if len(polygon) < MIN_POLYGON_POINTS:
             return
         self.canvas.create_polygon(
-            polygon,
+            tuple((x * VIEW_SCALE, y * VIEW_SCALE) for x, y in polygon),
             outline=color,
             fill="",
             width=2,
@@ -505,7 +507,8 @@ class RoomEditor:
         kind, index = self.selection
         if kind not in {"props", "characters"}:
             return
-        delta_x, delta_y = event.x - self.drag_origin[0], event.y - self.drag_origin[1]
+        delta_x = round((event.x - self.drag_origin[0]) / VIEW_SCALE)
+        delta_y = round((event.y - self.drag_origin[1]) / VIEW_SCALE)
         target = self.drag_position[0] + delta_x, self.drag_position[1] + delta_y
         self._set_content_position(kind, index, target)
 
@@ -514,8 +517,8 @@ class RoomEditor:
             kind, index = self.selection
             if kind in {"props", "characters"} and self.drag_origin is not None and self.drag_position is not None:
                 target = (
-                    self.drag_position[0] + event.x - self.drag_origin[0],
-                    self.drag_position[1] + event.y - self.drag_origin[1],
+                    self.drag_position[0] + round((event.x - self.drag_origin[0]) / VIEW_SCALE),
+                    self.drag_position[1] + round((event.y - self.drag_origin[1]) / VIEW_SCALE),
                 )
                 if target != getattr(self.room, kind)[index].position:
                     self._set_content_position(kind, index, target)
@@ -668,7 +671,7 @@ class RoomEditor:
         if kind == "hotspots":
             values.append(HotspotData(name="New hotspot", description="", polygon=POLYGON_DEFAULT))
         elif kind == "points":
-            values.append((VIEW_SIZE[0] // 2, VIEW_SIZE[1] // 2))
+            values.append((ROOM_VIEW_SIZE[0] // 2, ROOM_VIEW_SIZE[1] // 2))
         else:
             values.append(POLYGON_DEFAULT)
         self.room_data[self.room_key] = _replace_room_contents(self.room, kind, tuple(values))

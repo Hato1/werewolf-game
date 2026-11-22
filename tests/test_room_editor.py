@@ -5,11 +5,13 @@ from collections.abc import Callable
 from dataclasses import replace
 from types import SimpleNamespace
 from typing import cast
-from unittest.mock import Mock
+from unittest.mock import Mock, call
+
+import pytest
 
 from my_game.werewolf import room_editor
 from my_game.werewolf.assets import Images
-from my_game.werewolf.room import rooms
+from my_game.werewolf.room import characters, rooms
 from my_game.werewolf.room.loaders import HotspotData, RoomData
 from my_game.werewolf.room_editor import RoomEditor, _restore_value, update_room_source
 
@@ -91,7 +93,8 @@ def test_restore_value_updates_existing_hotspots() -> None:
     assert updated.polygon == ((10, 20), (30, 40))
 
 
-def test_drag_updates_selected_content_position() -> None:
+@pytest.mark.parametrize(("mouse", "expected"), [((20, 26), (105, 153)), ((0, 14), (95, 147))])
+def test_drag_updates_selected_content_position(mouse: tuple[int, int], expected: tuple[int, int]) -> None:
     editor = SimpleNamespace(
         selection=("props", 1),
         drag_origin=(10, 20),
@@ -99,9 +102,103 @@ def test_drag_updates_selected_content_position() -> None:
         _set_content_position=Mock(),
     )
 
-    RoomEditor._canvas_drag(cast(RoomEditor, editor), cast(tk.Event, SimpleNamespace(x=20, y=25)))
+    RoomEditor._canvas_drag(cast(RoomEditor, editor), cast(tk.Event, SimpleNamespace(x=mouse[0], y=mouse[1])))
 
-    editor._set_content_position.assert_called_once_with("props", 1, (110, 155))
+    editor._set_content_position.assert_called_once_with("props", 1, expected)
+
+
+def test_preview_canvas_uses_room_coordinates(monkeypatch: pytest.MonkeyPatch) -> None:
+    editor = RoomEditor.__new__(RoomEditor)
+    editor.root = Mock(spec=tk.Tk)
+    monkeypatch.setattr(editor, "_build_header", Mock())
+    monkeypatch.setattr(editor, "_build_sidebar", Mock())
+    canvas = Mock()
+    monkeypatch.setattr(room_editor.tk, "Canvas", canvas)
+    monkeypatch.setattr(room_editor.tk, "StringVar", Mock())
+    monkeypatch.setattr(room_editor.ttk, "Frame", Mock())
+    monkeypatch.setattr(room_editor.ttk, "Label", Mock())
+
+    editor._build_ui()
+
+    assert canvas.call_args.kwargs["width"] == 960
+    assert canvas.call_args.kwargs["height"] == 416
+
+
+@pytest.mark.parametrize("kind", ["points", "hotspots", "regions", "walkable_areas"])
+def test_new_geometry_is_inside_room(kind: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    editor = RoomEditor.__new__(RoomEditor)
+    editor.room_key = "TEST"
+    editor.room_data = {"TEST": RoomData(name="Test", description="")}
+    monkeypatch.setattr(editor, "_refresh_tree", Mock())
+    monkeypatch.setattr(editor, "_select_content", Mock())
+
+    editor._add_geometry(kind)
+
+    content = getattr(editor.room, kind)[0]
+    points = (content,) if kind == "points" else content.polygon if isinstance(content, HotspotData) else content
+    assert all(0 <= x < 480 and 0 <= y < 208 for x, y in points)
+    if kind == "points":
+        assert content == (240, 104)
+
+
+def test_preview_scales_content_and_overlays(monkeypatch: pytest.MonkeyPatch) -> None:
+    editor = RoomEditor.__new__(RoomEditor)
+    editor.room_key = "TEST"
+    prop = replace(rooms.INN.props[1], position=(30, 40), size=(10, 20))
+    character = replace(characters.PLAYER, position=(120, 150))
+    editor.room_data = {
+        "TEST": RoomData(
+            name="Test",
+            description="",
+            props=(prop,),
+            characters=(character,),
+            hotspots=(HotspotData("Door", "", ((10, 20), (30, 40), (50, 60))),),
+            points=((100, 150),),
+        )
+    }
+    editor.selection = ("props", 0)
+    editor.canvas = Mock(spec=tk.Canvas)
+    photo = object()
+    get_photo = Mock(return_value=photo)
+    monkeypatch.setattr(editor, "_scaled_size", Mock(return_value=(8, 12)))
+    monkeypatch.setattr(editor, "_get_photo", get_photo)
+
+    editor._draw_room()
+
+    assert editor.canvas.create_image.call_args_list == [
+        call((60, 80), image=photo, anchor=tk.NW, tags=("content", "props:0")),
+        call((240, 300), image=photo, anchor=tk.S, tags=("content", "characters:0")),
+    ]
+    assert get_photo.call_args_list == [call(prop.image, (20, 40)), call(character.image, (16, 24))]
+    editor.canvas.create_rectangle.assert_called_once_with(60, 80, 80, 120, outline="#ffcc00", width=2)
+    editor.canvas.create_polygon.assert_called_once_with(
+        ((20, 40), (60, 80), (100, 120)),
+        outline="#00d8ff",
+        fill="",
+        width=2,
+        tags=("content", "hotspots:0"),
+    )
+    editor.canvas.create_oval.assert_called_once_with(
+        195, 295, 205, 305, fill="#ff55dd", outline="", tags=("content", "points:0")
+    )
+
+
+def test_release_uses_room_coordinates() -> None:
+    prop = replace(rooms.INN.props[1], position=(100, 150))
+    editor = SimpleNamespace(
+        selection=("props", 0),
+        drag_origin=(10, 20),
+        drag_position=prop.position,
+        room=RoomData(name="Test", description="", props=(prop,)),
+        tree=Mock(),
+        _set_content_position=Mock(),
+        _refresh_tree=Mock(),
+        _refresh_form=Mock(),
+    )
+
+    RoomEditor._canvas_release(cast(RoomEditor, editor), cast(tk.Event, SimpleNamespace(x=30, y=10)))
+
+    editor._set_content_position.assert_called_once_with("props", 0, (110, 145))
 
 
 def test_selecting_canvas_content_does_not_reselect_same_tree_item() -> None:
