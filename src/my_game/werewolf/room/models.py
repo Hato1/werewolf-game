@@ -6,6 +6,7 @@ from typing import ClassVar, Self
 
 import pygame as pg
 
+from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
@@ -114,7 +115,7 @@ class Character:
             return delta / step if step else pg.Vector2()
         return delta.normalize()
 
-    def update(self, bounds: pg.Rect, dt: float, input_state: InputState) -> None:
+    def update(self, dt: float, input_state: InputState) -> None:
         direction = self.get_direction(dt, input_state)
         was_walking = self.walking
         self.walking = direction.length_squared() > 0
@@ -126,8 +127,8 @@ class Character:
             self.position += direction * self.speed * dt
             if direction.x:
                 self.facing_left = direction.x < 0
-            self.position.x = min(max(self.position.x, bounds.left), bounds.right)
-            self.position.y = min(max(self.position.y, bounds.top), bounds.bottom)
+            self.position.x = min(max(self.position.x, 0), SCREEN_SIZE[0])
+            self.position.y = min(max(self.position.y, 0), SCREEN_SIZE[1])
 
         self.frame_time += dt
         while self.frame_time >= self.FRAME_DURATION:
@@ -185,8 +186,8 @@ class Player(Character):
             return pg.Vector2()
         return to_target.normalize()
 
-    def update(self, bounds: pg.Rect, dt: float, input_state: InputState) -> None:
-        super().update(bounds, dt, input_state)
+    def update(self, dt: float, input_state: InputState) -> None:
+        super().update(dt, input_state)
         if self.target is not None and self.vector_to_target().length() <= self.INTERACT_DISTANCE:
             on_arrive = self.on_arrive
             self.cancel_walk()
@@ -325,6 +326,11 @@ class Prop:
         rect = self.sprite.get_rect(topleft=self.position)
         renderer(self.sprite, rect)
 
+    def get_inventory_sprite(self) -> pg.Surface:
+        """Return the sprite used for the inventory."""
+        # TODO: Implement inventory-specific sprite handling if needed.
+        return self.sprite
+
 
 @dataclass
 class Room:
@@ -369,10 +375,10 @@ class Room:
         cls.registry[data] = room
         return room
 
-    def update(self, bounds: pg.Rect, dt: float, input_state: InputState) -> None:
+    def update(self, dt: float, input_state: InputState) -> None:
         """Advance the room's characters."""
         for character in self.characters:
-            character.update(bounds, dt, input_state)
+            character.update(dt, input_state)
 
     def draw(self, renderer: Renderer) -> None:
         """Draw the room and its contents."""

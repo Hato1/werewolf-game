@@ -1,9 +1,7 @@
 """Run the program.
-
 Asyncio is used for Pygbag (web) compatibility."""
 
 import asyncio
-import json
 import sys
 import types
 from pathlib import Path
@@ -17,80 +15,26 @@ if sys.platform == "emscripten" and "my_game" not in sys.modules:
     sys.modules["my_game"] = pkg
 
 import my_game.initialise_pygame  # noqa: F401
-from my_game.constants import DEFAULT_CAPTION, SCREEN_SIZE
-from my_game.core.gl_renderer import GLRenderer
 from my_game.core.logger import LogLevel, get_logger, initialize_logger
 from my_game.core.state_manager import StateManager
 from my_game.examples.bullet_hell import registry as bullet_hell
 from my_game.werewolf import registry as werewolf
 
-OPTIONS_FILE = Path("settings.json")
-
+initialize_logger(LogLevel.INFO)
 logger = get_logger(__name__)
 
 # TODO: Allow configuration via command line arguments or something.
 GAMES = [bullet_hell, werewolf]
 DEFAULT_GAME = werewolf
-# Use OpenGL GPU rendering.
-OPENGL = True
-
-# Pygbag does not support OPENGL.
-if sys.platform == "emscripten":
-    OPENGL = False
-else:
-    try:
-        with OPTIONS_FILE.open("r") as settings:
-            try:
-                saved_settings = json.loads(settings.read())
-
-                for sel in saved_settings:
-                    if sel.get("key") == "LIGHT":
-                        OPENGL = sel.get("status")
-
-            except json.JSONDecodeError:
-                pass
-    except FileNotFoundError:
-        pass
 
 
 async def main():
     """Run the program."""
     initialize_logger(LogLevel.INFO)
-    # Initialization
-    pg.init()
-
-
-
-    if OPENGL:
-        # Set OpenGL context attributes for Pygame before creating the window.
-        # Without this the OpenGL context may not be created with the desired version and profile.
-        # And on some platforms, failing to set these attributes may result in an incompatible OpenGL context.
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
-        options = pg.OPENGL | pg.DOUBLEBUF
-    elif sys.platform == "emscripten":
-        options = 0
-    else:
-        options = pg.SCALED
-
-    screen = pg.display.set_mode(SCREEN_SIZE, options)
-
-    if OPENGL:
-        gl_renderer = GLRenderer()
-    else:
-        gl_renderer = None
-
-    assert screen is not None, "Pygame display surface not initialized."
-    pg.display.set_caption(DEFAULT_CAPTION)
 
     state_manager = StateManager(
-        screen,
-        gl_renderer,
         DEFAULT_GAME.STATE_REGISTRY,
         DEFAULT_GAME.input_manager,
-        DEFAULT_CAPTION,
     )
 
     # Run main loop.

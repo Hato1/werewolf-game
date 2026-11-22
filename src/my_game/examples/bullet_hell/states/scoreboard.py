@@ -4,7 +4,6 @@ from typing import NamedTuple
 
 import pygame as pg
 
-from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
@@ -50,11 +49,10 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
 
     def enter(
         self,
-        surface_rect: pg.Rect,
         transition_data: BulletHellTransitionData,
-        gl_renderer: GLRenderer | None,
+        renderer: Renderer,
     ):
-        super().enter(surface_rect, transition_data=transition_data, gl_renderer=gl_renderer)
+        super().enter(transition_data=transition_data, renderer=renderer)
         self.current_score = transition_data.score
         if self.current_score == 0.0:
             print("No score found in persistent data; defaulting to 0.")
@@ -116,7 +114,7 @@ class Scoreboard(State[BulletHellState, BulletHellTransitionData]):
         else:
             raise ValueError(f"Unhandled sub-state: {self.sub_state}")
 
-    def update(self, surface_rect, dt, input_state: InputState) -> None:
+    def update(self, dt: float, input_state: InputState) -> None:
         pass
 
     def draw_title(self, renderer: Renderer):

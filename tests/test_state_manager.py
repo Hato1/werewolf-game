@@ -3,7 +3,6 @@ from enum import Enum
 
 import pytest
 
-from my_game.core.gl_renderer import GLRenderer
 from my_game.core.input_manager import InputManager, InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State, StateManager, StateRegistry, TransitionData
@@ -25,7 +24,7 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
             pass
 
-        def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+        def update(self, dt: float, input_state: InputState) -> None:
             pass
 
         def draw(self, renderer: Renderer, dt: float) -> None:
@@ -35,27 +34,23 @@ def test_state_transition_uses_explicit_enter_exit_and_payload() -> None:
         def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
             pass
 
-        def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+        def update(self, dt: float, input_state: InputState) -> None:
             pass
 
         def draw(self, renderer: Renderer, dt: float) -> None:
             pass
 
-        def enter(
-            self, surface_rect: pg.Rect, transition_data: TestTransitionData, gl_renderer: GLRenderer | None
-        ) -> None:
-            super().enter(surface_rect, transition_data, gl_renderer=gl_renderer)
+        def enter(self, transition_data: TestTransitionData, renderer: Renderer) -> None:
+            super().enter(transition_data, renderer=renderer)
             assert transition_data.previous_state is StateKey.ALPHA
             assert transition_data.score == 42
 
-    screen = pg.display.set_mode((64, 64))
     registry = StateRegistry(
         {StateKey.ALPHA: Alpha, StateKey.BETA: Beta},
         StateKey.ALPHA,
         TestTransitionData,
     )
-    gl_renderer = None
-    manager = StateManager(screen, gl_renderer, registry, InputManager(Enum), "Transition test")
+    manager = StateManager(registry, InputManager(Enum), force_cpu_renderer=True)
 
     alpha = manager.current_state
     alpha.done = True
@@ -93,7 +88,7 @@ def test_state_manager_passes_held_actions_to_update(monkeypatch) -> None:
         def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
             pass
 
-        def update(self, surface_rect: pg.Rect, dt: float, input_state: InputState) -> None:
+        def update(self, dt: float, input_state: InputState) -> None:
             self.input_state = input_state
 
         def draw(self, renderer: Renderer, dt: float) -> None:
@@ -102,14 +97,10 @@ def test_state_manager_passes_held_actions_to_update(monkeypatch) -> None:
     input_manager = InputManager(Action)
     input_manager.bind(Action.MOVE, InputEvent.keyboard(pg.K_w))
     input_manager.bind(Action.ANALOG_MOVE, InputEvent.controller_axis(pg.CONTROLLER_AXIS_LEFTX))
-    screen = pg.display.set_mode((64, 64))
-    gl_renderer = None
     manager = StateManager(
-        screen,
-        gl_renderer,
         StateRegistry({StateKey.TEST: TestState}, StateKey.TEST, TestTransitionData),
         input_manager,
-        "Held input test",
+        force_cpu_renderer=True,
     )
     monkeypatch.setattr(
         pg.event,
