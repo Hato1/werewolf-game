@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import replace
+from tkinter import Event
 from tkinter.constants import LEFT, NW, TOP
 
 from customtkinter import (
@@ -123,7 +124,7 @@ class RoomViewport(CTkFrame):
     def get_current_room_name(self) -> str:
         return self.room_select_menu.get()
 
-    def _on_canvas_press(self, event: object) -> None:
+    def _on_canvas_press(self, event: Event) -> None:
         """Handle canvas mouse press - record drag start position."""
         if self.selected_prop_index is None:
             return
@@ -132,11 +133,11 @@ class RoomViewport(CTkFrame):
         if self.selected_prop_index >= len(current_room.props):
             return
 
-        self.drag_start = (event.x, event.y)  # type: ignore[attr-defined]
+        self.drag_start = (event.x, event.y)
         prop = current_room.props[self.selected_prop_index]
         self.drag_start_prop_position = prop.position
 
-    def _on_canvas_drag(self, event: object) -> None:
+    def _on_canvas_drag(self, event: Event) -> None:
         """Handle canvas mouse drag - update prop position in real-time."""
         if self.drag_start is None or self.drag_start_prop_position is None or self.selected_prop_index is None:
             return
@@ -145,8 +146,8 @@ class RoomViewport(CTkFrame):
         if self.selected_prop_index >= len(current_room.props):
             return
 
-        event_x: int = event.x  # type: ignore[attr-defined]
-        event_y: int = event.y  # type: ignore[attr-defined]
+        event_x: int = event.x
+        event_y: int = event.y
 
         delta_x = round((event_x - self.drag_start[0]) / MULTIPLIER)
         delta_y = round((event_y - self.drag_start[1]) / MULTIPLIER)
@@ -169,12 +170,12 @@ class RoomViewport(CTkFrame):
 
         self.draw_room(updated_room)
 
-    def _on_canvas_release(self, event: object) -> None:
+    def _on_canvas_release(self, event: Event) -> None:
         """Handle canvas mouse release - finalize drag."""
         self.drag_start = None
         self.drag_start_prop_position = None
 
-    def _on_arrow_key(self, event: object) -> None:
+    def _on_arrow_key(self, event: Event) -> None:
         """Handle arrow key press - nudge selected prop by 1 pixel."""
         if self.selected_prop_index is None:
             return
@@ -183,7 +184,7 @@ class RoomViewport(CTkFrame):
         if self.selected_prop_index >= len(current_room.props):
             return
 
-        keysym: str = event.keysym  # type: ignore[attr-defined]
+        keysym: str = event.keysym
         delta_x = 0
         delta_y = 0
 
