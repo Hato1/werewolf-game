@@ -99,6 +99,7 @@ class RoomEditor:
         self.room_selector = ttk.Combobox(header, state="readonly", width=34)
         self.room_selector.pack(side=tk.LEFT, padx=(8, 14))
         self.room_selector.bind("<<ComboboxSelected>>", self._change_room)
+        ttk.Button(header, text="New room", command=self._new_room).pack(side=tk.LEFT, padx=(0, 2))
         ttk.Button(header, text="Save room definitions", command=self._save).pack(side=tk.LEFT)
 
     def _build_sidebar(self, body: ttk.Frame) -> None:
@@ -507,6 +508,76 @@ class RoomEditor:
         self._refresh_tree()
         self._refresh_form()
         self._draw_room()
+
+    def _new_room(self) -> None:
+        """Create a new empty room with a user-provided name and variable name."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Create New Room")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        ttk.Label(dialog, text="Room name (displayed in editor):").grid(
+            row=0, column=0, columnspan=2, sticky=tk.W, padx=10, pady=10
+        )
+        name_var = tk.StringVar(value="New Room")
+        ttk.Entry(dialog, textvariable=name_var, width=40).grid(
+            row=1, column=0, columnspan=2, sticky=tk.EW, padx=10, pady=5
+        )
+
+        ttk.Label(dialog, text="Variable name (Python identifier):").grid(
+            row=2, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(10, 0)
+        )
+        var_name = tk.StringVar(value="NEW_ROOM")
+        ttk.Entry(dialog, textvariable=var_name, width=40).grid(
+            row=3, column=0, columnspan=2, sticky=tk.EW, padx=10, pady=5
+        )
+
+        ttk.Label(dialog, text="Description:").grid(row=4, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(10, 0))
+        description_var = tk.StringVar()
+        ttk.Entry(dialog, textvariable=description_var, width=40).grid(
+            row=5, column=0, columnspan=2, sticky=tk.EW, padx=10, pady=5
+        )
+
+        def create() -> None:
+            """Create the room if the form is valid."""
+            name = name_var.get().strip()
+            var_name_str = var_name.get().strip()
+            description = description_var.get().strip()
+
+            if not name:
+                messagebox.showerror("Invalid room name", "Room name cannot be empty.", parent=dialog)
+                return
+            if not var_name_str:
+                messagebox.showerror("Invalid variable name", "Variable name cannot be empty.", parent=dialog)
+                return
+            if not var_name_str.isidentifier():
+                messagebox.showerror(
+                    "Invalid variable name", "Variable name must be a valid Python identifier.", parent=dialog
+                )
+                return
+            if var_name_str in self.room_data:
+                messagebox.showerror(
+                    "Room already exists", f"A room named '{var_name_str}' already exists.", parent=dialog
+                )
+                return
+
+            new_room = RoomData(name=name, description=description)
+            self.room_data[var_name_str] = new_room
+            self.room_key = var_name_str
+            self.selection = None
+            self._refresh_room_selector()
+            self._refresh_tree()
+            self._draw_room()
+            self.status.set(f"Created new room '{var_name_str}'. Remember to save your changes.")
+            dialog.destroy()
+
+        button_frame = ttk.Frame(dialog)
+        button_frame.grid(row=6, column=0, columnspan=2, sticky=tk.E, padx=10, pady=10)
+        ttk.Button(button_frame, text="Create", command=create).pack(side=tk.LEFT, padx=2)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT, padx=2)
+
+        dialog.columnconfigure(0, weight=1)
+        dialog.rowconfigure(1, weight=1)
 
     def _save(self) -> None:
         """Write changed room definitions to the room module."""

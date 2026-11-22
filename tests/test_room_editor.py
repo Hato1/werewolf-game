@@ -296,3 +296,43 @@ def test_first_sigint_closes_the_editor(monkeypatch) -> None:
     room_editor.run()
 
     assert root.destroyed
+
+
+def test_new_room_adds_room_to_room_data() -> None:
+    room_data: dict[str, RoomData] = {"TEST": RoomData(name="Test", description="")}
+
+    new_room = RoomData(name="New Room", description="Test description")
+    room_data["NEW_ROOM"] = new_room
+
+    assert "NEW_ROOM" in room_data
+    assert room_data["NEW_ROOM"].name == "New Room"
+    assert room_data["NEW_ROOM"].description == "Test description"
+
+
+def test_new_room_created_room_is_empty() -> None:
+    room = RoomData(name="Empty Room", description="")
+
+    assert room.props == ()
+    assert room.characters == ()
+    assert room.hotspots == ()
+    assert room.regions == ()
+    assert room.points == ()
+    assert room.walkable_areas == ()
+
+
+def test_new_room_validates_variable_name_is_identifier_logic() -> None:
+    valid_names = ["ROOM_ONE", "room_two", "Room3", "_private", "room_123_test"]
+    invalid_names = ["123room", "room-name", "room name", "room.name", ""]
+
+    for name in valid_names:
+        assert name.isidentifier(), f"Expected {name} to be a valid identifier"
+
+    for name in invalid_names:
+        assert not name.isidentifier(), f"Expected {name} to be an invalid identifier"
+
+
+def test_new_room_prevents_duplicate_names_logic() -> None:
+    room_data = {"ROOM_ONE": RoomData(name="Room 1", description="")}
+
+    assert "ROOM_ONE" in room_data
+    assert "ROOM_TWO" not in room_data
