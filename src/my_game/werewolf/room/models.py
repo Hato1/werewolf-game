@@ -57,6 +57,7 @@ class Prop:
     depth: int
     baseline: int
     walk_to_interact: bool = False
+    pickup_on_click: bool = False
 
     @classmethod
     def from_prop_data(cls, data: PropData) -> Self:
@@ -102,6 +103,25 @@ class Prop:
         """Return the sprite used for the inventory."""
         # TODO: Implement inventory-specific sprite handling if needed.
         return self.sprite
+
+    def to_dict(self) -> dict:
+        """Convert to a dict representation."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "sprite": self.sprite,
+            "position": self.position,
+            "visible": self.visible,
+            "clickable": self.clickable,
+            "hotspot": self.hotspot,
+            "scale": self.scale,
+            "size": self.size,
+            "parallax": self.parallax,
+            "depth": self.depth,
+            "baseline": self.baseline,
+            "walk_to_interact": self.walk_to_interact,
+            "pickup_on_click": self.pickup_on_click,
+        }
 
 
 @dataclass
