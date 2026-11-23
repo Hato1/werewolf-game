@@ -10,7 +10,7 @@ from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room.loaders import CharacterData, HotspotData, PropData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
 Point = tuple[int, int]
 Polygon = tuple[Point, ...]
@@ -153,6 +153,7 @@ class Character:
     idle_frames: list[pg.Surface]
     walk_frames: list[pg.Surface]
     position: pg.Vector2
+    depth: int
     speed: float
     path: tuple[Point, ...]
     loop: bool
@@ -169,7 +170,10 @@ class Character:
         frame_width = idle.get_width()
         idle_frames = split_frames(idle, frame_width)
         walk_frames = split_frames(data.walk_image.load(), frame_width) if data.walk_image else idle_frames
-        if data.scale != 1.0:
+        if data.size is not None:
+            idle_frames = [pg.transform.smoothscale(f, data.size) for f in idle_frames]
+            walk_frames = [pg.transform.smoothscale(f, data.size) for f in walk_frames]
+        elif data.scale != 1.0:
             idle_frames = [pg.transform.scale_by(f, data.scale) for f in idle_frames]
             walk_frames = (
                 idle_frames if data.walk_image is None else [pg.transform.scale_by(f, data.scale) for f in walk_frames]
@@ -180,6 +184,7 @@ class Character:
             idle_frames,
             walk_frames,
             pg.Vector2(data.position),
+            data.depth,
             data.speed,
             data.path,
             loop=data.loop,
@@ -215,7 +220,7 @@ class Character:
 
     @property
     def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(midbottom=(round(self.position.x), round(self.position.y)))
+        return self.sprite.get_rect(topleft=(round(self.position.x), round(self.position.y)))
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).
@@ -370,6 +375,21 @@ class Region:
         """Check if the given point is within the region."""
         raise NotImplementedError
 
+    @classmethod
+    def from_region_data(cls, data: RegionData) -> Self:
+        region = cls(data.name, data.polygon)
+        return region
+
+
+@dataclass(frozen=True)
+class NamedPoint:
+    name: str
+    position: tuple[int, int]
+
+    @classmethod
+    def from_point_data(cls, data: NamedPointData) -> Self:
+        return cls(data.name, data.position)
+
 
 @dataclass
 class Room:
@@ -391,10 +411,10 @@ class Room:
     name: str
     description: str
     props: list[Prop] = field(default_factory=list)
-    hotspots: list[Hotspot] = field(default_factory=list)
     characters: list[Character] = field(default_factory=list)
-    regions: list[Polygon] = field(default_factory=list)
-    points: list[Point] = field(default_factory=list)
+    hotspots: list[Hotspot] = field(default_factory=list)
+    regions: list[Region] = field(default_factory=list)
+    points: list[NamedPoint] = field(default_factory=list)
     walkable_areas: list[Polygon] = field(default_factory=list)
 
     @classmethod
@@ -405,10 +425,10 @@ class Room:
             name=data.name,
             description=data.description,
             props=[Prop.from_prop_data(prop) for prop in data.props],
-            hotspots=[Hotspot.from_hotspot_data(hs) for hs in data.hotspots],
             characters=[Character.from_character_data(ch) for ch in data.characters],
-            regions=list(data.regions),
-            points=list(data.points),
+            hotspots=[Hotspot.from_hotspot_data(hs) for hs in data.hotspots],
+            regions=[Region.from_region_data(r) for r in data.regions],
+            points=[NamedPoint.from_point_data(p) for p in data.points],
             walkable_areas=list(data.walkable_areas),
         )
         cls.registry[data] = room

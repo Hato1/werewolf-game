@@ -33,6 +33,15 @@ uv run pre-commit install
 uv run run-game
 ```
 
+### Room editor
+
+Launch the desktop room editor with:
+```bash
+uv run room-editor
+```
+
+Choose a room to preview the top 480×208 room pixels at 2× size. Drag props and characters to reposition them, and use the sidebar to edit properties or add and remove props, characters, hotspots, regions, points, and walkable areas. Coordinates remain in room pixels. Select **Save room definitions** to write changes back to `src/my_game/werewolf/room/rooms.py`.
+
 
 >####  💡 Optional: Activate the virtual environment  
 > If you're tired of typing `uv run`, this will activate your environment for the session:
