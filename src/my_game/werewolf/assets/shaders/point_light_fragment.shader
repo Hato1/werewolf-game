@@ -69,18 +69,19 @@ float evaluate_flicker(float light_intensity, float flicker_amount, int index){
 
 vec3 direction_light(){
     vec2 sample_dir = vec2(-screen_size.y, -screen_size.y);
-    if(light_position != vec2(0,0) && !static_direction){
-        sample_dir = -normalize(uvs - light_position) * screen_size;
+    if(light_position != vec3(0,0, 0) && !static_direction){
+        vec2 new_dir = -normalize(uvs - light_position.xy) * screen_size;
+        sample_dir = new_dir;
     }
-    float start_distance = distance(light_position, uvs);
+    float start_distance = distance(light_position.xy, uvs);
     vec3 sample_total = texture(tex,uvs).rgb;
     vec3 sample_bonus = vec3(0,0,0);
     float weight = 1;
 
     for(int i = 0; i < sample_count; i++){
-        vec2 sample_pos = uvs + ((sample_dir) * (i * px_per_sample));
-        float distance = distance(sample_pos, light_position);
-        vec2 sample_dir_to_light = normalize(light_position - sample_pos);
+        vec2 sample_pos = uvs + ((sample_dir.xy) * (i * px_per_sample));
+        float distance = distance(sample_pos, light_position.xy);
+        vec2 sample_dir_to_light = normalize(light_position.xy - sample_pos);
         if(dot(sample_dir_to_light, normalize(sample_dir)) < 0.7 && !static_direction){
             //end early
             float percent_left = 1 - (i / (sample_count));
