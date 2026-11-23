@@ -1,8 +1,9 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from tkinter import Event
 from tkinter.constants import LEFT, NW, TOP
+from typing import NamedTuple
 
 from customtkinter import (
     CTk,
@@ -324,7 +325,17 @@ class RoomViewport(CTkFrame):
         #     )
 
 
+class TabData(NamedTuple):
+    """Container for tab UI components and data accessor."""
+
+    scrollable_frame: CTkScrollableFrame
+    selector_button: CTkSegmentedButton
+    get_items: Callable[[RoomData], Sequence]
+
+
 class MainTabview(CTkTabview):
+    BUTTON_HEIGHT = 30
+
     def __init__(
         self,
         master: RoomEditor,
@@ -335,81 +346,52 @@ class MainTabview(CTkTabview):
         super().__init__(master, command=on_tab_change)
         self.app_state = app_state
 
-        # Props tab
-        self.prop_frame = self.add("Props (0)")
-        self.scrollable_frame = CTkScrollableFrame(self.prop_frame)
-        self.prop_selector = CTkSegmentedButton(
-            self.scrollable_frame,
-            orientation="vertical",
-            command=on_prop_select,
-            dynamic_resizing=False,
-        )
+        self.tabs: dict[str, TabData] = {}
 
-        self.scrollable_frame.pack(fill="both", expand=True)
-        self.prop_selector.pack(fill="both", expand=True)
-
-        # Character tab
-        self.character_frame = self.add("Characters (0)")
-        self.scrollable_character_frame = CTkScrollableFrame(self.character_frame)
-        self.character_selector = CTkSegmentedButton(
-            self.scrollable_character_frame, orientation="vertical", dynamic_resizing=False
-        )
-
-        self.scrollable_character_frame.pack(fill="both", expand=True)
-        self.character_selector.pack(fill="both", expand=True)
-
-        # Region tab
-        self.region_frame = self.add("Regions (0)")
-        self.scrollable_region_frame = CTkScrollableFrame(self.region_frame)
-        self.region_selector = CTkSegmentedButton(
-            self.scrollable_region_frame, orientation="vertical", dynamic_resizing=False
-        )
-
-        # Point tab
-        self.point_frame = self.add("Points (0)")
-        self.scrollable_point_frame = CTkScrollableFrame(self.point_frame)
-        self.point_selector = CTkSegmentedButton(
-            self.scrollable_point_frame, orientation="vertical", dynamic_resizing=False
-        )
-
-        self.scrollable_point_frame.pack(fill="both", expand=True)
-        self.point_selector.pack(fill="both", expand=True)
-
-        self.scrollable_region_frame.pack(fill="both", expand=True)
-        self.region_selector.pack(fill="both", expand=True)
+        self._add_tab("Props", on_prop_select, lambda room_data: room_data.props)
+        self._add_tab("Character", None, lambda room_data: room_data.characters)
+        self._add_tab("Regions", None, lambda room_data: room_data.regions)
+        self._add_tab("Points", None, lambda room_data: room_data.points)
 
         self.refresh_tree(self.app_state.current_room)
 
+    def _add_tab(
+        self,
+        label: str,
+        command: Callable[[str], None] | None,
+        get_items: Callable[[RoomData], Sequence],
+    ) -> None:
+        """Add a tab with a scrollable frame and segmented button selector."""
+        frame = self.add(label)
+        scrollable = CTkScrollableFrame(frame)
+        selector = CTkSegmentedButton(
+            scrollable,
+            orientation="vertical",
+            dynamic_resizing=False,
+            command=command,
+        )
+
+        scrollable.pack(fill="both", expand=True)
+        selector.pack(fill="both", expand=True)
+
+        self.tabs[label] = TabData(scrollable, selector, get_items)
+
     def refresh_tree(self, room: RoomData) -> None:
-        props = [p.name for p in room.props]
-        old_title, new_title = self.get(0), f"Props ({len(props)})"
-        if old_title != new_title:
-            self.rename(old_title, new_title)
-        self.prop_selector.configure(values=props, height=len(props) * 30)
+        """Update all tab titles and selectors with current room data."""
+        for tab_index, (tab_name, tab_data) in enumerate(self.tabs.items()):
+            names = [item.name for item in tab_data.get_items(room)]
 
-        characters = [c.name for c in room.characters]
-        old_title, new_title = self.get(1), f"Characters ({len(characters)})"
-        if old_title != new_title:
-            self.rename(old_title, new_title)
-        self.character_selector.configure(values=characters, height=len(characters) * 30)
+            old_title = self.get(tab_index)
+            new_title = f"{tab_name} ({len(names)})"
+            if old_title != new_title:
+                self.rename(old_title, new_title)
 
-        regions = [c.name for c in room.regions]
-        old_title, new_title = self.get(2), f"Regions ({len(regions)})"
-        if old_title != new_title:
-            self.rename(old_title, new_title)
-        self.region_selector.configure(values=regions, height=len(regions) * 30)
-
-        points = [p.name for p in room.points]
-        old_title, new_title = self.get(3), f"Points ({len(points)})"
-        if old_title != new_title:
-            self.rename(old_title, new_title)
-        self.point_selector.configure(values=points, height=len(points) * 30)
+            tab_data.selector_button.configure(values=names, height=len(names) * self.BUTTON_HEIGHT)
 
     def clear_selection(self) -> None:
-        self.prop_selector.set("")
-        self.character_selector.set("")
-        self.region_selector.set("")
-        self.point_selector.set("")
+        """Clear selection from all tabs."""
+        for tab_data in self.tabs.values():
+            tab_data.selector_button.set("")
 
 
 class RoomEditor(CTk):
