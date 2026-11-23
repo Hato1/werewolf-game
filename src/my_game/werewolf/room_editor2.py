@@ -31,7 +31,7 @@ from PIL import Image, ImageTk
 from my_game.core.logger import get_logger
 from my_game.werewolf.room import rooms
 from my_game.werewolf.room.editor_data import named_values, update_room_source
-from my_game.werewolf.room.loaders import CharacterData, PropData, RegionData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
 
 logger = get_logger(__name__)
 
@@ -57,7 +57,7 @@ def run() -> None:
 class AppState:
     room_data: dict[str, RoomData]
     current_room_name: str
-    selected: PropData | CharacterData | RegionData | None = None
+    selected: PropData | CharacterData | RegionData | NamedPointData | None = None
     selected_index: int | None = None
 
     @property
@@ -326,8 +326,7 @@ class MainTabview(CTkTabview):
         self,
         master: RoomEditor,
         app_state: AppState,
-        on_prop_select: Callable[[str], None],
-        on_character_select: Callable[[str], None],
+        on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         on_tab_change: Callable[[], None],
     ) -> None:
         super().__init__(master, command=on_tab_change)
@@ -335,27 +334,31 @@ class MainTabview(CTkTabview):
 
         self.tabs: dict[str, TabData] = {}
 
-        self._add_tab("Props", on_prop_select, lambda room_data: room_data.props)
-        self._add_tab("Character", on_character_select, lambda room_data: room_data.characters)
-        self._add_tab("Regions", None, lambda room_data: room_data.regions)
-        self._add_tab("Points", None, lambda room_data: room_data.points)
+        self._add_tab("Props", on_select, lambda room_data: room_data.props)
+        self._add_tab("Character", on_select, lambda room_data: room_data.characters)
+        self._add_tab("Regions", on_select, lambda room_data: room_data.regions)
+        self._add_tab("Points", on_select, lambda room_data: room_data.points)
 
         self.refresh_tree(self.app_state.current_room)
 
     def _add_tab(
         self,
         label: str,
-        command: Callable[[str], None] | None,
+        on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         get_items: Callable[[RoomData], Sequence],
     ) -> None:
         """Add a tab with a scrollable frame and segmented button selector."""
         frame = self.add(label)
         scrollable = CTkScrollableFrame(frame)
+
+        # Create a specialized callback using the generic handler with this tab's get_items
+        callback = lambda item_name: on_select(item_name, get_items)
+
         selector = CTkSegmentedButton(
             scrollable,
             orientation="vertical",
             dynamic_resizing=False,
-            command=command,
+            command=callback,
         )
 
         scrollable.pack(fill="both", expand=True)
@@ -425,8 +428,7 @@ class RoomEditor(CTk):
         self.main_tabview = MainTabview(
             self,
             self.app_state,
-            on_prop_select=self.prop_select_event,
-            on_character_select=self.character_select_event,
+            on_select=self.on_select_item,
             on_tab_change=self.on_tab_change,
         )
 
@@ -487,20 +489,12 @@ class RoomEditor(CTk):
         except (OSError, ValueError, SyntaxError) as e:
             print(f"✗ Error saving rooms: {e}")
 
-    def prop_select_event(self, selected_prop: str) -> None:
-        current_room = self.current_room
-        for i, prop in enumerate(current_room.props):
-            if prop.name == selected_prop:
+    def on_select_item(self, item_name: str, get_items: Callable[[RoomData], Sequence]) -> None:
+        """Generic item selection handler for props, characters, regions, and points."""
+        items = get_items(self.current_room)
+        for i, item in enumerate(items):
+            if item.name == item_name:
                 self.app_state.selected_index = i
-                self.app_state.selected = prop
-                self.room_viewport.draw_room(current_room)
-                break
-
-    def character_select_event(self, selected_character: str) -> None:
-        current_room = self.current_room
-        for i, character in enumerate(current_room.characters):
-            if character.name == selected_character:
-                self.app_state.selected_index = i
-                self.app_state.selected = character
-                self.room_viewport.draw_room(current_room)
+                self.app_state.selected = item
+                self.room_viewport.draw_room(self.current_room)
                 break
