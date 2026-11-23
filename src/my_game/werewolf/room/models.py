@@ -25,6 +25,107 @@ def split_frames(sheet: pg.Surface, frame_width: int) -> list[pg.Surface]:
 
 
 @dataclass
+class Prop:
+    """Props are objects within a room that the player can interact with.
+
+    Attributes:
+        name: Prop's display name.
+        description: Prop's description.
+        sprite: Pygame surface containing the prop's visual representation.
+        position: Top-left coordinate of the prop's sprite.
+        visible: Whether the prop is drawn.
+        clickable: Whether the prop can be interacted with.
+        hotspot: Optional interactive area within the prop.
+        scale: Uniform scale factor applied to the image (ignored when size is set).
+        size: Exact pixel size to stretch the image to.
+        parallax: Parallax effect factor.
+        depth: Rendering depth (higher values render on top).
+        baseline: Reference point for prop positioning relative to its sprite.
+        walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
+    """
+
+    name: str
+    description: str
+    sprite: pg.Surface
+    position: Point
+    visible: bool
+    clickable: bool
+    hotspot: Hotspot | None
+    scale: float
+    size: tuple[int, int] | None
+    parallax: float
+    depth: int
+    baseline: int
+    walk_to_interact: bool = False
+    pickup_on_click: bool = False
+
+    @classmethod
+    def from_prop_data(cls, data: PropData) -> Self:
+        sprite = data.image.load()
+        if data.size is not None:
+            sprite = pg.transform.smoothscale(sprite, data.size)
+        elif data.scale != 1.0:
+            sprite = pg.transform.smoothscale_by(sprite, data.scale)
+        prop = cls(
+            data.name,
+            data.description,
+            sprite,
+            data.position,
+            data.visible,
+            data.clickable,
+            Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
+            data.scale,
+            data.size,
+            data.parallax,
+            data.depth,
+            data.baseline,
+            data.walk_to_interact,
+            data.pickup_on_click,
+        )
+        return prop
+
+    def to_dict(self) -> dict:
+        """Convert to a dict representation."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "sprite": self.sprite,
+            "position": self.position,
+            "visible": self.visible,
+            "clickable": self.clickable,
+            "hotspot": self.hotspot,
+            "scale": self.scale,
+            "size": self.size,
+            "parallax": self.parallax,
+            "depth": self.depth,
+            "baseline": self.baseline,
+            "walk_to_interact": self.walk_to_interact,
+            "pickup_on_click": self.pickup_on_click,
+        }
+
+    @property
+    def rect(self) -> pg.Rect:
+        return self.sprite.get_rect(topleft=self.position)
+
+    def hide(self):
+        """Hide the prop from the room."""
+        self.visible = False
+        self.clickable = False
+
+    def draw(self, renderer: Renderer) -> None:
+        """Draw the prop in the room."""
+        if not self.visible:
+            return
+        rect = self.sprite.get_rect(topleft=self.position)
+        renderer(self.sprite, rect)
+
+    def get_inventory_sprite(self) -> pg.Surface:
+        """Return the sprite used for the inventory."""
+        # TODO: Implement inventory-specific sprite handling if needed.
+        return self.sprite
+
+
+@dataclass
 class Character:
     """Character represents an animated entity within the room.
 
@@ -268,107 +369,6 @@ class Region:
     def contains_point(self, point: Point) -> bool:
         """Check if the given point is within the region."""
         raise NotImplementedError
-
-
-@dataclass
-class Prop:
-    """Props are objects within a room that the player can interact with.
-
-    Attributes:
-        name: Prop's display name.
-        description: Prop's description.
-        sprite: Pygame surface containing the prop's visual representation.
-        position: Top-left coordinate of the prop's sprite.
-        visible: Whether the prop is drawn.
-        clickable: Whether the prop can be interacted with.
-        hotspot: Optional interactive area within the prop.
-        scale: Uniform scale factor applied to the image (ignored when size is set).
-        size: Exact pixel size to stretch the image to.
-        parallax: Parallax effect factor.
-        depth: Rendering depth (higher values render on top).
-        baseline: Reference point for prop positioning relative to its sprite.
-        walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
-    """
-
-    name: str
-    description: str
-    sprite: pg.Surface
-    position: Point
-    visible: bool
-    clickable: bool
-    hotspot: Hotspot | None
-    scale: float
-    size: tuple[int, int] | None
-    parallax: float
-    depth: int
-    baseline: int
-    walk_to_interact: bool = False
-    pickup_on_click: bool = False
-
-    @classmethod
-    def from_prop_data(cls, data: PropData) -> Self:
-        sprite = data.image.load()
-        if data.size is not None:
-            sprite = pg.transform.smoothscale(sprite, data.size)
-        elif data.scale != 1.0:
-            sprite = pg.transform.smoothscale_by(sprite, data.scale)
-        prop = cls(
-            data.name,
-            data.description,
-            sprite,
-            data.position,
-            data.visible,
-            data.clickable,
-            Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
-            data.scale,
-            data.size,
-            data.parallax,
-            data.depth,
-            data.baseline,
-            data.walk_to_interact,
-            data.pickup_on_click,
-        )
-        return prop
-
-    def to_dict(self) -> dict:
-        """Convert to a dict representation."""
-        return {
-            "name": self.name,
-            "description": self.description,
-            "sprite": self.sprite,
-            "position": self.position,
-            "visible": self.visible,
-            "clickable": self.clickable,
-            "hotspot": self.hotspot,
-            "scale": self.scale,
-            "size": self.size,
-            "parallax": self.parallax,
-            "depth": self.depth,
-            "baseline": self.baseline,
-            "walk_to_interact": self.walk_to_interact,
-            "pickup_on_click": self.pickup_on_click,
-        }
-
-    @property
-    def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(topleft=self.position)
-
-    def hide(self):
-        """Hide the prop from the room."""
-        self.visible = False
-        self.clickable = False
-
-    def draw(self, renderer: Renderer) -> None:
-        """Draw the prop in the room."""
-        if not self.visible:
-            return
-        rect = self.sprite.get_rect(topleft=self.position)
-        renderer(self.sprite, rect)
-
-    def get_inventory_sprite(self) -> pg.Surface:
-        """Return the sprite used for the inventory."""
-        # TODO: Implement inventory-specific sprite handling if needed.
-        return self.sprite
 
 
 @dataclass
