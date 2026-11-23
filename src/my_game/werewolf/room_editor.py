@@ -31,6 +31,7 @@ from customtkinter import (
 from PIL import Image, ImageTk
 
 from my_game.core.logger import get_logger
+from my_game.werewolf.assets import Images
 from my_game.werewolf.room import rooms
 from my_game.werewolf.room.editor_data import named_values, update_room_source
 from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
@@ -440,6 +441,11 @@ class ObjectForm(CTkFrame):
 
         # Store field widgets for easy access
         self.field_widgets: dict[str, object] = {}
+        # Store image button widgets separately for updating labels
+        self.image_buttons: dict[str, CTkButton] = {}
+
+        # Keep reference to prevent garbage collection
+        self._thumbnail_images: list[CTkImage] = []
 
         self._refresh_form()
 
@@ -508,6 +514,7 @@ class ObjectForm(CTkFrame):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
         self.field_widgets.clear()
+        self.image_buttons.clear()
 
         selected = self.app_state.selected
         if selected is None:
@@ -564,7 +571,8 @@ class ObjectForm(CTkFrame):
             label.pack(side="left", padx=(0, 5))
 
             # Create appropriate input widget (right side)
-            widget: CTkSwitch | CTkEntry
+            widget: CTkSwitch | CTkEntry | CTkButton
+
             if isinstance(field_value, bool):
                 # Boolean: use switch
                 widget = CTkSwitch(
@@ -575,6 +583,17 @@ class ObjectForm(CTkFrame):
                 )
                 widget.select() if field_value else widget.deselect()
                 self.field_widgets[field_name] = widget
+
+            elif isinstance(field_value, Images):
+                # Images enum: use button with picker
+                display_text = field_value.name
+                widget = CTkButton(
+                    field_frame,
+                    text=display_text,
+                    command=lambda fn=field_name: self._show_image_picker(fn),  # type: ignore[misc]
+                )
+                self.field_widgets[field_name] = field_value
+                self.image_buttons[field_name] = widget
 
             else:
                 # Integer, Point, or String: use entry
@@ -621,6 +640,102 @@ class ObjectForm(CTkFrame):
             logger.error("Unsupported object type for update: %s", type(selected))
             return None
 
+    def _show_image_picker(self, field_name: str) -> None:
+        """Show a popup dialog to select an image from the Images enum with thumbnails."""
+        # Get all Images enum values
+        image_options = sorted([img for img in Images], key=lambda x: x.name)
+
+        # Create a popup dialog with image preview
+        popup = CTkToplevel(self.master)
+        popup.title("Select Image")
+        popup.geometry("2880x1800")
+
+        # Create a scrollable frame for image options
+        scroll_frame = CTkScrollableFrame(popup)
+        scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        selected_image: list[Images | None] = [None]
+        thumbnail_size = (120, 120)
+        columns = 10
+
+        def select_image(img: Images) -> None:
+            """Handle image selection."""
+            selected_image[0] = img
+            popup.destroy()
+
+        # Create a grid of images (5 columns)
+        for idx, img in enumerate(image_options):
+            # Calculate row and column position
+            row = idx // columns
+            col = idx % columns
+
+            # Create a frame for this image
+            option_frame = CTkFrame(scroll_frame)
+            option_frame.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+            # Try to load and display thumbnail
+            try:
+                # Load image directly from file path using PIL
+                image_path = img.get_path()
+                image_pil = Image.open(image_path)
+                # Resize to thumbnail size (maintains aspect ratio)
+                image_pil.thumbnail(thumbnail_size, Image.Resampling.LANCZOS)
+                # Convert to CTkImage for display
+                ctk_image = CTkImage(light_image=image_pil, size=thumbnail_size)
+
+                # Create a button with the thumbnail and name
+                img_button = CTkButton(
+                    option_frame,
+                    text=img.name,
+                    image=ctk_image,
+                    compound="top",
+                    command=lambda img_ref=img: select_image(img_ref),  # type: ignore[misc]
+                    height=160,
+                    width=140,
+                )
+                self._thumbnail_images.append(ctk_image)
+
+                img_button.pack(fill="both", expand=True)
+            except (OSError, ValueError, TypeError) as e:
+                # Fallback to text button if image loading fails
+                logger.warning("Failed to load thumbnail for %s: %s", img.name, e)
+                btn = CTkButton(
+                    option_frame,
+                    text=img.name,
+                    command=lambda img_ref=img: select_image(img_ref),  # type: ignore[misc]
+                    height=160,
+                    width=140,
+                )
+                btn.pack(fill="both", expand=True)
+
+        # Configure grid columns to be equal width
+        for col in range(columns):
+            scroll_frame.grid_columnconfigure(col, weight=1)
+
+        # Wait for the popup to close
+        popup.wait_window()
+
+        self._thumbnail_images = []
+
+        # Update the field if an image was selected
+        if selected_image[0] is not None:
+            # Store the new image value
+            self.field_widgets[field_name] = selected_image[0]  # type: ignore[index]
+            # Update the button label to show the new selection
+            if field_name in self.image_buttons:
+                self.image_buttons[field_name].configure(text=selected_image[0].name)
+
+    def _get_widget_value(self, widget: object, field_type: object) -> object:
+        """Extract the value from a widget based on its type."""
+        if isinstance(widget, CTkSwitch):
+            return widget.get()
+        elif isinstance(widget, Images):
+            return widget
+        elif isinstance(widget, CTkEntry):
+            input_text = widget.get()
+            return self._parse_input_value(field_type, input_text)
+        return None
+
     def _redraw_viewport(self) -> None:
         """Redraw the room viewport to reflect changes."""
         parent = self.master
@@ -645,12 +760,8 @@ class ObjectForm(CTkFrame):
             field_type = field_info.type
 
             try:
-                if isinstance(widget, CTkSwitch):
-                    new_value: object = widget.get()
-                elif isinstance(widget, CTkEntry):
-                    input_text = widget.get()
-                    new_value = self._parse_input_value(field_type, input_text)
-                else:
+                new_value = self._get_widget_value(widget, field_type)
+                if new_value is None:
                     continue
 
                 old_value = getattr(selected, field_name)
