@@ -61,6 +61,7 @@ class RegionData:
     """Data representation of a region."""
 
     name: str
+    description: str
     polygon: Polygon = field(default_factory=tuple)
 
 

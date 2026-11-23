@@ -281,6 +281,15 @@ class RoomViewport(CTkFrame):
                 # tags=("content", f"characters:{index}"),
             )
 
+        for region in room.regions:
+            polygon = [(x * MULTIPLIER, y * MULTIPLIER) for x, y in region.polygon]
+            self.room_canvas.create_polygon(
+                *sum(polygon, ()),
+                outline="#8cff66",
+                fill="",
+                width=int(1 * MULTIPLIER),
+            )
+
         if self.app_state.selected_prop_index is not None:
             prop = room.props[self.app_state.selected_prop_index]
             image = self.get_prop_image(prop)
