@@ -52,7 +52,7 @@ TEST_ROOM = RoomData(
         NamedPointData(
             name="Test Point",
             description="A test named point.",
-            position=(324, 42),
+            position=(324, 100),
         ),
     ),
     walkable_areas=(),
