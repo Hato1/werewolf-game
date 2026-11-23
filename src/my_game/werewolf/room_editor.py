@@ -13,7 +13,6 @@ from customtkinter import (
     CTkFont,
     CTkFrame,
     CTkImage,
-    CTkInputDialog,
     CTkLabel,
     CTkOptionMenu,
     CTkScrollableFrame,
@@ -96,6 +95,9 @@ class LeftSidebar(CTkFrame):
         self.scaling_optionmenu = CTkOptionMenu(self, values=["100%", "150%", "200%"], command=self.on_scaling_change)
         widget_scaling = round(ScalingTracker.widget_scaling * 100)
         self.scaling_optionmenu.set(f"{widget_scaling}%")
+        # Skip confirmation dialog toggle
+        self.skip_confirmation_label = CTkLabel(self, text="Skip Confirmation:", anchor="w")
+        self.skip_confirmation_switch = CTkSwitch(self, text="")
 
         self.logo.pack(side="top", fill="x", padx=5, pady=5)
         self.logo_label.pack(side="top", fill="x", padx=0, pady=0)
@@ -103,6 +105,8 @@ class LeftSidebar(CTkFrame):
         self.theme_optionmenu.pack(side="top", fill="x", padx=20, pady=(0, 10))
         self.scaling_label.pack(side="top", fill="x", padx=20, pady=(10, 0))
         self.scaling_optionmenu.pack(side="top", fill="x", padx=20, pady=(0, 10))
+        self.skip_confirmation_label.pack(side="top", fill="x", padx=20, pady=(10, 0))
+        self.skip_confirmation_switch.pack(side="top", fill="x", padx=20, pady=(0, 10))
 
 
 class RoomViewport(CTkFrame):
@@ -358,22 +362,25 @@ class TabData(NamedTuple):
     selector_button: CTkSegmentedButton
     get_items: Callable[[RoomData], Sequence]
     add_button: CTkButton | None = None
+    delete_button: CTkButton | None = None
 
 
 class MainTabview(CTkTabview):
     BUTTON_HEIGHT = 30
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         master: RoomEditor,
         app_state: AppState,
         on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         on_tab_change: Callable[[], None],
         on_add_item: Callable[[str], None],
+        on_delete_item: Callable[[str], None],
     ) -> None:
         super().__init__(master, command=on_tab_change)
         self.app_state = app_state
         self.on_add_item = on_add_item
+        self.on_delete_item = on_delete_item
 
         self.tabs: dict[str, TabData] = {}
 
@@ -390,10 +397,10 @@ class MainTabview(CTkTabview):
         on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         get_items: Callable[[RoomData], Sequence],
     ) -> None:
-        """Add a tab with a scrollable frame, segmented button selector, and add button."""
+        """Add a tab with a scrollable frame, segmented button selector, add and delete buttons."""
         frame = self.add(label)
 
-        # Create a button frame for the add button
+        # Create a button frame for action buttons
         button_frame = CTkFrame(frame)
         button_frame.pack(fill="x", padx=5, pady=5)
 
@@ -404,7 +411,16 @@ class MainTabview(CTkTabview):
             command=lambda tab_name=label: self.on_add_item(tab_name),  # type: ignore[misc]
             height=28,
         )
-        add_button.pack(fill="x")
+        add_button.pack(side="left", fill="x", expand=True, padx=(0, 2))
+
+        # Delete button
+        delete_button = CTkButton(
+            button_frame,
+            text=f"Delete {label.removesuffix('s')}",
+            command=lambda tab_name=label: self.on_delete_item(tab_name),  # type: ignore[misc]
+            height=28,
+        )
+        delete_button.pack(side="left", fill="x", expand=True, padx=(2, 0))
 
         # Scrollable frame with selector
         scrollable = CTkScrollableFrame(frame)
@@ -422,7 +438,7 @@ class MainTabview(CTkTabview):
         scrollable.pack(fill="both", expand=True)
         selector.pack(fill="x")
 
-        self.tabs[label] = TabData(scrollable, selector, get_items, add_button)
+        self.tabs[label] = TabData(scrollable, selector, get_items, add_button, delete_button)
 
     def refresh_tree(self, room: RoomData) -> None:
         """Update all tab titles and selectors with current room data."""
@@ -893,6 +909,7 @@ class RoomEditor(CTk):
             on_select=self.on_select_item,
             on_tab_change=self.on_tab_change,
             on_add_item=self.on_add_item,
+            on_delete_item=self.on_delete_item,
         )
         self.object_form = ObjectForm(
             self,
@@ -913,10 +930,6 @@ class RoomEditor(CTk):
         toplevel.geometry(f"{500}x{250}")
         toplevel.resizable(width=True, height=True)
         toplevel.title("CTkToplevel")
-
-    def _open_input_dialog_event(self) -> None:
-        dialog = CTkInputDialog(title="CTkInputDialog", text="Description of requested input")
-        dialog.get_input()
 
     def _change_scaling_event(self, new_scaling: str) -> None:
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
@@ -1026,6 +1039,97 @@ class RoomEditor(CTk):
         self.main_tabview.refresh_tree(updated_room)
         self.room_viewport.draw_room(updated_room)
         self.object_form._refresh_form()
+
+    def on_delete_item(self, tab_name: str) -> None:
+        """Delete the selected item from the current room with confirmation."""
+        if self.app_state.selected is None:
+            return
+
+        selected = self.app_state.selected
+        item_name = selected.name if hasattr(selected, "name") else str(selected)
+
+        # Show confirmation dialog unless skip confirmation is enabled
+        skip_confirmation = self.sidebar_frame.skip_confirmation_switch.get()
+        if not skip_confirmation:
+            confirmed = self._show_confirmation_dialog(
+                f"Delete '{item_name}'?",
+                f"Are you sure you want to delete '{item_name}'?",
+            )
+
+            if not confirmed:
+                return
+
+        current_room = self.current_room
+        updated_room: RoomData
+
+        if tab_name == "Props":
+            new_props = tuple(p for p in current_room.props if p != selected)
+            updated_room = replace(current_room, props=new_props)
+        elif tab_name == "Characters":
+            new_chars = tuple(c for c in current_room.characters if c != selected)
+            updated_room = replace(current_room, characters=new_chars)
+        elif tab_name == "Regions":
+            new_regions = tuple(r for r in current_room.regions if r != selected)
+            updated_room = replace(current_room, regions=new_regions)
+        elif tab_name == "Points":
+            new_points = tuple(pt for pt in current_room.points if pt != selected)
+            updated_room = replace(current_room, points=new_points)
+        else:
+            logger.error(f"Unknown tab name: {tab_name}")
+            return
+
+        # Update app state
+        self.app_state.room_data[self.app_state.current_room_name] = updated_room
+        self.app_state.selected = None
+        self.app_state.selected_index = -1
+
+        # Refresh UI
+        self.main_tabview.refresh_tree(updated_room)
+        self.room_viewport.draw_room(updated_room)
+        self.object_form._refresh_form()
+
+    def _show_confirmation_dialog(self, title: str, message: str) -> bool:
+        """Show a confirmation dialog with Yes/No buttons. Returns True if Yes is clicked."""
+        dialog = CTkToplevel(self)
+        dialog.title(title)
+
+        # Make dialog modal
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # Center the dialog
+        x = self.winfo_x() + (self.winfo_width() // 2) - 150
+        y = self.winfo_y() + (self.winfo_height() // 2) - 75
+        dialog.geometry(f"+{x}+{y}")
+
+        result: list[bool] = [False]
+
+        # Message label
+        message_label = CTkLabel(dialog, text=message, wraplength=280)
+        message_label.pack(pady=(20, 20), padx=10)
+
+        # Button frame
+        button_frame = CTkFrame(dialog)
+        button_frame.pack(pady=(0, 15), padx=10, fill="x")
+
+        def on_yes() -> None:
+            result[0] = True
+            dialog.destroy()
+
+        def on_no() -> None:
+            result[0] = False
+            dialog.destroy()
+
+        yes_button = CTkButton(button_frame, text="Yes", command=on_yes)
+        yes_button.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        no_button = CTkButton(button_frame, text="No", command=on_no)
+        no_button.pack(side="left", fill="x", expand=True, padx=(5, 0))
+
+        # Wait for dialog to close
+        dialog.wait_window()
+
+        return result[0]
 
     @staticmethod
     def _get_collection_name(tab_name: str) -> str:
