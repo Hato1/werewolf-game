@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from tkinter import Event
 from tkinter.constants import LEFT, NW, TOP
 
@@ -47,6 +47,17 @@ def run() -> None:
         new_instance = app.new_instance_requested
 
 
+@dataclass
+class AppState:
+    room_data: dict[str, RoomData]
+    current_room_name: str
+    selected_prop_index: int | None = None
+
+    @property
+    def current_room(self) -> RoomData:
+        return self.room_data[self.current_room_name]
+
+
 class LeftSidebar(CTkFrame):
     LOGO_SIZE = (100, 100)
     LOGO_PATH = "src/my_game/werewolf/assets/textures/studio-light.png"
@@ -85,19 +96,19 @@ class LeftSidebar(CTkFrame):
 
 
 class RoomViewport(CTkFrame):
-    def __init__(self, master: RoomEditor, on_room_change: Callable[[str], None]) -> None:
+    def __init__(self, master: RoomEditor, app_state: AppState, on_room_change: Callable[[str], None]) -> None:
         super().__init__(master)
+        self.app_state = app_state
 
         self.photo_images: list[ImageTk.PhotoImage] = []  # Keep references to prevent garbage collection
-        self.selected_prop_index: int | None = None
         self.drag_start: tuple[int, int] | None = None
-        self.drag_start_prop_position: tuple[float, float] | None = None
+        self.drag_start_prop_position: tuple[int, int] | None = None
 
         ### Room Viewport ###
         self.room_top_menu = CTkFrame(self)
         self.room_select_label = CTkLabel(self.room_top_menu, text="Room select:", anchor="w")
         self.room_select_menu = CTkOptionMenu(
-            self.room_top_menu, dynamic_resizing=False, values=list(master.room_data), command=on_room_change
+            self.room_top_menu, dynamic_resizing=False, values=list(self.app_state.room_data), command=on_room_change
         )
 
         self.room_top_menu.pack(side=TOP, fill="x")
@@ -121,31 +132,35 @@ class RoomViewport(CTkFrame):
         self.room_canvas.bind("<Right>", self._on_arrow_key)
         self.room_canvas.focus_set()
 
-        self.draw_room(master.current_room)
+        self.draw_room(app_state.current_room)
 
     def get_current_room_name(self) -> str:
         return self.room_select_menu.get()
 
     def _on_canvas_press(self, event: Event) -> None:
         """Handle canvas mouse press - record drag start position."""
-        if self.selected_prop_index is None:
+        if self.app_state.selected_prop_index is None:
             return
 
-        current_room = self.master.current_room  # type: ignore[attr-defined]
-        if self.selected_prop_index >= len(current_room.props):
+        current_room = self.app_state.current_room
+        if self.app_state.selected_prop_index >= len(current_room.props):
             return
 
         self.drag_start = (event.x, event.y)
-        prop = current_room.props[self.selected_prop_index]
+        prop = current_room.props[self.app_state.selected_prop_index]
         self.drag_start_prop_position = prop.position
 
     def _on_canvas_drag(self, event: Event) -> None:
         """Handle canvas mouse drag - update prop position in real-time."""
-        if self.drag_start is None or self.drag_start_prop_position is None or self.selected_prop_index is None:
+        if (
+            self.drag_start is None
+            or self.drag_start_prop_position is None
+            or self.app_state.selected_prop_index is None
+        ):
             return
 
-        current_room = self.master.current_room  # type: ignore[attr-defined]
-        if self.selected_prop_index >= len(current_room.props):
+        current_room = self.app_state.current_room
+        if self.app_state.selected_prop_index >= len(current_room.props):
             return
 
         event_x: int = event.x
@@ -157,18 +172,18 @@ class RoomViewport(CTkFrame):
         new_x = self.drag_start_prop_position[0] + delta_x
         new_y = self.drag_start_prop_position[1] + delta_y
 
-        old_prop = current_room.props[self.selected_prop_index]
+        old_prop = current_room.props[self.app_state.selected_prop_index]
         new_prop = replace(old_prop, position=(new_x, new_y))
 
         new_props = (
-            *current_room.props[: self.selected_prop_index],
+            *current_room.props[: self.app_state.selected_prop_index],
             new_prop,
-            *current_room.props[self.selected_prop_index + 1 :],
+            *current_room.props[self.app_state.selected_prop_index + 1 :],
         )
 
         updated_room = replace(current_room, props=new_props)
         room_name = self.room_select_menu.get()
-        self.master.room_data[room_name] = updated_room  # type: ignore[attr-defined]
+        self.app_state.room_data[room_name] = updated_room
 
         self.draw_room(updated_room)
 
@@ -179,11 +194,11 @@ class RoomViewport(CTkFrame):
 
     def _on_arrow_key(self, event: Event) -> None:
         """Handle arrow key press - nudge selected prop by 1 pixel."""
-        if self.selected_prop_index is None:
+        if self.app_state.selected_prop_index is None:
             return
 
-        current_room = self.master.current_room  # type: ignore[attr-defined]
-        if self.selected_prop_index >= len(current_room.props):
+        current_room = self.app_state.current_room
+        if self.app_state.selected_prop_index >= len(current_room.props):
             return
 
         keysym: str = event.keysym
@@ -199,19 +214,19 @@ class RoomViewport(CTkFrame):
         elif keysym == "Right":
             delta_x = 1
 
-        old_prop = current_room.props[self.selected_prop_index]
+        old_prop = current_room.props[self.app_state.selected_prop_index]
         new_position = (old_prop.position[0] + delta_x, old_prop.position[1] + delta_y)
         new_prop = replace(old_prop, position=new_position)
 
         new_props = (
-            *current_room.props[: self.selected_prop_index],
+            *current_room.props[: self.app_state.selected_prop_index],
             new_prop,
-            *current_room.props[self.selected_prop_index + 1 :],
+            *current_room.props[self.app_state.selected_prop_index + 1 :],
         )
 
         updated_room = replace(current_room, props=new_props)
         room_name = self.room_select_menu.get()
-        self.master.room_data[room_name] = updated_room  # type: ignore[attr-defined]
+        self.app_state.room_data[room_name] = updated_room
 
         self.draw_room(updated_room)
 
@@ -242,7 +257,7 @@ class RoomViewport(CTkFrame):
                 # tags=("content", f"props:{index}"),
             )
 
-            if self.selected_prop_index == index:
+            if self.app_state.selected_prop_index == index:
                 selected_rectangle = (
                     *corrected_position,
                     (corrected_position[0] + image.width()),
@@ -298,8 +313,15 @@ class RoomViewport(CTkFrame):
 
 
 class MainTabview(CTkTabview):
-    def __init__(self, master: RoomEditor, on_prop_select: Callable[[str], None]) -> None:
-        super().__init__(master, command=self.clear_selection)
+    def __init__(
+        self,
+        master: RoomEditor,
+        app_state: AppState,
+        on_prop_select: Callable[[str], None],
+        on_tab_change: Callable[[], None],
+    ) -> None:
+        super().__init__(master, command=on_tab_change)
+        self.app_state = app_state
 
         # Props tab
         self.prop_frame = self.add("Props (0)")
@@ -324,7 +346,7 @@ class MainTabview(CTkTabview):
         self.scrollable_character_frame.pack(fill="both", expand=True)
         self.character_selector.pack(fill="both", expand=True)
 
-        self.refresh_tree(master.current_room)
+        self.refresh_tree(self.app_state.current_room)
 
     def refresh_tree(self, room: RoomData) -> None:
         props = [p.name for p in room.props]
@@ -353,16 +375,20 @@ class RoomEditor(CTk):
 
     def __init__(self) -> None:
         super().__init__()
+
+        # Set window size and scaling
         default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 1000)
         default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.5)
         self.geometry(f"{default_width}x{default_height}")
         self._change_scaling_event(self.DEFAULT_SCALING)
 
         # Load rooms
-        self.room_data = named_values(rooms, RoomData)
-        if not self.room_data:
+        room_data = named_values(rooms, RoomData)
+        if not room_data:
             raise ValueError("No RoomData definitions were found in rooms.py.")
-        self._default_room = next(iter(self.room_data.values()))
+
+        room = next(iter(room_data))
+        self.app_state = AppState(room_data, current_room_name=room)
 
         # configure window
         self.title("Room Editor")
@@ -375,8 +401,10 @@ class RoomEditor(CTk):
             on_theme_change=self._change_theme_event,
             on_scaling_change=self._change_scaling_event,
         )
-        self.room_viewport = RoomViewport(self, on_room_change=self._change_room_event)
-        self.main_tabview = MainTabview(self, on_prop_select=self.prop_select_event)
+        self.room_viewport = RoomViewport(self, self.app_state, on_room_change=self._change_room_event)
+        self.main_tabview = MainTabview(
+            self, self.app_state, on_prop_select=self.prop_select_event, on_tab_change=self.on_tab_change
+        )
 
         self.sidebar_frame.pack(side="left", fill="y")
         self.room_viewport.pack(side="left", fill="both", expand=False)
@@ -384,10 +412,7 @@ class RoomEditor(CTk):
 
     @property
     def current_room(self) -> RoomData:
-        if hasattr(self, "room_viewport"):
-            return self.room_data[self.room_viewport.get_current_room_name()]
-        else:
-            return self._default_room
+        return self.app_state.current_room
 
     def _open_ctktoplevel_event(self) -> None:
         toplevel = CTkToplevel(self)
@@ -412,14 +437,20 @@ class RoomEditor(CTk):
 
     def _change_room_event(self, new_room: str) -> None:
         """Switch the preview and content tree to the chosen room."""
-        self.main_tabview.refresh_tree(self.room_data[new_room])
-        self.room_viewport.selected_prop_index = None
-        self.room_viewport.draw_room(self.room_data[new_room])
+        self.app_state.current_room_name = new_room
+        self.main_tabview.refresh_tree(self.current_room)
+        self.app_state.selected_prop_index = None
+        self.room_viewport.draw_room(self.current_room)
+
+    def on_tab_change(self) -> None:
+        self.main_tabview.clear_selection()
+        self.app_state.selected_prop_index = None
+        self.room_viewport.draw_room(self.current_room)
 
     def prop_select_event(self, selected_prop: str) -> None:
         current_room = self.current_room
         for i, prop in enumerate(current_room.props):
             if prop.name == selected_prop:
-                self.room_viewport.selected_prop_index = i
+                self.app_state.selected_prop_index = i
                 self.room_viewport.draw_room(current_room)
                 break
