@@ -56,6 +56,22 @@ class PropData:
 
 
 @dataclass(frozen=True)
+class RegionData:
+    """Data representation of a region."""
+
+    name: str
+    polygon: Polygon = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class PointData:
+    """Data representation of a point."""
+
+    name: str
+    position: Point
+
+
+@dataclass(frozen=True)
 class RoomData:
     """Data representation of a room."""
 
@@ -64,6 +80,6 @@ class RoomData:
     props: tuple[PropData, ...] = field(default_factory=tuple)
     hotspots: tuple[HotspotData, ...] = field(default_factory=tuple)
     characters: tuple[CharacterData, ...] = field(default_factory=tuple)
-    regions: tuple[Polygon, ...] = field(default_factory=tuple)
-    points: tuple[Point, ...] = field(default_factory=tuple)
+    regions: tuple[RegionData, ...] = field(default_factory=tuple)
+    points: tuple[PointData, ...] = field(default_factory=tuple)
     walkable_areas: tuple[Polygon, ...] = field(default_factory=tuple)

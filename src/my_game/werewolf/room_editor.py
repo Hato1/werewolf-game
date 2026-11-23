@@ -250,21 +250,21 @@ class RoomEditor:
 
         for index, hotspot in enumerate(self.room.hotspots):
             self._draw_polygon("hotspots", index, hotspot.polygon, "#00d8ff")
-        for index, region in enumerate(self.room.regions):
-            self._draw_polygon("regions", index, region, "#8cff66")
+        # for index, region in enumerate(self.room.regions):
+        #     self._draw_polygon("regions", index, region, "#8cff66")
         for index, area in enumerate(self.room.walkable_areas):
             self._draw_polygon("walkable_areas", index, area, "#ffffff")
-        for index, point in enumerate(self.room.points):
-            x, y = point[0] * VIEW_SCALE, point[1] * VIEW_SCALE
-            self.canvas.create_oval(
-                x - 5,
-                y - 5,
-                x + 5,
-                y + 5,
-                fill="#ff55dd",
-                outline="",
-                tags=("content", f"points:{index}"),
-            )
+        # for index, point in enumerate(self.room.points):
+        #     x, y = point[0] * VIEW_SCALE, point[1] * VIEW_SCALE
+        #     self.canvas.create_oval(
+        #         x - 5,
+        #         y - 5,
+        #         x + 5,
+        #         y + 5,
+        #         fill="#ff55dd",
+        #         outline="",
+        #         tags=("content", f"points:{index}"),
+        #     )
 
     def _draw_polygon(self, kind: str, index: int, polygon: Polygon, color: str) -> None:
         """Draw a tagged geometry overlay in the scaled preview."""

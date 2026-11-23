@@ -358,6 +358,26 @@ class MainTabview(CTkTabview):
         self.scrollable_character_frame.pack(fill="both", expand=True)
         self.character_selector.pack(fill="both", expand=True)
 
+        # Region tab
+        self.region_frame = self.add("Regions (0)")
+        self.scrollable_region_frame = CTkScrollableFrame(self.region_frame)
+        self.region_selector = CTkSegmentedButton(
+            self.scrollable_region_frame, orientation="vertical", dynamic_resizing=False
+        )
+
+        # Point tab
+        self.point_frame = self.add("Points (0)")
+        self.scrollable_point_frame = CTkScrollableFrame(self.point_frame)
+        self.point_selector = CTkSegmentedButton(
+            self.scrollable_point_frame, orientation="vertical", dynamic_resizing=False
+        )
+
+        self.scrollable_point_frame.pack(fill="both", expand=True)
+        self.point_selector.pack(fill="both", expand=True)
+
+        self.scrollable_region_frame.pack(fill="both", expand=True)
+        self.region_selector.pack(fill="both", expand=True)
+
         self.refresh_tree(self.app_state.current_room)
 
     def refresh_tree(self, room: RoomData) -> None:
@@ -373,9 +393,23 @@ class MainTabview(CTkTabview):
             self.rename(old_title, new_title)
         self.character_selector.configure(values=characters, height=len(characters) * 30)
 
+        regions = [c.name for c in room.regions]
+        old_title, new_title = self.get(2), f"Regions ({len(regions)})"
+        if old_title != new_title:
+            self.rename(old_title, new_title)
+        self.region_selector.configure(values=regions, height=len(regions) * 30)
+
+        points = [p.name for p in room.points]
+        old_title, new_title = self.get(3), f"Points ({len(points)})"
+        if old_title != new_title:
+            self.rename(old_title, new_title)
+        self.point_selector.configure(values=points, height=len(points) * 30)
+
     def clear_selection(self) -> None:
         self.prop_selector.set("")
         self.character_selector.set("")
+        self.region_selector.set("")
+        self.point_selector.set("")
 
 
 class RoomEditor(CTk):
