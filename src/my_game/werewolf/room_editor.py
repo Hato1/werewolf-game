@@ -51,7 +51,7 @@ TYPES = PropData | CharacterData | RegionData | NamedPointData
 
 DEFAULT_THEME = "dark-blue"
 NATIVE_WINDOW_RESOLUTION = (480, 208)
-MULTIPLIER = 5  # Adjust this if you want to scale the room canvas size
+MULTIPLIER = 2  # Adjust this if you want to scale the room canvas size
 SCALED_WINDOW_RESOLUTION = (NATIVE_WINDOW_RESOLUTION[0] * MULTIPLIER, NATIVE_WINDOW_RESOLUTION[1] * MULTIPLIER)
 
 
