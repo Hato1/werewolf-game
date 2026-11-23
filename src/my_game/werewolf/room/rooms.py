@@ -55,19 +55,6 @@ TEST_ROOM = RoomData(
             path=(),
             loop=False,
         ),
-        CharacterData(
-            name="Character1",
-            description="New character",
-            image=Images.MC_IDLE,
-            position=(304, 59),
-            walk_image=Images.MC_WALK,
-            scale=1.0,
-            size=None,
-            speed=200.0,
-            depth=0,
-            path=(),
-            loop=False,
-        ),
     ),
     regions=(
         RegionData(

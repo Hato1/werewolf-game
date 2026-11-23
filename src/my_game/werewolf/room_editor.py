@@ -610,6 +610,12 @@ class ObjectForm(CTkFrame):
 
         all_fields = list(fields(obj))
 
+        # Skip collection fields when editing a room (props, characters, regions, etc.)
+        # These are managed through the add/delete UI buttons
+        non_editable_fields = set()
+        if isinstance(obj, RoomData):
+            non_editable_fields = {"props", "hotspots", "characters", "regions", "points", "walkable_areas"}
+
         # Create two-column layout
         columns_frame = CTkFrame(self.scrollable_frame)
         columns_frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -622,12 +628,19 @@ class ObjectForm(CTkFrame):
         right_column.pack(side="right", fill="both", expand=True, padx=(5, 0))
 
         # Distribute fields between columns
-        for idx, field_info in enumerate(all_fields):
+        column_index = 0
+        for field_info in all_fields:
             field_name = field_info.name
+
+            # Skip non-editable fields
+            if field_name in non_editable_fields:
+                continue
+
             field_value = getattr(obj, field_name)
 
             # Choose column based on index (even -> left, odd -> right)
-            column = left_column if idx % 2 == 0 else right_column
+            column = left_column if column_index % 2 == 0 else right_column
+            column_index += 1
 
             # Create a horizontal frame for label + widget
             field_frame = CTkFrame(column)
@@ -817,15 +830,69 @@ class ObjectForm(CTkFrame):
             parent.room_viewport.draw_room(self.app_state.current_room)
 
     def _on_save_changes(self) -> None:
-        """Save changes from form back to the selected object."""
-        from dataclasses import fields, replace
-
+        """Save changes from form back to the selected object or current room."""
         selected = self.app_state.selected
-        if selected is None or not hasattr(selected, "__dataclass_fields__"):
+
+        # If nothing is selected, try to save room metadata
+        if selected is None:
+            self._save_room_changes()
+        else:
+            self._save_object_changes(selected)
+
+    def _save_room_changes(self) -> None:
+        """Save changes to the current room metadata."""
+        from dataclasses import replace
+
+        current_room = self.app_state.current_room
+        if not hasattr(current_room, "__dataclass_fields__"):
             return
 
+        changes = self._collect_changes(current_room)
+        if not changes:
+            return
+
+        # Update the room
+        updated_room = replace(current_room, **changes)  # type: ignore[arg-type]
+        room_name = self.app_state.current_room_name
+        self.app_state.room_data[room_name] = updated_room
+        self._redraw_viewport()
+        self._refresh_form()
+
+    def _save_object_changes(self, selected: PropData | CharacterData | RegionData | NamedPointData) -> None:
+        """Save changes to a selected object (prop, character, etc.)."""
+        from dataclasses import replace
+
+        if not hasattr(selected, "__dataclass_fields__"):
+            return
+
+        changes = self._collect_changes(selected)
+        if not changes:
+            return
+
+        # Update the selected object
+        updated_object = replace(selected, **changes)  # type: ignore[arg-type,type-var]
+        self.app_state.selected = updated_object  # type: ignore[assignment]
+
+        # Update the room data
+        current_room = self.app_state.current_room
+        updated_room = self._update_room_with_object(selected, updated_object, current_room)
+        if updated_room is None:
+            return
+
+        # Persist changes
+        room_name = self.app_state.current_room_name
+        self.app_state.room_data[room_name] = updated_room
+        self.app_state.selected = updated_object  # type: ignore[assignment]
+
+        # Redraw the viewport to reflect changes
+        self._redraw_viewport()
+
+    def _collect_changes(self, obj: object) -> dict[str, object]:
+        """Collect changed fields from the form for the given object."""
+        from dataclasses import fields
+
         changes: dict[str, object] = {}
-        for field_info in fields(selected):  # type: ignore[arg-type]
+        for field_info in fields(obj):  # type: ignore[arg-type]
             field_name = field_info.name
             if field_name not in self.field_widgets:
                 continue
@@ -838,32 +905,13 @@ class ObjectForm(CTkFrame):
                 if new_value is None:
                     continue
 
-                old_value = getattr(selected, field_name)
+                old_value = getattr(obj, field_name)
                 if new_value != old_value:
                     changes[field_name] = new_value
             except (ValueError, TypeError) as e:
                 logger.error("Error parsing field %s: %s", field_name, e)
 
-        if not changes:
-            return
-
-        # Update the selected object
-        updated_object = replace(selected, **changes)  # type: ignore[arg-type]
-        self.app_state.selected = updated_object
-
-        # Update the room data
-        current_room = self.app_state.current_room
-        updated_room = self._update_room_with_object(selected, updated_object, current_room)
-        if updated_room is None:
-            return
-
-        # Persist changes
-        room_name = self.app_state.current_room_name
-        self.app_state.room_data[room_name] = updated_room
-        self.app_state.selected = updated_object
-
-        # Redraw the viewport to reflect changes
-        self._redraw_viewport()
+        return changes
 
 
 class RoomEditor(CTk):
