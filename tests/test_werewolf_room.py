@@ -185,9 +185,9 @@ def make_npc(
     data = CharacterData(
         name="npc",
         description="An NPC.",
-        image=Images.PLAYER_IDLE,
+        image=Images.MC_IDLE,
         position=position,
-        walk_image=Images.PLAYER_WALK,
+        walk_image=Images.MC_WALK,
         speed=speed,
         path=path,
         loop=loop,
@@ -237,7 +237,7 @@ def test_room_updates_its_characters() -> None:
 def test_room_builds_characters_from_room_data() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    npc = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (5, 6))
+    npc = CharacterData("npc", "An NPC.", Images.MC_IDLE, (5, 6))
 
     room = Room.from_room_data(RoomData("char room", "A room with a character.", characters=(npc,)), overwrite=True)
 
@@ -248,8 +248,8 @@ def test_room_builds_characters_from_room_data() -> None:
 def test_character_scale_applies_to_all_frames() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    base_data = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (0, 0), walk_image=Images.PLAYER_WALK)
-    scaled_data = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (0, 0), walk_image=Images.PLAYER_WALK, scale=2)
+    base_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, (0, 0), walk_image=Images.MC_WALK)
+    scaled_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, (0, 0), walk_image=Images.MC_WALK, scale=2)
     base = Character.from_character_data(base_data)
     scaled = Character.from_character_data(scaled_data)
 

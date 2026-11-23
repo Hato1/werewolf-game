@@ -49,7 +49,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
         # background
         self.background_color = pg.Color("gray20")
-        self.background = Images.TEST_BACKGROUND.load()
+        self.background = Images.BACKGROUNDTEST2.load()
 
         # text
         self.FONT = Fonts.PICO8.load(MENU_FONT_SIZE)

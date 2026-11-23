@@ -30,9 +30,9 @@ TEST_ROOM = RoomData(
         CharacterData(
             name="Test Character",
             description="A test character.",
-            image=Images.PLAYER_IDLE,
+            image=Images.MC_IDLE,
             position=(75, 64),
-            walk_image=Images.PLAYER_WALK,
+            walk_image=Images.MC_WALK,
             scale=1,
             size=None,
             speed=200.0,
