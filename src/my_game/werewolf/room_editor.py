@@ -139,6 +139,12 @@ class RoomViewport(CTkFrame):
         self.drag_start: tuple[int, int] | None = None
         self.drag_start_image_position: tuple[int, int] | None = None
 
+        # Region creation state
+        self.creating_region = False
+        self.region_vertices: list[tuple[int, int]] = []
+        self.dragging_vertex: tuple[int, int] | None = None
+        self.selected_region_index: int | None = None
+
         ### Room Viewport ###
         self.room_top_menu = CTkFrame(self)
         self.room_select_label = CTkLabel(self.room_top_menu, text="Room select:", anchor="w")
@@ -216,7 +222,19 @@ class RoomViewport(CTkFrame):
             self.on_selection_change()
 
     def _on_canvas_press(self, event: Event) -> None:
-        """Handle canvas mouse press - record drag start position."""
+        """Handle canvas mouse press - add vertex if creating region, otherwise record drag start."""
+        if self.creating_region:
+            # Add vertex to region
+            canvas_x = event.x
+            canvas_y = event.y
+            # Convert from canvas coordinates to room coordinates
+            room_x = round(canvas_x / MULTIPLIER)
+            room_y = round(canvas_y / MULTIPLIER)
+            self.region_vertices.append((room_x, room_y))
+            self.draw_room(self.app_state.current_room)
+            self._draw_region_creation()
+            return
+
         if self.app_state.selected is None:
             return
 
@@ -359,6 +377,91 @@ class RoomViewport(CTkFrame):
         #         tags=("content", f"points:{index}"),
         #     )
 
+    def start_region_creation(self) -> None:
+        """Start creating a new region by clicking vertices."""
+        self.creating_region = True
+        self.region_vertices = []
+
+    def finish_region_creation(self) -> None:
+        """Finish creating the region and add it to the room."""
+        min_vertices = 3
+        if len(self.region_vertices) < min_vertices:
+            logger.warning("Region must have at least 3 vertices")
+            return
+
+        # Convert vertices list to tuple
+        polygon = tuple(self.region_vertices)
+
+        # Create a new region
+        new_region = RegionData(
+            name=f"Region {len(self.app_state.current_room.regions) + 1}",
+            description="",
+            polygon=polygon,
+        )
+
+        # Add to current room
+        current_room = self.app_state.current_room
+        updated_room = replace(current_room, regions=(*current_room.regions, new_region))
+        self.app_state.room_data[self.app_state.current_room_name] = updated_room
+
+        # Reset state
+        self.creating_region = False
+        self.region_vertices = []
+
+        # Redraw and refresh UI
+        self.draw_room(updated_room)
+        if isinstance(self.master, RoomEditor):
+            self.master.main_tabview.refresh_tree(updated_room)
+
+    def _draw_region_creation(self) -> None:
+        """Draw the region being created with vertices and preview lines."""
+        if not self.creating_region or not self.region_vertices:
+            return
+
+        min_vertices_for_line = 2
+
+        # Draw lines connecting vertices
+        for i in range(len(self.region_vertices) - 1):
+            x1, y1 = self.region_vertices[i]
+            x2, y2 = self.region_vertices[i + 1]
+            self.room_canvas.create_line(
+                x1 * MULTIPLIER,
+                y1 * MULTIPLIER,
+                x2 * MULTIPLIER,
+                y2 * MULTIPLIER,
+                fill="#ffcc00",
+                width=int(2 * MULTIPLIER),
+            )
+
+        # Draw vertices as circles
+        for x, y in self.region_vertices:
+            canvas_x = x * MULTIPLIER
+            canvas_y = y * MULTIPLIER
+            radius = int(5 * MULTIPLIER)
+            self.room_canvas.create_oval(
+                canvas_x - radius,
+                canvas_y - radius,
+                canvas_x + radius,
+                canvas_y + radius,
+                fill="#ffcc00",
+                outline="white",
+                width=int(2 * MULTIPLIER),
+            )
+
+        # Draw line back to first vertex if at least 2 vertices
+        if len(self.region_vertices) >= min_vertices_for_line:
+            x1, y1 = self.region_vertices[-1]
+            x2, y2 = self.region_vertices[0]
+            self.room_canvas.create_line(
+                x1 * MULTIPLIER,
+                y1 * MULTIPLIER,
+                x2 * MULTIPLIER,
+                y2 * MULTIPLIER,
+                fill="#ffcc00",
+                width=int(2 * MULTIPLIER),
+                dash=(4, 4),  # Dashed line
+            )
+
 
 class TabData(NamedTuple):
     """Container for tab UI components and data accessor."""
@@ -381,17 +484,21 @@ class MainTabview(CTkTabview):
         on_tab_change: Callable[[], None],
         on_add_item: Callable[[str], None],
         on_delete_item: Callable[[str], None],
+        on_draw_region: Callable[[], None] | None = None,
+        on_finish_region: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(master, command=on_tab_change)
         self.app_state = app_state
         self.on_add_item = on_add_item
         self.on_delete_item = on_delete_item
+        self.on_draw_region = on_draw_region
+        self.on_finish_region = on_finish_region
 
         self.tabs: dict[str, TabData] = {}
 
         self._add_tab("Props", on_select, lambda room_data: room_data.props)
         self._add_tab("Characters", on_select, lambda room_data: room_data.characters)
-        self._add_tab("Regions", on_select, lambda room_data: room_data.regions)
+        self._add_tab("Regions", on_select, lambda room_data: room_data.regions, is_regions_tab=True)
         self._add_tab("Points", on_select, lambda room_data: room_data.points)
 
         self.refresh_tree(self.app_state.current_room)
@@ -401,6 +508,8 @@ class MainTabview(CTkTabview):
         label: str,
         on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         get_items: Callable[[RoomData], Sequence],
+        *,
+        is_regions_tab: bool = False,
     ) -> None:
         """Add a tab with a scrollable frame, segmented button selector, add and delete buttons."""
         frame = self.add(label)
@@ -409,14 +518,32 @@ class MainTabview(CTkTabview):
         button_frame = CTkFrame(frame)
         button_frame.pack(fill="x", padx=5, pady=5)
 
-        # Add button
-        add_button = CTkButton(
-            button_frame,
-            text=f"Add {label.removesuffix('s')}",
-            command=lambda tab_name=label: self.on_add_item(tab_name),  # type: ignore[misc]
-            height=28,
-        )
-        add_button.pack(side="left", fill="x", expand=True, padx=(0, 2))
+        # Region-specific buttons
+        if is_regions_tab:
+            add_button = CTkButton(
+                button_frame,
+                text="Draw Region",
+                command=self.on_draw_region,
+                height=28,
+            )
+            add_button.pack(side="left", fill="x", expand=True, padx=(2, 0))
+
+            finish_button = CTkButton(
+                button_frame,
+                text="Finish",
+                command=self.on_finish_region,
+                height=28,
+            )
+            finish_button.pack(side="left", fill="x", expand=True, padx=(2, 0))
+        else:
+            # Add button
+            add_button = CTkButton(
+                button_frame,
+                text=f"Add {label.removesuffix('s')}",
+                command=lambda tab_name=label: self.on_add_item(tab_name),  # type: ignore[misc]
+                height=28,
+            )
+            add_button.pack(side="left", fill="x", expand=True, padx=(0, 2))
 
         # Delete button
         delete_button = CTkButton(
@@ -970,6 +1097,8 @@ class RoomEditor(CTk):
             on_tab_change=self.on_tab_change,
             on_add_item=self.on_add_item,
             on_delete_item=self.on_delete_item,
+            on_draw_region=self.on_draw_region,
+            on_finish_region=self.on_finish_region,
         )
         self.object_form = ObjectForm(
             self,
@@ -1276,6 +1405,17 @@ class RoomEditor(CTk):
         dialog.wait_window()
 
         return result[0]
+
+    def on_draw_region(self) -> None:
+        """Start region drawing mode by delegating to the viewport."""
+        self.room_viewport.start_region_creation()
+
+    def on_finish_region(self) -> None:
+        """Finish drawing the region by delegating to the viewport."""
+        self.room_viewport.finish_region_creation()
+        # Refresh sidebar to show newly created region
+        self.main_tabview.refresh_tree(self.current_room)
+        self.object_form._refresh_form()
 
     @staticmethod
     def _get_collection_name(tab_name: str) -> str:
