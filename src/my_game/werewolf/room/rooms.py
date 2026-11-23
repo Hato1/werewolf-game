@@ -1,12 +1,13 @@
 """Room definitions for the werewolf game."""
 
-from my_game.werewolf.room import props
+from my_game.werewolf.room import characters, props
 from my_game.werewolf.room.loaders import RoomData
 
 TEST_ROOM = RoomData(
     name="Test Room",
     description="A room for testing the room rendering system.",
     props=(props.BACKGROUND_INN, props.STUDIO),
+    characters=(characters.TEST_CHARACTER,),
 )
 
 CHURCH_CEMETARY = RoomData(

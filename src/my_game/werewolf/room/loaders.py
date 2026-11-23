@@ -21,6 +21,7 @@ class CharacterData:
     position: Point
     walk_image: Images | None = None
     scale: float = 1.0
+    size: tuple[int, int] | None = None
     speed: float = 200.0
     depth: int = 0
     path: tuple[Point, ...] = ()

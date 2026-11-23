@@ -149,7 +149,10 @@ class Character:
         frame_width = idle.get_width()
         idle_frames = split_frames(idle, frame_width)
         walk_frames = split_frames(data.walk_image.load(), frame_width) if data.walk_image else idle_frames
-        if data.scale != 1.0:
+        if data.size is not None:
+            idle_frames = [pg.transform.smoothscale(f, data.size) for f in idle_frames]
+            walk_frames = [pg.transform.smoothscale(f, data.size) for f in walk_frames]
+        elif data.scale != 1.0:
             idle_frames = [pg.transform.scale_by(f, data.scale) for f in idle_frames]
             walk_frames = (
                 idle_frames if data.walk_image is None else [pg.transform.scale_by(f, data.scale) for f in walk_frames]
@@ -178,7 +181,7 @@ class Character:
 
     @property
     def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(midbottom=(round(self.position.x), round(self.position.y)))
+        return self.sprite.get_rect(topleft=(round(self.position.x), round(self.position.y)))
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).

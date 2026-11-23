@@ -30,7 +30,7 @@ from PIL import Image, ImageTk
 
 from my_game.werewolf.room import rooms
 from my_game.werewolf.room.editor_data import named_values, update_room_source
-from my_game.werewolf.room.loaders import PropData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, PropData, RoomData
 
 DEFAULT_THEME = "dark-blue"
 NATIVE_WINDOW_RESOLUTION = (480, 208)
@@ -243,7 +243,7 @@ class RoomViewport(CTkFrame):
 
         self.draw_room(updated_room)
 
-    def get_prop_image(self, prop: PropData) -> ImageTk.PhotoImage:
+    def get_prop_image(self, prop: PropData | CharacterData) -> ImageTk.PhotoImage:
         image = Image.open(prop.image.get_path())
         size = prop.size or (int(image.size[0] * prop.scale), int(image.size[1] * prop.scale))
         scaled_size = (size[0] * MULTIPLIER, size[1] * MULTIPLIER)
@@ -259,7 +259,7 @@ class RoomViewport(CTkFrame):
 
         selected_rectangle = None
 
-        for index, prop in enumerate(props):
+        for prop in props:
             image = self.get_prop_image(prop)
             self.photo_images.append(image)
             corrected_position = (prop.position[0] * MULTIPLIER, prop.position[1] * MULTIPLIER)
@@ -270,12 +270,26 @@ class RoomViewport(CTkFrame):
                 # tags=("content", f"props:{index}"),
             )
 
-            if self.app_state.selected_prop_index == index:
-                selected_rectangle = (
-                    *corrected_position,
-                    (corrected_position[0] + image.width()),
-                    (corrected_position[1] + image.height()),
-                )
+        for character in room.characters:
+            image = self.get_prop_image(character)
+            self.photo_images.append(image)
+            corrected_position = (character.position[0] * MULTIPLIER, character.position[1] * MULTIPLIER)
+            self.room_canvas.create_image(
+                *corrected_position,
+                image=image,
+                anchor=NW,
+                # tags=("content", f"characters:{index}"),
+            )
+
+        if self.app_state.selected_prop_index is not None:
+            prop = room.props[self.app_state.selected_prop_index]
+            image = self.get_prop_image(prop)
+            corrected_position = (prop.position[0] * MULTIPLIER, prop.position[1] * MULTIPLIER)
+            selected_rectangle = (
+                *corrected_position,
+                (corrected_position[0] + image.width()),
+                (corrected_position[1] + image.height()),
+            )
 
         if selected_rectangle:
             self.room_canvas.create_rectangle(
@@ -283,27 +297,6 @@ class RoomViewport(CTkFrame):
                 outline="#ffcc00",
                 width=int(1 * MULTIPLIER),
             )
-
-        # for index, character in enumerate(characters):
-        #     size = self._scaled_size(character.image, character.scale)
-        #     photo_size = (self._canvas_scale(size[0]), self._canvas_scale(size[1]))
-        #     photo = self._get_photo(character.image, photo_size)
-        #     self.room_canvas.create_image(
-        #         (self._canvas_scale(character.position[0]), self._canvas_scale(character.position[1])),
-        #         image=photo,
-        #         anchor=tk.S,
-        #         tags=("content", f"characters:{index}"),
-        #     )
-        #     if self.selection == ("characters", index):
-        #         rect = self.room_canvas.bbox(f"characters:{index}")
-        #         if rect is None:
-        #             rect = (
-        #                 self._canvas_scale(character.position[0] - size[0] // 2),
-        #                 self._canvas_scale(character.position[1] - size[1]),
-        #                 self._canvas_scale(character.position[0] + size[0] // 2),
-        #                 self._canvas_scale(character.position[1]),
-        #             )
-        #         self.room_canvas.create_rectangle(rect, outline="#ffcc00", width=int(2 * self.scale))
 
         # for index, hotspot in enumerate(room.hotspots):
         #     self._draw_polygon("hotspots", index, hotspot.polygon, "#00d8ff")
