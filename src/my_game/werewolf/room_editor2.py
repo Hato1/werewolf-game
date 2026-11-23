@@ -108,6 +108,8 @@ class RoomViewport(CTkFrame):
             self,
             width=SCALED_WINDOW_RESOLUTION[0],
             height=SCALED_WINDOW_RESOLUTION[1],
+            bd=0,
+            highlightthickness=0,
         )
         self.room_canvas.pack(side=LEFT, anchor="nw")
         self.room_canvas.bind("<Button-1>", self._on_canvas_press)
