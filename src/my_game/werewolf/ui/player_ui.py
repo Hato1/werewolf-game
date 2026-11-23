@@ -1,21 +1,21 @@
-import json
-import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
 import pygame as pg
 
 from my_game.core.renderer import Renderer
+from my_game.werewolf.data import data_manager
 from my_game.werewolf.room.models import Prop
 
 if __import__("sys").platform == "emscripten":
-    from platform import window  # type: ignore[attr-defined]
+    pass  # type: ignore[attr-defined]
 
 from my_game.constants import SCREEN_SIZE
 from my_game.core.logger import get_logger
 from my_game.werewolf.assets import Fonts, Images
 from my_game.werewolf.inputs import Action
+from my_game.werewolf.room import props
 
 logger = get_logger(__name__)
 
@@ -42,6 +42,7 @@ class Inventory:
     # Placement of inventory slots/buttons.
     BUTTON_COLOR = pg.Color("saddlebrown")
     OFFSET_Y = UI_OFFSET
+    BUTTON_SELECTED_COLOR = pg.Color("#D8A264")
 
     def __init__(self, width: int) -> None:
         self.width = width
@@ -119,14 +120,6 @@ class Inventory:
             image_rect = sprite.get_rect(center=background_rect.center)
             renderer(sprite, image_rect, unlit=True)
 
-    # Convert the inventory to a JSON string for saving
-    # These methods should probably be part of Prop instead of here.
-    def to_json(self) -> str:
-        return json.dumps([asdict(item) for item in self.inventory])
-
-    def from_json(self, json_data: str) -> None:
-        self.inventory = [Prop(**item) for item in json.loads(json_data)]
-
 
 class UIPanel:
     """represents the UI and all elements contained within"""
@@ -151,6 +144,8 @@ class UIPanel:
         self.text_panel = TextDisplayPanel(width=354)
         self.second_portrait = SecondPortrait()
 
+        self.save_file = data_manager.SaveFile()
+
     def draw(self, renderer: Renderer) -> None:
         renderer(self.bg_surf, self.bg_rect, unlit=True)
         if self.inventory.visible:
@@ -159,6 +154,13 @@ class UIPanel:
         self.text_panel.draw(renderer)
         self.second_portrait.draw(renderer)
 
+    def build_inventory_ref(self) -> list[str]:
+        """build inventory reference list for save file"""
+        inventory_ref: list[str] = []
+        for item in self.inventory.inventory:
+            inventory_ref.append(item.name)
+        return inventory_ref
+
     def handle_mouse(self, actions: set[Enum], event: pg.Event, portrait_func=None) -> None:
         """Allow a room state to pass in custom functions for portrait/inventory. Otherwise, use default functionality"""
         if Action.MOUSE_SELECT in actions:
@@ -166,41 +168,29 @@ class UIPanel:
                 if portrait_func is not None:
                     portrait_func()
                 else:
-                    logger.info("Portrait button clicked")
+                    print("Save button clicked")
+                    self.save_file.inventory = self.build_inventory_ref()
+                    self.save_file.save_game()
             elif self.second_portrait.get_rect().collidepoint(event.pos):
-                self.toggle_modes()
+                # self.toggle_modes()
+                self.save_file.load_game()
+                self.load_inventory()
             else:
                 """check each inventory slot for mouse click"""
                 if self.inventory.visible:
                     self.inventory.handle_mouse(event.pos)
 
-    def save_inventory(self) -> None:
-        json_player_data = self.inventory.to_json()
-
-        if sys.platform != "emscripten":
-            with DATA_FILE.open("w") as player_data:
-                player_data.write(json_player_data)
-        else:
-            window.localStorage.setItem("beast_of_temerev_player_data", json_player_data)
-
     def load_inventory(self) -> None:
-        inventory_json = None
-
-        if sys.platform == "emscripten":
-            if player_data := window.localStorage.getItem(WEB_DATA_LOCATION):
-                inventory_json = player_data
-            else:
-                logger.warning("Could not find inventory data in localStorage.")
-                return
-        else:
-            try:
-                with DATA_FILE.open("r") as player_data:
-                    inventory_json = player_data.read()
-            except FileNotFoundError:
-                logger.warning("Failed to load inventory, file not found.")
-                return
-
-        self.inventory.from_json(inventory_json)
+        print(f"Loading inventory from {self.save_file.inventory}")
+        for item_name in self.save_file.inventory:
+            new_prop = props.load_prop(item_name)
+            if new_prop is not None:
+                """
+                    Very important:
+                    use inventory.add_item, rather than appending directly to inventory.inventory
+                    otherwise, we get duplicate items
+                """
+                self.inventory.add_item(new_prop)
 
     """allow developers to enable/disable inventory wholesale, when needed"""
 

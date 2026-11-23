@@ -12,6 +12,7 @@ from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
+from my_game.werewolf.data.data_models import SaveData
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.characters import PLAYER
@@ -38,6 +39,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.player = Player.from_character_data(PLAYER)
         self.ui = UIPanel()
         self.renderer: Renderer
+        SaveData.current_room = room.name
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
         super().enter(transition_data, renderer)
@@ -49,6 +51,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.room.on_exit(self.renderer)
         self.room = Room.from_room_data(room)
         self.room.on_enter(self.renderer)
+        SaveData.current_room = room.name
 
     def show_message(self, text: str) -> None:
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
