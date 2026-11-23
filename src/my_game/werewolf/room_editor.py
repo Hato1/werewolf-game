@@ -110,13 +110,14 @@ class LeftSidebar(CTkFrame):
 
 
 class RoomViewport(CTkFrame):
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         master: RoomEditor,
         app_state: AppState,
         on_room_change: Callable[[str], None],
         on_save: Callable[[], None],
         on_selection_change: Callable[[], None],
+        on_add_room: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(master)
         self.app_state = app_state
@@ -132,6 +133,9 @@ class RoomViewport(CTkFrame):
         self.room_select_menu = CTkOptionMenu(
             self.room_top_menu, dynamic_resizing=False, values=list(self.app_state.room_data), command=on_room_change
         )
+        self.add_room_button = CTkButton(
+            self.room_top_menu, text="Add Room", command=on_add_room or (lambda: None), width=40
+        )
         self.save_button = CTkButton(
             self.room_top_menu, text="SAVE ALL CHANGES", command=on_save, fg_color="darkred", hover_color="red"
         )
@@ -139,6 +143,7 @@ class RoomViewport(CTkFrame):
         self.room_top_menu.pack(side=TOP, fill="x")
         self.room_select_label.pack(side=LEFT, padx=(20, 0), pady=(10, 10))
         self.room_select_menu.pack(side=LEFT, padx=20, pady=(10, 10))
+        self.add_room_button.pack(side=LEFT, padx=(0, 10), pady=(10, 10))
         self.save_button.pack(side=LEFT, padx=20, pady=(10, 10))
 
         self.room_canvas = CTkCanvas(
@@ -902,6 +907,7 @@ class RoomEditor(CTk):
             on_room_change=self._change_room_event,
             on_save=self.on_save,
             on_selection_change=self.on_selection_change,
+            on_add_room=self.on_add_room,
         )
         self.main_tabview = MainTabview(
             self,
@@ -1087,6 +1093,92 @@ class RoomEditor(CTk):
         self.main_tabview.refresh_tree(updated_room)
         self.room_viewport.draw_room(updated_room)
         self.object_form._refresh_form()
+
+    def on_add_room(self) -> None:
+        """Add a new room to the room data after prompting for a name."""
+        # Show a dialog to get the room name from the user
+        room_name = self._prompt_room_name()
+        if room_name is None or not room_name.strip():
+            return  # User cancelled or entered empty name
+
+        room_name = room_name.strip()
+
+        # Generate a valid Python identifier from the room name
+        # Replace spaces and special characters with underscores
+        var_name = "".join(c if c.isalnum() or c == "_" else "_" for c in room_name)
+        # Ensure it starts with a letter or underscore
+        if not var_name or not (var_name[0].isalpha() or var_name[0] == "_"):
+            var_name = f"_{var_name}"
+        # Make it uppercase for consistency with existing rooms
+        var_name = var_name.upper()
+
+        # Ensure uniqueness
+        original_var_name = var_name
+        counter = 1
+        while var_name in self.app_state.room_data:
+            var_name = f"{original_var_name}_{counter}"
+            counter += 1
+
+        # Create a new room with default values
+        new_room = RoomData(name=room_name, description="")
+
+        # Add to room data using the Python variable name as key
+        self.app_state.room_data[var_name] = new_room
+
+        # Update the room select dropdown
+        self.room_viewport.room_select_menu.configure(values=list(self.app_state.room_data))
+
+        # Switch to the new room
+        self.room_viewport.room_select_menu.set(var_name)
+        self._change_room_event(var_name)
+
+    def _prompt_room_name(self) -> str | None:
+        """Show a dialog to prompt for a room name. Returns the name or None if cancelled."""
+        dialog = CTkToplevel(self)
+        dialog.title("Create New Room")
+
+        # Make dialog modal
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # Center the dialog
+        x = self.winfo_x() + (self.winfo_width() // 2) - 175
+        y = self.winfo_y() + (self.winfo_height() // 2) - 75
+        dialog.geometry(f"+{x}+{y}")
+
+        result: list[str | None] = [None]
+
+        # Prompt label
+        prompt_label = CTkLabel(dialog, text="Enter room name:")
+        prompt_label.pack(pady=(15, 5), padx=15)
+
+        # Text entry
+        name_entry = CTkEntry(dialog)
+        name_entry.pack(pady=(5, 15), padx=15, fill="x")
+        name_entry.focus()
+
+        # Button frame
+        button_frame = CTkFrame(dialog)
+        button_frame.pack(pady=(0, 15), padx=15, fill="x")
+
+        def on_ok() -> None:
+            result[0] = name_entry.get()
+            dialog.destroy()
+
+        def on_cancel() -> None:
+            result[0] = None
+            dialog.destroy()
+
+        ok_button = CTkButton(button_frame, text="OK", command=on_ok)
+        ok_button.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        cancel_button = CTkButton(button_frame, text="Cancel", command=on_cancel)
+        cancel_button.pack(side="left", fill="x", expand=True, padx=(5, 0))
+
+        # Wait for dialog to close
+        dialog.wait_window()
+
+        return result[0]
 
     def _show_confirmation_dialog(self, title: str, message: str) -> bool:
         """Show a confirmation dialog with Yes/No buttons. Returns True if Yes is clicked."""
