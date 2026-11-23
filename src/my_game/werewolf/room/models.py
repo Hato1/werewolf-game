@@ -10,7 +10,7 @@ from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room.loaders import CharacterData, HotspotData, PropData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
 Point = tuple[int, int]
 Polygon = tuple[Point, ...]
@@ -22,6 +22,86 @@ def split_frames(sheet: pg.Surface, frame_width: int) -> list[pg.Surface]:
     return [
         sheet.subsurface(pg.Rect(x, 0, frame_width, sheet.get_height())).copy() for x in range(0, width, frame_width)
     ]
+
+
+@dataclass
+class Prop:
+    """Props are objects within a room that the player can interact with.
+
+    Attributes:
+        name: Prop's display name.
+        description: Prop's description.
+        sprite: Pygame surface containing the prop's visual representation.
+        position: Top-left coordinate of the prop's sprite.
+        visible: Whether the prop is drawn.
+        clickable: Whether the prop can be interacted with.
+        hotspot: Optional interactive area within the prop.
+        scale: Uniform scale factor applied to the image (ignored when size is set).
+        size: Exact pixel size to stretch the image to.
+        parallax: Parallax effect factor.
+        depth: Rendering depth (higher values render on top).
+        baseline: Reference point for prop positioning relative to its sprite.
+        walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
+    """
+
+    name: str
+    description: str
+    sprite: pg.Surface
+    position: Point
+    visible: bool
+    clickable: bool
+    hotspot: Hotspot | None
+    scale: float
+    size: tuple[int, int] | None
+    parallax: float
+    depth: int
+    baseline: int
+    walk_to_interact: bool = False
+
+    @classmethod
+    def from_prop_data(cls, data: PropData) -> Self:
+        sprite = data.image.load()
+        if data.size is not None:
+            sprite = pg.transform.smoothscale(sprite, data.size)
+        elif data.scale != 1.0:
+            sprite = pg.transform.smoothscale_by(sprite, data.scale)
+        prop = cls(
+            data.name,
+            data.description,
+            sprite,
+            data.position,
+            data.visible,
+            data.clickable,
+            Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
+            data.scale,
+            data.size,
+            data.parallax,
+            data.depth,
+            data.baseline,
+            data.walk_to_interact,
+        )
+        return prop
+
+    @property
+    def rect(self) -> pg.Rect:
+        return self.sprite.get_rect(topleft=self.position)
+
+    def hide(self):
+        """Hide the prop from the room."""
+        self.visible = False
+        self.clickable = False
+
+    def draw(self, renderer: Renderer) -> None:
+        """Draw the prop in the room."""
+        if not self.visible:
+            return
+        rect = self.sprite.get_rect(topleft=self.position)
+        renderer(self.sprite, rect)
+
+    def get_inventory_sprite(self) -> pg.Surface:
+        """Return the sprite used for the inventory."""
+        # TODO: Implement inventory-specific sprite handling if needed.
+        return self.sprite
 
 
 @dataclass
@@ -52,6 +132,7 @@ class Character:
     idle_frames: list[pg.Surface]
     walk_frames: list[pg.Surface]
     position: pg.Vector2
+    depth: int
     speed: float
     path: tuple[Point, ...]
     loop: bool
@@ -68,7 +149,10 @@ class Character:
         frame_width = idle.get_width()
         idle_frames = split_frames(idle, frame_width)
         walk_frames = split_frames(data.walk_image.load(), frame_width) if data.walk_image else idle_frames
-        if data.scale != 1.0:
+        if data.size is not None:
+            idle_frames = [pg.transform.smoothscale(f, data.size) for f in idle_frames]
+            walk_frames = [pg.transform.smoothscale(f, data.size) for f in walk_frames]
+        elif data.scale != 1.0:
             idle_frames = [pg.transform.scale_by(f, data.scale) for f in idle_frames]
             walk_frames = (
                 idle_frames if data.walk_image is None else [pg.transform.scale_by(f, data.scale) for f in walk_frames]
@@ -79,6 +163,7 @@ class Character:
             idle_frames,
             walk_frames,
             pg.Vector2(data.position),
+            data.depth,
             data.speed,
             data.path,
             loop=data.loop,
@@ -96,7 +181,7 @@ class Character:
 
     @property
     def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(midbottom=(round(self.position.x), round(self.position.y)))
+        return self.sprite.get_rect(topleft=(round(self.position.x), round(self.position.y)))
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).
@@ -251,85 +336,20 @@ class Region:
         """Check if the given point is within the region."""
         raise NotImplementedError
 
+    @classmethod
+    def from_region_data(cls, data: RegionData) -> Self:
+        region = cls(data.name, data.polygon)
+        return region
 
-@dataclass
-class Prop:
-    """Props are objects within a room that the player can interact with.
 
-    Attributes:
-        name: Prop's display name.
-        description: Prop's description.
-        sprite: Pygame surface containing the prop's visual representation.
-        position: Top-left coordinate of the prop's sprite.
-        visible: Whether the prop is drawn.
-        clickable: Whether the prop can be interacted with.
-        hotspot: Optional interactive area within the prop.
-        scale: Uniform scale factor applied to the image (ignored when size is set).
-        size: Exact pixel size to stretch the image to.
-        parallax: Parallax effect factor.
-        depth: Rendering depth (higher values render on top).
-        baseline: Reference point for prop positioning relative to its sprite.
-        walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
-    """
-
+@dataclass(frozen=True)
+class NamedPoint:
     name: str
-    description: str
-    sprite: pg.Surface
-    position: Point
-    visible: bool
-    clickable: bool
-    hotspot: Hotspot | None
-    scale: float
-    size: tuple[int, int] | None
-    parallax: float
-    depth: int
-    baseline: int
-    walk_to_interact: bool = False
+    position: tuple[int, int]
 
     @classmethod
-    def from_prop_data(cls, data: PropData) -> Self:
-        sprite = data.image.load()
-        if data.size is not None:
-            sprite = pg.transform.smoothscale(sprite, data.size)
-        elif data.scale != 1.0:
-            sprite = pg.transform.smoothscale_by(sprite, data.scale)
-        prop = cls(
-            data.name,
-            data.description,
-            sprite,
-            data.position,
-            data.visible,
-            data.clickable,
-            Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
-            data.scale,
-            data.size,
-            data.parallax,
-            data.depth,
-            data.baseline,
-            data.walk_to_interact,
-        )
-        return prop
-
-    @property
-    def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(topleft=self.position)
-
-    def hide(self):
-        """Hide the prop from the room."""
-        self.visible = False
-        self.clickable = False
-
-    def draw(self, renderer: Renderer) -> None:
-        """Draw the prop in the room."""
-        if not self.visible:
-            return
-        rect = self.sprite.get_rect(topleft=self.position)
-        renderer(self.sprite, rect)
-
-    def get_inventory_sprite(self) -> pg.Surface:
-        """Return the sprite used for the inventory."""
-        # TODO: Implement inventory-specific sprite handling if needed.
-        return self.sprite
+    def from_point_data(cls, data: NamedPointData) -> Self:
+        return cls(data.name, data.position)
 
 
 @dataclass
@@ -352,10 +372,10 @@ class Room:
     name: str
     description: str
     props: list[Prop] = field(default_factory=list)
-    hotspots: list[Hotspot] = field(default_factory=list)
     characters: list[Character] = field(default_factory=list)
-    regions: list[Polygon] = field(default_factory=list)
-    points: list[Point] = field(default_factory=list)
+    hotspots: list[Hotspot] = field(default_factory=list)
+    regions: list[Region] = field(default_factory=list)
+    points: list[NamedPoint] = field(default_factory=list)
     walkable_areas: list[Polygon] = field(default_factory=list)
 
     @classmethod
@@ -366,10 +386,10 @@ class Room:
             name=data.name,
             description=data.description,
             props=[Prop.from_prop_data(prop) for prop in data.props],
-            hotspots=[Hotspot.from_hotspot_data(hs) for hs in data.hotspots],
             characters=[Character.from_character_data(ch) for ch in data.characters],
-            regions=list(data.regions),
-            points=list(data.points),
+            hotspots=[Hotspot.from_hotspot_data(hs) for hs in data.hotspots],
+            regions=[Region.from_region_data(r) for r in data.regions],
+            points=[NamedPoint.from_point_data(p) for p in data.points],
             walkable_areas=list(data.walkable_areas),
         )
         cls.registry[data] = room
