@@ -10,7 +10,7 @@ from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.room.loaders import CharacterData, HotspotData, PointData, PropData, RegionData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
 Point = tuple[int, int]
 Polygon = tuple[Point, ...]
@@ -348,7 +348,7 @@ class NamedPoint:
     position: tuple[int, int]
 
     @classmethod
-    def from_point_data(cls, data: PointData) -> Self:
+    def from_point_data(cls, data: NamedPointData) -> Self:
         return cls(data.name, data.position)
 
 

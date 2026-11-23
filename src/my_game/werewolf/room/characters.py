@@ -7,7 +7,7 @@ PLAYER = CharacterData(
     name="Player",
     description="The player character.",
     image=Images.PLAYER_IDLE,
-    position=(480 // 2, 75),
+    position=(240, 75),
     walk_image=Images.PLAYER_WALK,
     scale=1,
 )

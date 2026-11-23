@@ -66,10 +66,11 @@ class RegionData:
 
 
 @dataclass(frozen=True)
-class PointData:
+class NamedPointData:
     """Data representation of a point."""
 
     name: str
+    description: str
     position: Point
 
 
@@ -83,5 +84,5 @@ class RoomData:
     hotspots: tuple[HotspotData, ...] = field(default_factory=tuple)
     characters: tuple[CharacterData, ...] = field(default_factory=tuple)
     regions: tuple[RegionData, ...] = field(default_factory=tuple)
-    points: tuple[PointData, ...] = field(default_factory=tuple)
+    points: tuple[NamedPointData, ...] = field(default_factory=tuple)
     walkable_areas: tuple[Polygon, ...] = field(default_factory=tuple)
