@@ -48,10 +48,8 @@ class SaveFile:
         try:
             if path.exists():
                 self.save_data.to_persistent_storage()
-                print("Save successful!")
-
         except OSError as e:
-            print(f"Save failed: {e}")
+            print(f"Save operation failed: {e}")
 
     def load_game(self) -> None:
         print("Loading game...")
@@ -63,18 +61,8 @@ class SaveFile:
             self.inventory = self.save_data.inventory
             self.flags = self.save_data.flags
 
-            # self.save_data.version = getattr(self.save_data, , None)
-            # if value is not None:
-            #     if isinstance(value, bool):
-            #         value = "on" if value else "off"
-            #     button.selected_index = button.options.index(value)
-
-            # json_str = path.read_text(encoding="utf-8")
-            # data = json.loads(json_str)
-            # return self.migrate_save(data)
         except (json.JSONDecodeError, OSError) as e:
             print(f"Load failed: {e}")
-            # return None
 
     def update_room(self, room_name: str):
         self.save_data.current_room = room_name
@@ -98,6 +86,7 @@ class SaveFile:
     def from_json(json_data: str, obj_type: Any) -> Any:
         return [obj_type(**item) for item in json.loads(json_data)]
 
+    """Save slots not currently supported"""
     # def slot_path(slot: int) -> Path:
     #     return get_save_dir() / f"slot_{slot}.json"
 
