@@ -9,6 +9,7 @@ from customtkinter import (
     CTk,
     CTkButton,
     CTkCanvas,
+    CTkEntry,
     CTkFont,
     CTkFrame,
     CTkImage,
@@ -17,6 +18,7 @@ from customtkinter import (
     CTkOptionMenu,
     CTkScrollableFrame,
     CTkSegmentedButton,
+    CTkSwitch,
     CTkTabview,
     CTkToplevel,
     DrawEngine,
@@ -109,9 +111,11 @@ class RoomViewport(CTkFrame):
         app_state: AppState,
         on_room_change: Callable[[str], None],
         on_save: Callable[[], None],
+        on_selection_change: Callable[[], None],
     ) -> None:
         super().__init__(master)
         self.app_state = app_state
+        self.on_selection_change = on_selection_change
 
         self.photo_images: list[ImageTk.PhotoImage] = []  # Keep references to prevent garbage collection
         self.drag_start: tuple[int, int] | None = None
@@ -185,6 +189,9 @@ class RoomViewport(CTkFrame):
         room_name = self.room_select_menu.get()
         self.app_state.room_data[room_name] = updated_room
         self.draw_room(updated_room)
+        # Only refresh form if not currently dragging to avoid lag
+        if self.drag_start is None:
+            self.on_selection_change()
 
     def _on_canvas_press(self, event: Event) -> None:
         """Handle canvas mouse press - record drag start position."""
@@ -217,6 +224,8 @@ class RoomViewport(CTkFrame):
         """Handle canvas mouse release - finalize drag."""
         self.drag_start = None
         self.drag_start_image_position = None
+        # Refresh form after drag is complete
+        self.on_selection_change()
 
     def _on_arrow_key(self, event: Event) -> None:
         """Handle arrow key press - nudge selected prop by 1 pixel."""
@@ -416,6 +425,262 @@ class MainTabview(CTkTabview):
             tab_data.selector_button.set("")
 
 
+class ObjectForm(CTkFrame):
+    def __init__(self, parent: CTk, app_state: AppState) -> None:
+        super().__init__(parent)
+        self.app_state = app_state
+
+        # Title label
+        self.title_label = CTkLabel(self, text="", font=CTkFont(size=14, weight="bold"))
+        self.title_label.pack(anchor="w", padx=10, pady=(0, 0))
+
+        # Scrollable frame for form fields
+        self.scrollable_frame = CTkScrollableFrame(self)
+        self.scrollable_frame.pack(fill="both", expand=True, padx=0, pady=0)
+
+        # Store field widgets for easy access
+        self.field_widgets: dict[str, object] = {}
+
+        self._refresh_form()
+
+    def _is_point_type(self, field_type: object) -> bool:
+        """Check if a type is a Point type (tuple[int, int])."""
+        point_length = 2
+        return (
+            hasattr(field_type, "__origin__")
+            and getattr(field_type, "__origin__", None) is tuple
+            and len(getattr(field_type, "__args__", [])) == point_length
+        )
+
+    def _get_display_value(self, value: object) -> str:
+        """Convert a field value to a display string."""
+        point_length = 2
+        if isinstance(value, (tuple, list)):
+            if isinstance(value, tuple) and len(value) == point_length and all(isinstance(x, int) for x in value):
+                # Point/position tuple
+                x, y = value
+                return f"{x}, {y}"
+            return str(value)
+        elif isinstance(value, bool):
+            return str(value)
+        return str(value)
+
+    def _get_parsed_value(self, field_type: object, value: str) -> object:
+        """Helper to get the parsed value for a given type."""
+        # Check for int type
+        if field_type is int or (isinstance(field_type, type) and issubclass(field_type, int)):
+            return int(value)
+
+        # Check for float type
+        if field_type is float or (isinstance(field_type, type) and issubclass(field_type, float)):
+            return float(value)
+
+        # Check for bool type
+        if field_type is bool or (isinstance(field_type, type) and issubclass(field_type, bool)):
+            return value.lower() in ("true", "1", "yes", "on")
+
+        # Handle generic types (tuple, Union, Optional, etc.)
+        origin = getattr(field_type, "__origin__", None)
+        if origin is tuple:
+            # Handle tuple types like tuple[int, int]
+            parts = [p.strip() for p in value.split(",")]
+            return tuple(int(p) for p in parts)
+
+        if origin is type(int | str):  # Union in Python 3.10+
+            # Try to parse with the first non-None type
+            args = getattr(field_type, "__args__", ())
+            for arg in args:
+                if arg is not type(None):
+                    return self._parse_input_value(arg, value)
+
+        return value
+
+    def _parse_input_value(self, field_type: object, value: str) -> object:
+        """Parse string input based on the expected field type."""
+        # Handle None/empty type
+        if value.strip().lower() in ("none", "null", ""):
+            return None
+        return self._get_parsed_value(field_type, value)
+
+    def _refresh_form(self) -> None:
+        """Refresh the form with the current selected object."""
+        # Clear existing widgets
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+        self.field_widgets.clear()
+
+        selected = self.app_state.selected
+        if selected is None:
+            # Show room metadata
+            current_room = self.app_state.current_room
+            self.title_label.configure(text=f"Room: {current_room.name}")
+            self._add_field_widgets(current_room)
+        else:
+            # Show selected object attributes
+            self.title_label.configure(text=f"{type(selected).__name__}: {selected.name}")
+            self._add_field_widgets(selected)
+
+    def _add_field_widgets(self, obj: RoomData | PropData | CharacterData | RegionData | NamedPointData) -> None:
+        """Add input widgets for all fields of the given object."""
+        from dataclasses import fields
+
+        if not hasattr(obj, "__dataclass_fields__"):
+            return
+
+        all_fields = list(fields(obj))
+
+        # Create two-column layout
+        columns_frame = CTkFrame(self.scrollable_frame)
+        columns_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Create left and right column frames
+        left_column = CTkFrame(columns_frame)
+        left_column.pack(side="left", fill="both", expand=True, padx=(0, 5))
+
+        right_column = CTkFrame(columns_frame)
+        right_column.pack(side="right", fill="both", expand=True, padx=(5, 0))
+
+        # Distribute fields between columns
+        for idx, field_info in enumerate(all_fields):
+            field_name = field_info.name
+            field_value = getattr(obj, field_name)
+
+            # Choose column based on index (even -> left, odd -> right)
+            column = left_column if idx % 2 == 0 else right_column
+
+            # Create a horizontal frame for label + widget
+            field_frame = CTkFrame(column)
+            field_frame.pack(fill="x", padx=0, pady=3)
+
+            # Create label (left side)
+            label = CTkLabel(
+                field_frame,
+                text=field_name,
+                font=CTkFont(size=11),
+                text_color="gray70",
+                width=80,
+                anchor="w",
+            )
+            label.pack(side="left", padx=(0, 5))
+
+            # Create appropriate input widget (right side)
+            widget: CTkSwitch | CTkEntry
+            if isinstance(field_value, bool):
+                # Boolean: use switch
+                widget = CTkSwitch(
+                    field_frame,
+                    text="",
+                    onvalue=True,
+                    offvalue=False,
+                )
+                widget.select() if field_value else widget.deselect()
+                self.field_widgets[field_name] = widget
+
+            else:
+                # Integer, Point, or String: use entry
+                widget = CTkEntry(field_frame)
+                display_value = self._get_display_value(field_value)
+                widget.insert(0, display_value)
+                self.field_widgets[field_name] = widget
+
+            widget.pack(side="right", fill="x", expand=True)
+
+        # Save button
+        save_button = CTkButton(
+            self.scrollable_frame,
+            text="Apply Changes",
+            command=self._on_save_changes,
+        )
+        save_button.pack(fill="x", padx=5, pady=(10, 0))
+
+    def _update_room_with_object(
+        self, selected: object, updated_object: object, current_room: RoomData
+    ) -> RoomData | None:
+        """Update room data with the modified object."""
+        from typing import cast as typing_cast
+
+        if isinstance(selected, PropData):
+            new_props = tuple(p if p != selected else typing_cast(PropData, updated_object) for p in current_room.props)
+            return replace(current_room, props=new_props)
+        elif isinstance(selected, CharacterData):
+            new_characters = tuple(
+                c if c != selected else typing_cast(CharacterData, updated_object) for c in current_room.characters
+            )
+            return replace(current_room, characters=new_characters)
+        elif isinstance(selected, NamedPointData):
+            new_points = tuple(
+                pt if pt != selected else typing_cast(NamedPointData, updated_object) for pt in current_room.points
+            )
+            return replace(current_room, points=new_points)
+        elif isinstance(selected, RegionData):
+            new_regions = tuple(
+                r if r != selected else typing_cast(RegionData, updated_object) for r in current_room.regions
+            )
+            return replace(current_room, regions=new_regions)
+        else:
+            logger.error("Unsupported object type for update: %s", type(selected))
+            return None
+
+    def _redraw_viewport(self) -> None:
+        """Redraw the room viewport to reflect changes."""
+        parent = self.master
+        if isinstance(parent, RoomEditor):
+            parent.room_viewport.draw_room(self.app_state.current_room)
+
+    def _on_save_changes(self) -> None:
+        """Save changes from form back to the selected object."""
+        from dataclasses import fields, replace
+
+        selected = self.app_state.selected
+        if selected is None or not hasattr(selected, "__dataclass_fields__"):
+            return
+
+        changes: dict[str, object] = {}
+        for field_info in fields(selected):  # type: ignore[arg-type]
+            field_name = field_info.name
+            if field_name not in self.field_widgets:
+                continue
+
+            widget = self.field_widgets[field_name]
+            field_type = field_info.type
+
+            try:
+                if isinstance(widget, CTkSwitch):
+                    new_value: object = widget.get()
+                elif isinstance(widget, CTkEntry):
+                    input_text = widget.get()
+                    new_value = self._parse_input_value(field_type, input_text)
+                else:
+                    continue
+
+                old_value = getattr(selected, field_name)
+                if new_value != old_value:
+                    changes[field_name] = new_value
+            except (ValueError, TypeError) as e:
+                logger.error("Error parsing field %s: %s", field_name, e)
+
+        if not changes:
+            return
+
+        # Update the selected object
+        updated_object = replace(selected, **changes)  # type: ignore[arg-type]
+        self.app_state.selected = updated_object
+
+        # Update the room data
+        current_room = self.app_state.current_room
+        updated_room = self._update_room_with_object(selected, updated_object, current_room)
+        if updated_room is None:
+            return
+
+        # Persist changes
+        room_name = self.app_state.current_room_name
+        self.app_state.room_data[room_name] = updated_room
+        self.app_state.selected = updated_object
+
+        # Redraw the viewport to reflect changes
+        self._redraw_viewport()
+
+
 class RoomEditor(CTk):
     SPACING = 20
     DEFAULT_SCALING = "200%"
@@ -452,7 +717,11 @@ class RoomEditor(CTk):
             on_scaling_change=self._change_scaling_event,
         )
         self.room_viewport = RoomViewport(
-            self, self.app_state, on_room_change=self._change_room_event, on_save=self.on_save
+            self,
+            self.app_state,
+            on_room_change=self._change_room_event,
+            on_save=self.on_save,
+            on_selection_change=self.on_selection_change,
         )
         self.main_tabview = MainTabview(
             self,
@@ -460,10 +729,15 @@ class RoomEditor(CTk):
             on_select=self.on_select_item,
             on_tab_change=self.on_tab_change,
         )
+        self.object_form = ObjectForm(
+            self,
+            self.app_state,
+        )
 
         self.sidebar_frame.pack(side="left", fill="y")
-        self.room_viewport.pack(side="left", fill="both", expand=False)
         self.main_tabview.pack(side="right", fill="both", expand=True, padx=0, pady=(0, 5))
+        self.room_viewport.pack(side="top", expand=False)
+        self.object_form.pack(side="bottom", fill="both", expand=True, padx=0, pady=(0, 5))
 
     @property
     def current_room(self) -> RoomData:
@@ -499,12 +773,17 @@ class RoomEditor(CTk):
         self.app_state.selected_index = None
         self.app_state.selected = None
         self.room_viewport.draw_room(self.current_room)
+        self.object_form._refresh_form()
 
     def on_tab_change(self) -> None:
         self.main_tabview.clear_selection()
         self.app_state.selected_index = None
         self.app_state.selected = None
         self.room_viewport.draw_room(self.current_room)
+        self.object_form._refresh_form()
+
+    def on_selection_change(self) -> None:
+        self.object_form._refresh_form()
 
     def on_save(self) -> None:
         """Save changes made to room data back to rooms.py."""
@@ -526,4 +805,5 @@ class RoomEditor(CTk):
                 self.app_state.selected_index = i
                 self.app_state.selected = item
                 self.room_viewport.draw_room(self.current_room)
+                self.object_form._refresh_form()
                 break
