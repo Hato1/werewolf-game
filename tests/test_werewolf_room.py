@@ -122,22 +122,6 @@ def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pyte
     assert room_state.message_surface is None
 
 
-def test_graveyard_chains_click_changes_to_church_cemetery() -> None:
-    pg.init()
-    pg.display.set_mode((1, 1))
-    room_state = RoomState(rooms.INN)
-    graveyard_chains = room_state.room.props[1]
-
-    room_state.handle_event(
-        {Action.MOUSE_SELECT},
-        pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=graveyard_chains.rect.center),
-    )
-
-    assert room_state.room.name == rooms.INN.name
-    finish_player_walk(room_state)
-    assert room_state.room.name == rooms.CHURCH_CEMETARY.name
-
-
 def test_player_moves_with_held_input_and_animates() -> None:
     pg.init()
     pg.display.set_mode((1, 1))

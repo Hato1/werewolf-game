@@ -40,7 +40,6 @@ class Images(StrEnum):
     SPLASH_TF_0 = "splash_tf_0.png"
     SPLASH_TF_1 = "splash_tf_1.png"
     SPLASH_TF_END = "splash_tf_end.png"
-    UI_BACKGROUND_PLACEHOLDER = "ui_background_placeholder.png"
     UI_TEST_ONLY = "ui_test_only.png"
 
     # Backgrounds

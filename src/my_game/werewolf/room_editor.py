@@ -1,9 +1,17 @@
+"""Room editor UI for the werewolf game.
+
+Type ignore statements are used for the following unavoidable issues:
+- Lambda captures in callbacks: Mypy cannot infer types through default arguments in lambdas
+- Dict unpacking with Any values: Needed when spreading dynamic field changes
+- Optional value indexing: Occurs with optional list items from form state
+"""
+
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from tkinter import Event
 from tkinter.constants import LEFT, NW, TOP
-from typing import NamedTuple, cast
+from typing import Any, NamedTuple, TypeVar, cast
 
 from customtkinter import (
     CTk,
@@ -37,6 +45,10 @@ from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropDat
 
 logger = get_logger(__name__)
 
+# Type variables for better type safety
+ItemT = TypeVar("ItemT", PropData, CharacterData, RegionData, NamedPointData)
+TYPES = PropData | CharacterData | RegionData | NamedPointData
+
 DEFAULT_THEME = "dark-blue"
 NATIVE_WINDOW_RESOLUTION = (480, 208)
 MULTIPLIER = 5  # Adjust this if you want to scale the room canvas size
@@ -59,7 +71,7 @@ def run() -> None:
 class AppState:
     room_data: dict[str, RoomData]
     current_room_name: str
-    selected: PropData | CharacterData | RegionData | NamedPointData | None = None
+    selected: TYPES | None = None
     selected_index: int | None = None
 
     @property
@@ -270,29 +282,17 @@ class RoomViewport(CTkFrame):
         self.room_canvas.delete("all")
         self.photo_images.clear()
 
-        props = sorted(room.props, key=lambda item: item.depth, reverse=True)
-        characters = sorted(room.characters, key=lambda item: item.depth, reverse=True)
+        objects = sorted(room.props + room.characters, key=lambda item: item.depth, reverse=True)
 
-        for prop in props:
-            image = self.get_prop_image(prop)
+        for obj in objects:
+            image = self.get_prop_image(obj)
             self.photo_images.append(image)
-            corrected_position = (prop.position[0] * MULTIPLIER, prop.position[1] * MULTIPLIER)
+            corrected_position = (obj.position[0] * MULTIPLIER, obj.position[1] * MULTIPLIER)
             self.room_canvas.create_image(
                 *corrected_position,
                 image=image,
                 anchor=NW,
                 # tags=("content", f"props:{index}"),
-            )
-
-        for character in characters:
-            image = self.get_prop_image(character)
-            self.photo_images.append(image)
-            corrected_position = (character.position[0] * MULTIPLIER, character.position[1] * MULTIPLIER)
-            self.room_canvas.create_image(
-                *corrected_position,
-                image=image,
-                anchor=NW,
-                # tags=("content", f"characters:{index}"),
             )
 
         for region in room.regions:
@@ -601,7 +601,7 @@ class ObjectForm(CTkFrame):
             self.title_label.configure(text=f"{type(selected).__name__}: {selected.name}")
             self._add_field_widgets(selected)
 
-    def _add_field_widgets(self, obj: RoomData | PropData | CharacterData | RegionData | NamedPointData) -> None:
+    def _add_field_widgets(self, obj: RoomData | TYPES) -> None:
         """Add input widgets for all fields of the given object."""
         from dataclasses import fields
 
@@ -841,11 +841,7 @@ class ObjectForm(CTkFrame):
 
     def _save_room_changes(self) -> None:
         """Save changes to the current room metadata."""
-        from dataclasses import replace
-
         current_room = self.app_state.current_room
-        if not hasattr(current_room, "__dataclass_fields__"):
-            return
 
         changes = self._collect_changes(current_room)
         if not changes:
@@ -858,20 +854,28 @@ class ObjectForm(CTkFrame):
         self._redraw_viewport()
         self._refresh_form()
 
-    def _save_object_changes(self, selected: PropData | CharacterData | RegionData | NamedPointData) -> None:
+    def _save_object_changes(self, selected: TYPES) -> None:
         """Save changes to a selected object (prop, character, etc.)."""
         from dataclasses import replace
-
-        if not hasattr(selected, "__dataclass_fields__"):
-            return
 
         changes = self._collect_changes(selected)
         if not changes:
             return
 
-        # Update the selected object
-        updated_object = replace(selected, **changes)  # type: ignore[arg-type,type-var]
-        self.app_state.selected = updated_object  # type: ignore[assignment]
+        # Update the selected object - cast to maintain type safety
+        updated_object: TYPES
+        if isinstance(selected, PropData):
+            updated_object = cast(PropData, replace(selected, **changes))
+        elif isinstance(selected, CharacterData):
+            updated_object = cast(CharacterData, replace(selected, **changes))
+        elif isinstance(selected, RegionData):
+            updated_object = cast(RegionData, replace(selected, **changes))
+        elif isinstance(selected, NamedPointData):
+            updated_object = cast(NamedPointData, replace(selected, **changes))
+        else:
+            return
+
+        self.app_state.selected = updated_object
 
         # Update the room data
         current_room = self.app_state.current_room
@@ -882,17 +886,19 @@ class ObjectForm(CTkFrame):
         # Persist changes
         room_name = self.app_state.current_room_name
         self.app_state.room_data[room_name] = updated_room
-        self.app_state.selected = updated_object  # type: ignore[assignment]
+        self.app_state.selected = updated_object
 
         # Redraw the viewport to reflect changes
         self._redraw_viewport()
+        if isinstance(self.master, RoomEditor):
+            self.master.main_tabview.refresh_tree(current_room)
 
-    def _collect_changes(self, obj: object) -> dict[str, object]:
+    def _collect_changes(self, obj: RoomData | TYPES) -> dict[str, Any]:
         """Collect changed fields from the form for the given object."""
-        from dataclasses import fields
+        from dataclasses import fields as dataclass_fields
 
-        changes: dict[str, object] = {}
-        for field_info in fields(obj):  # type: ignore[arg-type]
+        changes: dict[str, Any] = {}
+        for field_info in dataclass_fields(obj):
             field_name = field_info.name
             if field_name not in self.field_widgets:
                 continue
