@@ -155,7 +155,7 @@ class RoomViewport(CTkFrame):
         return self.room_select_menu.get()
 
     def _update_selected_position(self, new_position: tuple[int, int]) -> None:
-        """Update the position of the currently selected prop/character and persist changes."""
+        """Update the position of the currently selected prop/character/point and persist changes."""
         old_item = self.app_state.selected
         if old_item is None or isinstance(old_item, RegionData):
             return
@@ -173,6 +173,11 @@ class RoomViewport(CTkFrame):
                 c if c != old_item else cast(CharacterData, updated_item) for c in current_room.characters
             )
             updated_room = replace(current_room, characters=new_characters)
+        elif isinstance(old_item, NamedPointData):
+            new_points = tuple(
+                pt if pt != old_item else cast(NamedPointData, updated_item) for pt in current_room.points
+            )
+            updated_room = replace(current_room, points=new_points)
         else:
             logger.error("Unsupported item type for updating position: %s", type(old_item))
             return
@@ -189,7 +194,7 @@ class RoomViewport(CTkFrame):
         self.drag_start = (event.x, event.y)
 
         selected = self.app_state.selected
-        if isinstance(selected, (PropData, CharacterData)):
+        if isinstance(selected, (PropData, CharacterData, NamedPointData)):
             self.drag_start_image_position = selected.position
 
     def _on_canvas_drag(self, event: Event) -> None:
@@ -280,6 +285,18 @@ class RoomViewport(CTkFrame):
                 width=int(1 * MULTIPLIER),
             )
 
+        for point in room.points:
+            corrected_position = (point.position[0] * MULTIPLIER, point.position[1] * MULTIPLIER)
+            radius = int(5 * MULTIPLIER)
+            self.room_canvas.create_oval(
+                corrected_position[0] - radius,
+                corrected_position[1] - radius,
+                corrected_position[0] + radius,
+                corrected_position[1] + radius,
+                fill="#ff55dd",
+                outline="",
+            )
+
         if isinstance(self.app_state.selected, (PropData, CharacterData)):
             selected_item = self.app_state.selected
             image = self.get_prop_image(selected_item)
@@ -290,6 +307,19 @@ class RoomViewport(CTkFrame):
                 (corrected_position[1] + image.height()),
                 outline="#ffcc00",
                 width=int(1 * MULTIPLIER),
+            )
+        elif isinstance(self.app_state.selected, NamedPointData):
+            selected_point = self.app_state.selected
+            corrected_position = (selected_point.position[0] * MULTIPLIER, selected_point.position[1] * MULTIPLIER)
+            radius = int(5 * MULTIPLIER)
+            self.room_canvas.create_oval(
+                corrected_position[0] - radius,
+                corrected_position[1] - radius,
+                corrected_position[0] + radius,
+                corrected_position[1] + radius,
+                fill="",
+                outline="#ffcc00",
+                width=int(2 * MULTIPLIER),
             )
 
         # for index, hotspot in enumerate(room.hotspots):
@@ -375,7 +405,6 @@ class MainTabview(CTkTabview):
             new_title = f"{tab_name} ({len(names)})"
             if old_title != new_title:
                 self.rename(old_title, new_title)
-                print(self.get(), old_title)
                 # Fix bug where selected tab looks unselected when its title changes
                 self.set(self.get())
 
@@ -485,9 +514,9 @@ class RoomEditor(CTk):
             current_source = rooms_file.read_text()
             updated_source = update_room_source(current_source, self.app_state.room_data)
             rooms_file.write_text(updated_source)
-            print(f"✓ Saved {len(self.app_state.room_data)} room(s) to {rooms_file}")
+            logger.warning(f"✓ Saved {len(self.app_state.room_data)} room(s) to {rooms_file}")
         except (OSError, ValueError, SyntaxError) as e:
-            print(f"✗ Error saving rooms: {e}")
+            logger.warning(f"✗ Error saving rooms: {e}")
 
     def on_select_item(self, item_name: str, get_items: Callable[[RoomData], Sequence]) -> None:
         """Generic item selection handler for props, characters, regions, and points."""

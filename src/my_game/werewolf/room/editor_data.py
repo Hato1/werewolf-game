@@ -15,7 +15,7 @@ from typing import Any
 
 from my_game.werewolf.assets import Images
 from my_game.werewolf.room import characters, props
-from my_game.werewolf.room.loaders import CharacterData, HotspotData, PropData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
 
 def named_values[T](module: ModuleType, value_type: type[T]) -> dict[str, T]:
@@ -135,7 +135,7 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
 
     used_types = {
         data_type.__name__
-        for data_type in (CharacterData, HotspotData, PropData, RoomData)
+        for data_type in (CharacterData, HotspotData, PropData, RegionData, NamedPointData, RoomData)
         if re.search(rf"\b{data_type.__name__}\(", updated)
     }
     if used_types:
