@@ -168,7 +168,6 @@ class UIPanel:
                 if portrait_func is not None:
                     portrait_func()
                 else:
-                    print("Save button clicked")
                     self.save_file.inventory = self.build_inventory_ref()
                     self.save_file.save_game()
             elif self.second_portrait.get_rect().collidepoint(event.pos):
