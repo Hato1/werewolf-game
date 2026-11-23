@@ -1,10 +1,12 @@
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from pathlib import Path
 from tkinter import Event
 from tkinter.constants import LEFT, NW, TOP
 
 from customtkinter import (
     CTk,
+    CTkButton,
     CTkCanvas,
     CTkFont,
     CTkFrame,
@@ -26,7 +28,7 @@ from customtkinter import (
 from PIL import Image, ImageTk
 
 from my_game.werewolf.room import rooms
-from my_game.werewolf.room.editor_data import named_values
+from my_game.werewolf.room.editor_data import named_values, update_room_source
 from my_game.werewolf.room.loaders import PropData, RoomData
 
 DEFAULT_THEME = "dark-blue"
@@ -96,7 +98,13 @@ class LeftSidebar(CTkFrame):
 
 
 class RoomViewport(CTkFrame):
-    def __init__(self, master: RoomEditor, app_state: AppState, on_room_change: Callable[[str], None]) -> None:
+    def __init__(
+        self,
+        master: RoomEditor,
+        app_state: AppState,
+        on_room_change: Callable[[str], None],
+        on_save: Callable[[], None],
+    ) -> None:
         super().__init__(master)
         self.app_state = app_state
 
@@ -110,10 +118,14 @@ class RoomViewport(CTkFrame):
         self.room_select_menu = CTkOptionMenu(
             self.room_top_menu, dynamic_resizing=False, values=list(self.app_state.room_data), command=on_room_change
         )
+        self.save_button = CTkButton(
+            self.room_top_menu, text="SAVE ALL CHANGES", command=on_save, fg_color="darkred", hover_color="red"
+        )
 
         self.room_top_menu.pack(side=TOP, fill="x")
         self.room_select_label.pack(side=LEFT, padx=(20, 0), pady=(10, 10))
         self.room_select_menu.pack(side=LEFT, padx=20, pady=(10, 10))
+        self.save_button.pack(side=LEFT, padx=20, pady=(10, 10))
 
         self.room_canvas = CTkCanvas(
             self,
@@ -401,7 +413,9 @@ class RoomEditor(CTk):
             on_theme_change=self._change_theme_event,
             on_scaling_change=self._change_scaling_event,
         )
-        self.room_viewport = RoomViewport(self, self.app_state, on_room_change=self._change_room_event)
+        self.room_viewport = RoomViewport(
+            self, self.app_state, on_room_change=self._change_room_event, on_save=self.on_save
+        )
         self.main_tabview = MainTabview(
             self, self.app_state, on_prop_select=self.prop_select_event, on_tab_change=self.on_tab_change
         )
@@ -446,6 +460,18 @@ class RoomEditor(CTk):
         self.main_tabview.clear_selection()
         self.app_state.selected_prop_index = None
         self.room_viewport.draw_room(self.current_room)
+
+    def on_save(self) -> None:
+        """Save changes made to room data back to rooms.py."""
+        rooms_file = Path("src/my_game/werewolf/room/rooms.py")
+
+        try:
+            current_source = rooms_file.read_text()
+            updated_source = update_room_source(current_source, self.app_state.room_data)
+            rooms_file.write_text(updated_source)
+            print(f"✓ Saved {len(self.app_state.room_data)} room(s) to {rooms_file}")
+        except (OSError, ValueError, SyntaxError) as e:
+            print(f"✗ Error saving rooms: {e}")
 
     def prop_select_event(self, selected_prop: str) -> None:
         current_room = self.current_room
