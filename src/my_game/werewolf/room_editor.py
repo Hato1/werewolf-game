@@ -70,7 +70,7 @@ class AppState:
 
 class LeftSidebar(CTkFrame):
     LOGO_SIZE = (100, 100)
-    LOGO_PATH = "src/my_game/werewolf/assets/textures/studio-light.png"
+    LOGO_PATH = Images.STUDIO_LIGHT.get_path()
 
     def __init__(
         self,
@@ -357,6 +357,7 @@ class TabData(NamedTuple):
     scrollable_frame: CTkScrollableFrame
     selector_button: CTkSegmentedButton
     get_items: Callable[[RoomData], Sequence]
+    add_button: CTkButton | None = None
 
 
 class MainTabview(CTkTabview):
@@ -368,14 +369,16 @@ class MainTabview(CTkTabview):
         app_state: AppState,
         on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         on_tab_change: Callable[[], None],
+        on_add_item: Callable[[str], None],
     ) -> None:
         super().__init__(master, command=on_tab_change)
         self.app_state = app_state
+        self.on_add_item = on_add_item
 
         self.tabs: dict[str, TabData] = {}
 
         self._add_tab("Props", on_select, lambda room_data: room_data.props)
-        self._add_tab("Character", on_select, lambda room_data: room_data.characters)
+        self._add_tab("Characters", on_select, lambda room_data: room_data.characters)
         self._add_tab("Regions", on_select, lambda room_data: room_data.regions)
         self._add_tab("Points", on_select, lambda room_data: room_data.points)
 
@@ -387,8 +390,23 @@ class MainTabview(CTkTabview):
         on_select: Callable[[str, Callable[[RoomData], Sequence]], None],
         get_items: Callable[[RoomData], Sequence],
     ) -> None:
-        """Add a tab with a scrollable frame and segmented button selector."""
+        """Add a tab with a scrollable frame, segmented button selector, and add button."""
         frame = self.add(label)
+
+        # Create a button frame for the add button
+        button_frame = CTkFrame(frame)
+        button_frame.pack(fill="x", padx=5, pady=5)
+
+        # Add button
+        add_button = CTkButton(
+            button_frame,
+            text=f"Add {label.removesuffix('s')}",
+            command=lambda tab_name=label: self.on_add_item(tab_name),  # type: ignore[misc]
+            height=28,
+        )
+        add_button.pack(fill="x")
+
+        # Scrollable frame with selector
         scrollable = CTkScrollableFrame(frame)
 
         # Create a specialized callback using the generic handler with this tab's get_items
@@ -402,23 +420,26 @@ class MainTabview(CTkTabview):
         )
 
         scrollable.pack(fill="both", expand=True)
-        selector.pack(fill="both", expand=True)
+        selector.pack(fill="x")
 
-        self.tabs[label] = TabData(scrollable, selector, get_items)
+        self.tabs[label] = TabData(scrollable, selector, get_items, add_button)
 
     def refresh_tree(self, room: RoomData) -> None:
         """Update all tab titles and selectors with current room data."""
-        for tab_index, (tab_name, tab_data) in enumerate(self.tabs.items()):
+        for tab_data in self.tabs.values():
             names = [item.name for item in tab_data.get_items(room)]
 
-            old_title = self.get(tab_index)
-            new_title = f"{tab_name} ({len(names)})"
-            if old_title != new_title:
-                self.rename(old_title, new_title)
-                # Fix bug where selected tab looks unselected when its title changes
-                self.set(self.get())
+            cmd = tab_data.selector_button._command
+            for child in tab_data.scrollable_frame.winfo_children():
+                child.destroy()
 
-            tab_data.selector_button.configure(values=names, height=len(names) * self.BUTTON_HEIGHT)
+            selector = CTkSegmentedButton(
+                tab_data.scrollable_frame,
+                orientation="vertical",
+                values=names,
+                command=cmd,
+            )
+            selector.pack(fill="x")
 
     def clear_selection(self) -> None:
         """Clear selection from all tabs."""
@@ -463,9 +484,15 @@ class ObjectForm(CTkFrame):
         point_length = 2
         if isinstance(value, (tuple, list)):
             if isinstance(value, tuple) and len(value) == point_length and all(isinstance(x, int) for x in value):
-                # Point/position tuple
+                # Point/position tuple like (10, 20)
                 x, y = value
                 return f"{x}, {y}"
+            elif isinstance(value, (tuple, list)) and all(
+                isinstance(item, (tuple, list)) and len(item) == point_length for item in value
+            ):
+                # Polygon: tuple of points like ((10, 10), (100, 10), (100, 100))
+                points_str = "; ".join(f"{x}, {y}" for x, y in value)
+                return points_str
             return str(value)
         elif isinstance(value, bool):
             return str(value)
@@ -488,9 +515,7 @@ class ObjectForm(CTkFrame):
         # Handle generic types (tuple, Union, Optional, etc.)
         origin = getattr(field_type, "__origin__", None)
         if origin is tuple:
-            # Handle tuple types like tuple[int, int]
-            parts = [p.strip() for p in value.split(",")]
-            return tuple(int(p) for p in parts)
+            return self._parse_tuple_type(field_type, value)
 
         if origin is type(int | str):  # Union in Python 3.10+
             # Try to parse with the first non-None type
@@ -500,6 +525,34 @@ class ObjectForm(CTkFrame):
                     return self._parse_input_value(arg, value)
 
         return value
+
+    def _parse_tuple_type(self, field_type: object, value: str) -> tuple:
+        """Parse a tuple type, handling both simple points and nested polygons."""
+        # Check if this is a nested tuple (polygon) by looking at type args
+        args = getattr(field_type, "__args__", ())
+
+        # Check if it's tuple[tuple[int, int], ...] (polygon)
+        if args and len(args) >= 1 and getattr(args[0], "__origin__", None) is tuple:
+            # This is a polygon: tuple of tuples
+            # Format: "10, 10; 100, 10; 100, 100"
+            return self._parse_polygon_string(value)
+
+        # Simple tuple like tuple[int, int] for a point
+        parts = [p.strip() for p in value.split(",")]
+        return tuple(int(p) for p in parts)
+
+    def _parse_polygon_string(self, value: str) -> tuple:
+        """Parse a polygon string in format '10, 10; 100, 10; 100, 100'."""
+        point_coords = 2
+        points: list[tuple] = []
+        for point_raw in value.split(";"):
+            point_text = point_raw.strip()
+            if not point_text:
+                continue
+            coords = [int(c.strip()) for c in point_text.split(",")]
+            if len(coords) == point_coords:
+                points.append(tuple(coords))  # type: ignore[arg-type]
+        return tuple(points)
 
     def _parse_input_value(self, field_type: object, value: str) -> object:
         """Parse string input based on the expected field type."""
@@ -596,7 +649,7 @@ class ObjectForm(CTkFrame):
                 self.image_buttons[field_name] = widget
 
             else:
-                # Integer, Point, or String: use entry
+                # Integer, Point, Polygon, or String: use entry
                 widget = CTkEntry(field_frame)
                 display_value = self._get_display_value(field_value)
                 widget.insert(0, display_value)
@@ -839,6 +892,7 @@ class RoomEditor(CTk):
             self.app_state,
             on_select=self.on_select_item,
             on_tab_change=self.on_tab_change,
+            on_add_item=self.on_add_item,
         )
         self.object_form = ObjectForm(
             self,
@@ -918,3 +972,74 @@ class RoomEditor(CTk):
                 self.room_viewport.draw_room(self.current_room)
                 self.object_form._refresh_form()
                 break
+
+    def on_add_item(self, tab_name: str) -> None:
+        """Add a new item to the current room based on the active tab."""
+        current_room = self.current_room
+        current_index = len(getattr(current_room, self._get_collection_name(tab_name)))
+
+        updated_room: RoomData
+        if tab_name == "Props":
+            new_item_prop = PropData(
+                name=f"Prop{current_index}",
+                description="New prop",
+                image=Images.LANTERN_1,
+                position=(240, 75),
+            )
+            self.app_state.selected = new_item_prop
+            updated_room = replace(current_room, props=(*current_room.props, new_item_prop))
+        elif tab_name == "Characters":
+            new_item_char = CharacterData(
+                name=f"Character{current_index}",
+                description="New character",
+                image=Images.MC_IDLE,
+                position=(240, 75),
+                walk_image=Images.MC_WALK,
+            )
+            self.app_state.selected = new_item_char
+            updated_room = replace(current_room, characters=(*current_room.characters, new_item_char))
+        elif tab_name == "Regions":
+            new_item_region = RegionData(
+                name=f"Region{current_index}",
+                description="New region",
+                polygon=((10, 10), (100, 10), (100, 100), (10, 100)),
+            )
+            self.app_state.selected = new_item_region
+            updated_room = replace(current_room, regions=(*current_room.regions, new_item_region))
+        elif tab_name == "Points":
+            new_item_point = NamedPointData(
+                name=f"Point{current_index}",
+                description="New point",
+                position=(240, 75),
+            )
+            self.app_state.selected = new_item_point
+            updated_room = replace(current_room, points=(*current_room.points, new_item_point))
+        else:
+            logger.error(f"Unknown tab name: {tab_name}")
+            return
+
+        # Update app state
+        self.app_state.room_data[self.app_state.current_room_name] = updated_room
+        self.app_state.selected_index = current_index
+
+        # Refresh UI
+        self.main_tabview.refresh_tree(updated_room)
+        self.room_viewport.draw_room(updated_room)
+        self.object_form._refresh_form()
+
+    @staticmethod
+    def _get_collection_name(tab_name: str) -> str:
+        """Map tab name to room data collection name."""
+        if tab_name == "Props":
+            return "props"
+        elif tab_name == "Characters":
+            return "characters"
+        elif tab_name == "Regions":
+            return "regions"
+        elif tab_name == "Points":
+            return "points"
+        return ""
+
+
+if __name__ == "__main__":
+    run()
