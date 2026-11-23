@@ -692,8 +692,8 @@ class RoomEditor(CTk):
         super().__init__()
 
         # Set window size and scaling
-        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 1000)
-        default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.5)
+        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 800)
+        default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.9)
         self.geometry(f"{default_width}x{default_height}")
         self._change_scaling_event(self.DEFAULT_SCALING)
 
