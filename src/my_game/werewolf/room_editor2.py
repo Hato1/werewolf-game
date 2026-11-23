@@ -227,6 +227,8 @@ class RoomViewport(CTkFrame):
         props = sorted(room.props, key=lambda item: item.depth, reverse=True)
         # characters = sorted(room.characters, key=lambda item: item.depth, reverse=True)
 
+        selected_rectangle = None
+
         for index, prop in enumerate(props):
             image = self.get_prop_image(prop)
             self.photo_images.append(image)
@@ -237,16 +239,20 @@ class RoomViewport(CTkFrame):
                 anchor=NW,
                 # tags=("content", f"props:{index}"),
             )
-            print("added image", index, "at position", prop.position)
-            # if self.selection == ("props", index):
-            #     self.room_canvas.create_rectangle(
-            #         self._canvas_scale(prop.position[0]),
-            #         self._canvas_scale(prop.position[1]),
-            #         self._canvas_scale(prop.position[0] + prop.size[0]),
-            #         self._canvas_scale(prop.position[1] + prop.size[1]),
-            #         outline="#ffcc00",
-            #         width=int(2 * self.scale),
-            #     )
+
+            if self.selected_prop_index == index:
+                selected_rectangle = (
+                    *corrected_position,
+                    (corrected_position[0] + image.width()),
+                    (corrected_position[1] + image.height()),
+                )
+
+        if selected_rectangle:
+            self.room_canvas.create_rectangle(
+                *selected_rectangle,
+                outline="#ffcc00",
+                width=int(1 * MULTIPLIER),
+            )
 
         # for index, character in enumerate(characters):
         #     size = self._scaled_size(character.image, character.scale)
@@ -294,29 +300,42 @@ class MainTabview(CTkTabview):
         super().__init__(master, command=self.clear_selection)
 
         # Props tab
-        props = [p.name for p in master.current_room.props]
-        self.prop_frame = self.add(f"Props ({len(props)})")
+        self.prop_frame = self.add("Props (0)")
         self.scrollable_frame = CTkScrollableFrame(self.prop_frame)
         self.prop_selector = CTkSegmentedButton(
             self.scrollable_frame,
-            values=props,
             orientation="vertical",
             command=on_prop_select,
+            dynamic_resizing=False,
         )
 
         self.scrollable_frame.pack(fill="both", expand=True)
         self.prop_selector.pack(fill="both", expand=True)
 
         # Character tab
-        characters = [c.name for c in master.current_room.characters]
-        self.character_frame = self.add(f"Characters ({len(characters)})")
+        self.character_frame = self.add("Characters (0)")
         self.scrollable_character_frame = CTkScrollableFrame(self.character_frame)
         self.character_selector = CTkSegmentedButton(
-            self.scrollable_character_frame, values=characters, orientation="vertical"
+            self.scrollable_character_frame, orientation="vertical", dynamic_resizing=False
         )
 
         self.scrollable_character_frame.pack(fill="both", expand=True)
         self.character_selector.pack(fill="both", expand=True)
+
+        self.refresh_tree(master.current_room)
+
+    def refresh_tree(self, room: RoomData) -> None:
+        props = [p.name for p in room.props]
+        old_title, new_title = self.get(0), f"Props ({len(props)})"
+        if old_title != new_title:
+            self.rename(old_title, new_title)
+        self.prop_selector.configure(values=props, height=len(props) * 30)
+
+        characters = [c.name for c in room.characters]
+        old_title, new_title = self.get(1), f"Characters ({len(characters)})"
+        if old_title != new_title:
+            self.rename(old_title, new_title)
+        self.character_selector.configure(values=characters, height=len(characters) * 30)
 
     def clear_selection(self) -> None:
         self.prop_selector.set("")
@@ -348,7 +367,6 @@ class RoomEditor(CTk):
 
         self.new_instance_requested: bool = False
 
-        ### create left sidebar frame with widgets ###
         self.sidebar_frame = LeftSidebar(
             self,
             width=self.LEFT_SIDEBAR_WIDTH,
@@ -392,7 +410,8 @@ class RoomEditor(CTk):
 
     def _change_room_event(self, new_room: str) -> None:
         """Switch the preview and content tree to the chosen room."""
-        # self._refresh_tree()
+        self.main_tabview.refresh_tree(self.room_data[new_room])
+        self.room_viewport.selected_prop_index = None
         self.room_viewport.draw_room(self.room_data[new_room])
 
     def prop_select_event(self, selected_prop: str) -> None:
@@ -400,4 +419,5 @@ class RoomEditor(CTk):
         for i, prop in enumerate(current_room.props):
             if prop.name == selected_prop:
                 self.room_viewport.selected_prop_index = i
+                self.room_viewport.draw_room(current_room)
                 break
