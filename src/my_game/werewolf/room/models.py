@@ -492,7 +492,14 @@ class NamedPoint:
             data.light_z_position,
             data.light_radius,
         )
-        # return cls(**data)
+
+    def get_normalised_position(self) -> tuple[float, float]:
+        """Return the position of the point normalised to the range [0, 1]."""
+        # Assuming the room's coordinate system is known and has width and height
+        # Replace ROOM_WIDTH and ROOM_HEIGHT with actual values or parameters
+        room_size = SCREEN_SIZE
+        x, y = self.position
+        return (x / room_size[0], y / room_size[1])
 
 
 @dataclass
