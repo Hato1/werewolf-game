@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Self
 
+from my_game.constants import CURRENT_VERSION
+
 if __import__("sys").platform == "emscripten":
     from platform import window  # type: ignore[attr-defined]
 
@@ -15,7 +17,7 @@ SAVE_FILE = Path("TemerevSave.json")
 
 @dataclass
 class SaveData:
-    version: int = 1
+    version: int = CURRENT_VERSION
     timestamp: str = datetime.now().astimezone().isoformat()
     current_chapter: int = 0
     current_room: str = ""

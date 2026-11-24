@@ -6,10 +6,11 @@ from typing import Any
 
 from platformdirs import user_data_dir
 
+from my_game.constants import CURRENT_VERSION
+from my_game.core.renderer import logger
 from my_game.werewolf.data.data_models import DataFlags, SaveData
 
 """Save file versioning so old files can still work if we update the game"""
-CURRENT_VERSION = 1
 SAVE_FILE = Path("TemerevSave.json")
 
 
@@ -38,6 +39,17 @@ class SaveFile:
 
     def save_game(self) -> None:
         path = SAVE_FILE
+        try:
+            if not SAVE_FILE.exists():
+                logger.info(f"Creating new save file: {SAVE_FILE}")
+                with Path.open(SAVE_FILE, "w") as file:
+                    file.write("")
+                    file.close()
+        except OSError as e:
+            logger.info(f"Save file creation failed: {e}")
+
+        """create file if it doesn't exist. Should only really ever happen the first time the user saves"""
+        logger.info(f"Saving file: {path}")
         self.save_data.version = CURRENT_VERSION
         self.save_data.timestamp = datetime.now().astimezone().isoformat()
         self.save_data.current_chapter = 1
@@ -52,7 +64,7 @@ class SaveFile:
             print(f"Save operation failed: {e}")
 
     def load_game(self) -> None:
-        print("Loading game...")
+        logger.info("Loading game...")
         path = SAVE_FILE
         if not path.exists():
             return
@@ -62,6 +74,7 @@ class SaveFile:
             self.flags = self.save_data.flags
 
         except (json.JSONDecodeError, OSError) as e:
+            logger.info(f"Load failed: {e}", source=e)
             print(f"Load failed: {e}")
 
     def update_room(self, room_name: str):
