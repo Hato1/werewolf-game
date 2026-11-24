@@ -379,7 +379,7 @@ class GLRenderer:
         """
         screen = self.pixel_to_screen_size((x, y))
         radius = self.light_position_radius_array[index][3]
-        print(str("position set to ") + str(screen))
+        print("position set to " + str(screen))
         self.light_position_radius_array[index] = (screen[0], screen[1], z, radius)
 
     def set_light_radius(self, index: int, radius: float):
@@ -403,7 +403,9 @@ class GLRenderer:
         """
         self.light_flicker_intensity_array[index] = flicker
 
-    def set_light_color_intensity(self, index: int, color: tuple[float,float,float] = DEFAULT_POINT_LIGHT_COLOR, intensity: float = 1):
+    def set_light_color_intensity(
+        self, index: int, color: tuple[float, float, float] = DEFAULT_POINT_LIGHT_COLOR[:-1], intensity: float = 1
+    ):
         """Set the color and intensity of a light.
 
         Args:
