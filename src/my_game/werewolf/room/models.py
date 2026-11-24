@@ -389,28 +389,6 @@ class NamedPoint:
     def from_point_data(cls, data: NamedPointData) -> Self:
         return cls(data.name, data.position)
 
-    def to_dict(self) -> dict:
-        """Convert to a dict representation."""
-        return {
-            "name": self.name,
-            "description": self.description,
-            "sprite": self.sprite,
-            "position": self.position,
-            "visible": self.visible,
-            "clickable": self.clickable,
-            "hotspot": self.hotspot,
-            "scale": self.scale,
-            "size": self.size,
-            "parallax": self.parallax,
-            "depth": self.depth,
-            "baseline": self.baseline,
-            "walk_to_interact": self.walk_to_interact,
-            "pickup_on_click": self.pickup_on_click,
-        }
-
-    @property
-    def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(topleft=self.position)
 
 @dataclass
 class Room:
