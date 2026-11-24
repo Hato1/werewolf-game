@@ -4,18 +4,14 @@ from pathlib import Path
 
 import pygame as pg
 
-from my_game.core.renderer import Renderer
-from my_game.werewolf.data import data_manager
-from my_game.werewolf.room.models import Prop
-
-if __import__("sys").platform == "emscripten":
-    pass  # type: ignore[attr-defined]
-
 from my_game.constants import SCREEN_SIZE
 from my_game.core.logger import get_logger
+from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Fonts, Images
+from my_game.werewolf.data import data_manager
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room import props
+from my_game.werewolf.room.models import Prop
 
 logger = get_logger(__name__)
 
@@ -61,8 +57,7 @@ class Inventory:
 
     def has_item(self, item: Prop) -> bool:
         """Useful for avoiding duplicate items and confirming a player has an item to trigger an event"""
-        name_filter = filter(lambda p: p.name == item.name, self.inventory)
-        return bool(next(name_filter, False))
+        return any(item.name == i.name for i in self.inventory)
 
     def add_item(self, item: Prop) -> None:
         """Don't duplicate items, just in case"""
@@ -171,7 +166,6 @@ class UIPanel:
                     self.save_file.inventory = self.build_inventory_ref()
                     self.save_file.save_game()
             elif self.second_portrait.get_rect().collidepoint(event.pos):
-                # self.toggle_modes()
                 self.save_file.load_game()
                 self.load_inventory()
             else:
@@ -180,7 +174,9 @@ class UIPanel:
                     self.inventory.handle_mouse(event.pos)
 
     def load_inventory(self) -> None:
-        print(f"Loading inventory from {self.save_file.inventory}")
+        logger.info("Loading inventory", source=self.save_file.inventory)
+        """Clear inventory so loading game overwrites current inventory. Otherwise, weird things can happen."""
+        self.inventory.inventory.clear()
         for item_name in self.save_file.inventory:
             new_prop = props.load_prop(item_name)
             if new_prop is not None:
