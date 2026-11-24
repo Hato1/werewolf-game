@@ -415,10 +415,10 @@ class Room:
                 return prop
         return None
 
-    def on_enter(self) -> None:
+    def on_enter(self, renderer: Renderer) -> None:
         """Hook for when the player enters the room."""
         pass
 
-    def on_exit(self) -> None:
+    def on_exit(self, renderer: Renderer) -> None:
         """Hook for when the player exits the room."""
         pass

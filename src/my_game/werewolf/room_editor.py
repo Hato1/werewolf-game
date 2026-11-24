@@ -51,7 +51,7 @@ TYPES = PropData | CharacterData | RegionData | NamedPointData
 
 DEFAULT_THEME = "dark-blue"
 NATIVE_WINDOW_RESOLUTION = (480, 208)
-MULTIPLIER = 5  # Adjust this if you want to scale the room canvas size
+MULTIPLIER = 2  # Adjust this if you want to scale the room canvas size
 SCALED_WINDOW_RESOLUTION = (NATIVE_WINDOW_RESOLUTION[0] * MULTIPLIER, NATIVE_WINDOW_RESOLUTION[1] * MULTIPLIER)
 
 
@@ -104,7 +104,9 @@ class LeftSidebar(CTkFrame):
         self.theme_optionmenu.set(ThemeManager._currently_loaded_theme or DEFAULT_THEME)
         # Scaling options for the UI
         self.scaling_label = CTkLabel(self, text="UI Scaling:", anchor="w")
-        self.scaling_optionmenu = CTkOptionMenu(self, values=["100%", "150%", "200%"], command=self.on_scaling_change)
+        self.scaling_optionmenu = CTkOptionMenu(
+            self, values=["50%", "100%", "150%", "200%"], command=self.on_scaling_change
+        )
         widget_scaling = round(ScalingTracker.widget_scaling * 100)
         self.scaling_optionmenu.set(f"{widget_scaling}%")
         # Skip confirmation dialog toggle
@@ -1049,7 +1051,7 @@ class ObjectForm(CTkFrame):
 
 class RoomEditor(CTk):
     SPACING = 20
-    DEFAULT_SCALING = "200%"
+    DEFAULT_SCALING = "100%"
 
     LEFT_SIDEBAR_WIDTH = 140
     RIGHT_SIDEBAR_WIDTH = 140
@@ -1058,7 +1060,7 @@ class RoomEditor(CTk):
         super().__init__()
 
         # Set window size and scaling
-        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 800)
+        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH)
         default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.9)
         self.geometry(f"{default_width}x{default_height}")
         self._change_scaling_event(self.DEFAULT_SCALING)
