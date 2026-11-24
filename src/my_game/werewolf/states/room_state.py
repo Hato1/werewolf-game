@@ -40,6 +40,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.renderer: Renderer
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
+        super().enter(transition_data, renderer)
         self.renderer = renderer
         self.room.on_enter(renderer)
 
