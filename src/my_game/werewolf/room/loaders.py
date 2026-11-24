@@ -54,6 +54,7 @@ class PropData:
     depth: int = 0
     baseline: int = 0
     walk_to_interact: bool = False
+    pickup_on_click: bool = False
 
 
 @dataclass(frozen=True)

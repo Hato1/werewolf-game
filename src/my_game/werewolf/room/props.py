@@ -6,6 +6,17 @@ a 'room builder' tool that generates prop definitions automatically.
 
 from my_game.werewolf.assets import Images
 from my_game.werewolf.room.loaders import PropData
+from my_game.werewolf.room.models import Prop
+
+
+def load_prop(name: str) -> Prop | None:
+    match name:
+        case STUDIO.name:
+            return Prop.from_prop_data(STUDIO)
+        case GRAVEYARD_CHAINS.name:
+            return Prop.from_prop_data(GRAVEYARD_CHAINS)
+    return None
+
 
 BACKGROUND = PropData(
     name="Background",
@@ -82,11 +93,12 @@ BACKGROUND_WOODS = PropData(
 
 GRAVEYARD_CHAINS = PropData(
     name="Graveyard Chains",
-    description="An interactable set of graveyard chains.",
+    description="Ponderously heavy iron chains",
     image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
     position=(300, 150),
     scale=1,
     clickable=True,
     depth=500,
     walk_to_interact=True,
+    pickup_on_click=True,
 )
