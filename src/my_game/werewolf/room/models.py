@@ -402,11 +402,10 @@ class Room:
 
     def draw(self, renderer: Renderer) -> None:
         """Draw the room and its contents."""
-        for prop in sorted(self.props, key=lambda p: p.depth, reverse=True):
-            prop.draw(renderer)
 
-        for character in self.characters:
-            character.draw(renderer)
+        prop_and_character: list[Prop | Character] = [*self.props, *self.characters]
+        for sorted_prop_and_character in sorted(prop_and_character, key=lambda p: p.depth, reverse=True):
+            sorted_prop_and_character.draw(renderer)
 
     def get_clicked_prop(self, point: Point) -> Prop | None:
         """Return the topmost visible, clickable prop at the given point."""
