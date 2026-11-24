@@ -7,6 +7,8 @@ from typing import ClassVar, Self
 
 import pygame as pg
 
+import asyncio
+
 from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.logger import get_logger
@@ -458,6 +460,14 @@ class Region:
 @dataclass(frozen=True)
 class NamedPoint:
     """A named location in a room.
+    name: str
+    position: tuple[int, int]
+    light_index:int
+    light_color:tuple[float, float, float]
+    light_intensity:float
+    light_flicker_intensity:float
+    light_z_position : float
+    light_radius : float 
 
     Attributes:
         name: Point's display name.
@@ -480,7 +490,6 @@ class NamedPoint:
             position=data.position,
             interactions=data.interactions,
         )
-
 
 @dataclass
 class Room:
@@ -506,6 +515,7 @@ class Room:
     points: list[NamedPoint] = field(default_factory=list)
     walkable_areas: list[Polygon] = field(default_factory=list)
 
+
     @classmethod
     def from_room_data(cls, data: RoomData, *, overwrite=False) -> Self:
         if data in cls.registry and not overwrite:
@@ -529,6 +539,8 @@ class Room:
 
     def draw(self, renderer: Renderer) -> None:
         """Draw the room and its contents."""
+        for prop in sorted(self.props, key=lambda p: p.depth, reverse=True):
+            prop.draw(renderer)
 
         prop_and_character: list[Prop | Character] = [*self.props, *self.characters]
         for sorted_prop_and_character in sorted(prop_and_character, key=lambda p: p.depth, reverse=True):
@@ -546,7 +558,17 @@ class Room:
 
     def on_enter(self, renderer: Renderer) -> None:
         """Hook for when the player enters the room."""
-        pass
+        self.point_setup(renderer)
+
+    def point_setup(self, renderer:Renderer) -> None:
+        for point in self.points:
+            if(point.light_index >= 0 or point.light_index < 6):
+                if renderer.gl_renderer is not None:
+                    renderer.gl_renderer.set_light_position(point.light_index, point.position[0], point.position[1], point.light_z_position)
+                    renderer.gl_renderer.set_light_radius(point.light_index, point.light_radius)
+                    renderer.gl_renderer.set_light_color_intensity(point.light_index, point.light_color, point.light_intensity * 1.0)
+                    renderer.gl_renderer.set_light_flicker_intensity(point.light_index, point.light_flicker_intensity)
+
 
     def on_exit(self, renderer: Renderer) -> None:
         """Hook for when the player exits the room."""

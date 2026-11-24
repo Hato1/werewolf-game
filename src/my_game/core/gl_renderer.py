@@ -223,6 +223,7 @@ class GLRenderer:
         ]
         # these arrays need to be populated otherwise the shader breaks!
         self.program["light_position_radius"] = self.light_position_radius_array
+        print(str(self.light_color_intensity_array))
         self.program["light_color_intensity"] = self.light_color_intensity_array
         self.program["light_flicker_intensity"] = self.light_flicker_intensity_array
         self.program["Time"] = self.TIME
@@ -376,8 +377,10 @@ class GLRenderer:
             y (float): y position of light in screen space
             z (float): z position of a light in screen space. 0 is close, 1 is further away. 1 is default because normal map alphas are used for distance, and I want the lights to work if we don't have time to make a depth mask for every room.
         """
+        screen = self.pixel_to_screen_size((x, y))
         radius = self.light_position_radius_array[index][3]
-        self.light_position_radius_array[index] = (x, y, z, radius)
+        print(str("position set to ") + str(screen))
+        self.light_position_radius_array[index] = (screen[0], screen[1], z, radius)
 
     def set_light_radius(self, index: int, radius: float):
         """Set the radius of a light.
@@ -400,7 +403,7 @@ class GLRenderer:
         """
         self.light_flicker_intensity_array[index] = flicker
 
-    def set_light_color_intensity(self, index: int, color: tuple = DEFAULT_POINT_LIGHT_COLOR, intensity: float = 1):
+    def set_light_color_intensity(self, index: int, color: tuple[float,float,float] = DEFAULT_POINT_LIGHT_COLOR, intensity: float = 1):
         """Set the color and intensity of a light.
 
         Args:
