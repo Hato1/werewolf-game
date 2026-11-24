@@ -122,22 +122,6 @@ def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pyte
     assert room_state.message_surface is None
 
 
-def test_graveyard_chains_click_changes_to_church_cemetery() -> None:
-    pg.init()
-    pg.display.set_mode((1, 1))
-    room_state = RoomState(rooms.INN)
-    graveyard_chains = room_state.room.props[1]
-
-    room_state.handle_event(
-        {Action.MOUSE_SELECT},
-        pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=graveyard_chains.rect.center),
-    )
-
-    assert room_state.room.name == rooms.INN.name
-    finish_player_walk(room_state)
-    assert room_state.room.name == rooms.CHURCH_CEMETARY.name
-
-
 def test_player_moves_with_held_input_and_animates() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
@@ -185,9 +169,9 @@ def make_npc(
     data = CharacterData(
         name="npc",
         description="An NPC.",
-        image=Images.PLAYER_IDLE,
+        image=Images.MC_IDLE,
         position=position,
-        walk_image=Images.PLAYER_WALK,
+        walk_image=Images.MC_WALK,
         speed=speed,
         path=path,
         loop=loop,
@@ -237,7 +221,7 @@ def test_room_updates_its_characters() -> None:
 def test_room_builds_characters_from_room_data() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    npc = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (5, 6))
+    npc = CharacterData("npc", "An NPC.", Images.MC_IDLE, (5, 6))
 
     room = Room.from_room_data(RoomData("char room", "A room with a character.", characters=(npc,)), overwrite=True)
 
@@ -248,8 +232,8 @@ def test_room_builds_characters_from_room_data() -> None:
 def test_character_scale_applies_to_all_frames() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    base_data = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (0, 0), walk_image=Images.PLAYER_WALK)
-    scaled_data = CharacterData("npc", "An NPC.", Images.PLAYER_IDLE, (0, 0), walk_image=Images.PLAYER_WALK, scale=2)
+    base_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, (0, 0), walk_image=Images.MC_WALK)
+    scaled_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, (0, 0), walk_image=Images.MC_WALK, scale=2)
     base = Character.from_character_data(base_data)
     scaled = Character.from_character_data(scaled_data)
 

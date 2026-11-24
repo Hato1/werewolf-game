@@ -200,7 +200,7 @@ class PortraitButton:
     """represents the portrait button"""
 
     def __init__(self):
-        self.sprite: pg.Surface = Images.MC_FACE_1.load()
+        self.sprite: pg.Surface = Images.MC_FACE1.load()
         width, height = self.sprite.get_size()
 
         buffer = 4
@@ -222,7 +222,7 @@ class PortraitButton:
 
 class SecondPortrait:
     def __init__(self):
-        self.sprite: pg.Surface = Images.MC_FACE_2.load()
+        self.sprite: pg.Surface = Images.MC_FACE2.load()
         width, height = self.sprite.get_size()
 
         buffer = 4
@@ -246,7 +246,7 @@ class TextDisplayPanel:
     def __init__(self, width: int) -> None:
         self.xpos = SCREEN_SIZE[0] // 2 - width // 2
         self.width = width
-        self.height = Images.MC_FACE_1.load().get_height() + 4
+        self.height = Images.MC_FACE1.load().get_height() + 4
         self.ypos = SCREEN_SIZE[1] - self.height
 
         self.txt_surf = pg.Surface(size=(self.width, self.height))

@@ -22,9 +22,9 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
         self.prompt_rect = self.prompt.get_rect(topleft=(16, 16))
         self.quit = False
         self.done = False
-        self.background = Images.load(Images.TEST_CHURCH)
-        self.light_mask = Images.load(Images.TEST_SHADOW)
-        self.normal_map = Images.load(Images.TEST_CHURCH_NORMALS)
+        self.background = Images.load(Images.BACKGROUND_CHURCH)
+        self.light_mask = Images.load(Images.BACKGROUND_SHADOW)
+        self.normal_map = Images.load(Images.BACKGROUND_CHURCH_NORMALS)
         self.light_z = 0.5
         self.i_hate_python: Renderer | None = None
         self.editing_light_index = 0

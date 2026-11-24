@@ -200,7 +200,7 @@ class OptionsMenu(State[WerewolfState, WerewolfTransitionData]):
 
         # background
         self.background_color = self.BACKGROUND_COLOR
-        self.background = Images.TEST_BACKGROUND.load()
+        self.background = Images.BACKGROUNDTEST2.load()
 
         # title
         self.title_surface = self.TITLE_FONT.render(self.TITLE, MENU_ANTI_ALIAS, self.TITLE_COLOR)
