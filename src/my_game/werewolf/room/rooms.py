@@ -76,6 +76,17 @@ TEST_ROOM = RoomData(
             position=(324, 100),
             interactions=(),
         ),
+        NamedPointData(
+            name="Point1",
+            description="New point",
+            position=(186, 70),
+            light_index=0,
+            light_z_position=1.0,
+            light_color=(1.0, 0.7, 0.1),
+            light_intensity=1.0,
+            light_flicker_intensity=0.1,
+            light_radius=0.5,
+        ),
     ),
     walkable_areas=(),
 )
