@@ -37,12 +37,17 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_expires_at = 0
         self.player = Player.from_character_data(PLAYER)
         self.ui = UIPanel()
+        self.renderer: Renderer
+
+    def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
+        self.renderer = renderer
+        self.room.on_enter(renderer)
 
     def change_room(self, room: RoomData) -> None:
         self.player.cancel_walk()
-        self.room.on_exit()
+        self.room.on_exit(self.renderer)
         self.room = Room.from_room_data(room)
-        self.room.on_enter()
+        self.room.on_enter(self.renderer)
 
     def show_message(self, text: str) -> None:
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
