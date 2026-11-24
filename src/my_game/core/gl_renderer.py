@@ -377,7 +377,7 @@ class GLRenderer:
             z (float): z position of a light in screen space. 0 is close, 1 is further away. 1 is default because normal map alphas are used for distance, and I want the lights to work if we don't have time to make a depth mask for every room.
         """
         radius = self.light_position_radius_array[index][3]
-        print("position set to " + str(x) + str(y))
+        print("position set to " + str(x) + ", " + str(y) + ", " + str(z))
         self.light_position_radius_array[index] = (x, y, z, radius)
 
     def set_light_radius(self, index: int, radius: float):
@@ -390,6 +390,7 @@ class GLRenderer:
         x = self.light_position_radius_array[index][0]
         y = self.light_position_radius_array[index][1]
         z = self.light_position_radius_array[index][2]
+        print(str(index) + " set radius to " + str(radius))
         self.light_position_radius_array[index] = (x, y, z, radius)
 
     def set_light_flicker_intensity(self, index: int, flicker: float = 0.25):

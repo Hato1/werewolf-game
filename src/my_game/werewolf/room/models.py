@@ -575,13 +575,13 @@ class Room:
             light_limit = 6
             if point.light_index >= 0 and point.light_index < light_limit:
                 if renderer.gl_renderer is not None:
-                    renderer.gl_renderer.set_light_position(
-                        point.light_index, point.position[0], point.position[1], point.light_z_position
-                    )
+                    norm = point.get_normalised_position()
+                    renderer.gl_renderer.set_light_position(point.light_index, norm[0], norm[1], point.light_z_position)
                     renderer.gl_renderer.set_light_radius(point.light_index, point.light_radius)
                     renderer.gl_renderer.set_light_color_intensity(
                         point.light_index, point.light_color, point.light_intensity * 1.0
                     )
+                    renderer.gl_renderer.set_light_radius(point.light_index, point.light_radius)
                     renderer.gl_renderer.set_light_flicker_intensity(point.light_index, point.light_flicker_intensity)
 
     def on_exit(self, renderer: Renderer) -> None:

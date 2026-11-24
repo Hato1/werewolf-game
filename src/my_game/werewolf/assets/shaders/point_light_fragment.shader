@@ -124,6 +124,8 @@ vec3 process_light(int index, vec2 uvs){
 
     vec4 normal_sample = texture(normals, uvs);
     vec3 sample_normals = vec3(remap(normal_sample.r, 0, 1, -1, 1), -remap(normal_sample.g, 0, 1, -1, 1), -remap(normal_sample.b, 0, 1, -1, 1));
+
+
     vec3 world_position = vec3(
         corrected_uvs.x + ((sample_normals.r * normal_sample.a) * screen_size.x),
         corrected_uvs.y + ((sample_normals.g * normal_sample.a) * screen_size.y),
@@ -134,8 +136,11 @@ vec3 process_light(int index, vec2 uvs){
     float weight = 1;
     vec3 sample_dir_to_light = normalize(light_pos - world_position);
     float normal_influence = clamp(dot(sample_normals, sample_dir_to_light), 0, 1);
-    if(normal_sample.rgb == vec3(0,0,0))
+
+    if(normal_sample == vec4(0,0,0,0)){
         normal_influence = 1;
+        start_distance = distance(light_pos.xy, world_position.xy);
+    }
 
     float dist_weight = clamp(1 - ((start_distance)/light_radius), 0, 1);
     return _light_color * ((dist_weight * normal_influence) * evaluate_flicker(light_intensity, flicker, index));
