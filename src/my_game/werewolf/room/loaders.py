@@ -76,12 +76,14 @@ class NamedPointData:
     description: str
     position: Point
     interactions: tuple[InteractionData, ...] = ()
-    light_index : int = -1# index of the light -1 to disable, 0-5 are valid
-    light_z_position: float = 1.0# z coord if there's depth. leave at 1 if no depth
-    light_color: tuple[float, float, float] = (1.0, 0.7, 0.1)# color
-    light_intensity: float = 1 # color multiplier
-    light_flicker_intensity: float = 0.1 # from 0 - 1. higher flickers more strongly
-    light_radius : float = 0.5#in screen space
+
+    # Lighting properties for the point. Set light index to -1 to disable the light.
+    light_index: int = -1  # 0-5 are valid
+    light_z_position: float = 1.0  # z coord if there's depth. leave at 1 if no depth
+    light_color: tuple[float, float, float] = (1.0, 0.7, 0.1)  # color
+    light_intensity: float = 1  # color multiplier
+    light_flicker_intensity: float = 0.1  # from 0 - 1. higher flickers more strongly
+    light_radius: float = 0.5  # in screen space
 
 
 @dataclass(frozen=True)

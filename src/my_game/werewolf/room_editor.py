@@ -874,6 +874,9 @@ class InteractionEditorDialog(CTkToplevel):
 
 
 class ObjectForm(CTkFrame):
+    COLOR_COMPONENTS = 3
+    POINT_LENGTH = 2
+
     def __init__(self, parent: CTk, app_state: AppState) -> None:
         super().__init__(parent)
         self.app_state = app_state
@@ -898,23 +901,29 @@ class ObjectForm(CTkFrame):
 
     def _is_point_type(self, field_type: object) -> bool:
         """Check if a type is a Point type (tuple[int, int])."""
-        point_length = 2
         return (
             hasattr(field_type, "__origin__")
             and getattr(field_type, "__origin__", None) is tuple
-            and len(getattr(field_type, "__args__", [])) == point_length
+            and len(getattr(field_type, "__args__", [])) == self.POINT_LENGTH
         )
 
     def _get_display_value(self, value: object) -> str:
         """Convert a field value to a display string."""
-        point_length = 2
-        if isinstance(value, (tuple, list)):
-            if isinstance(value, tuple) and len(value) == point_length and all(isinstance(x, int) for x in value):
+        # Handle NormalisedColor
+        color_tuple_len = 3
+        if (
+            isinstance(value, (tuple, list))
+            and len(value) == color_tuple_len
+            and all(isinstance(x, float) for x in value)
+        ):
+            return f"{value[0]:.2f}, {value[1]:.2f}, {value[2]:.2f}"
+        elif isinstance(value, (tuple, list)):
+            if isinstance(value, tuple) and len(value) == self.POINT_LENGTH and all(isinstance(x, int) for x in value):
                 # Point/position tuple like (10, 20)
                 x, y = value
                 return f"{x}, {y}"
             elif isinstance(value, (tuple, list)) and all(
-                isinstance(item, (tuple, list)) and len(item) == point_length for item in value
+                isinstance(item, (tuple, list)) and len(item) == self.POINT_LENGTH for item in value
             ):
                 # Polygon: tuple of points like ((10, 10), (100, 10), (100, 100))
                 points_str = "; ".join(f"{x}, {y}" for x, y in value)
@@ -924,8 +933,12 @@ class ObjectForm(CTkFrame):
             return str(value)
         return str(value)
 
-    def _get_parsed_value(self, field_type: object, value: str) -> object:
+    def _get_parsed_value(self, field_type: object, value: str) -> object:  # noqa: PLR0911
         """Helper to get the parsed value for a given type."""
+        # Check for NormalisedColor type
+        if field_type is tuple and getattr(field_type, "__args__", None) == (float, float, float):
+            return self._parse_normalised_color(value)
+
         # Check for int type
         if field_type is int or (isinstance(field_type, type) and issubclass(field_type, int)):
             return int(value)
@@ -940,17 +953,34 @@ class ObjectForm(CTkFrame):
 
         # Handle generic types (tuple, Union, Optional, etc.)
         origin = getattr(field_type, "__origin__", None)
+
+        # Handle tuple types (points and polygons)
         if origin is tuple:
             return self._parse_tuple_type(field_type, value)
 
-        if origin is type(int | str):  # Union in Python 3.10+
-            # Try to parse with the first non-None type
+        # Handle Union types (e.g., int | str)
+        if origin is type(int | str):
             args = getattr(field_type, "__args__", ())
             for arg in args:
                 if arg is not type(None):
                     return self._parse_input_value(arg, value)
 
         return value
+
+    def _parse_normalised_color(self, value: str) -> tuple[float, float, float]:
+        """Parse a NormalisedColor from a string in format 'r, g, b' with floats."""
+        parts = [p.strip() for p in value.split(",")]
+        if len(parts) != self.COLOR_COMPONENTS:
+            msg = f"Expected {self.COLOR_COMPONENTS} color components (r, g, b), got {len(parts)}"
+            raise ValueError(msg)
+        try:
+            r = float(parts[0])
+            g = float(parts[1])
+            b = float(parts[2])
+            return (r, g, b)
+        except ValueError as e:
+            msg = f"Could not parse color values as floats: {e}"
+            raise ValueError(msg) from e
 
     def _parse_tuple_type(self, field_type: object, value: str) -> tuple:
         """Parse a tuple type, handling both simple points and nested polygons."""
