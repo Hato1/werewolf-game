@@ -116,7 +116,6 @@ class Images(StrEnum):
     MC_WALK_NORMAL = "characters/mc_walk-Normal.png"
     MC_WALK = "characters/mc_walk.png"
     MC_WALK_SMALL = "characters/mc_walk_small.png"
-    MERCHANT_STALL1 = "props/merchant_stall1.png"
 
     # Miscellaneous
     PLAYER_PORTRAIT_WOLF = "krita_files/player_portrait_wolf.png"
@@ -160,6 +159,7 @@ class Images(StrEnum):
     INTERACTABLE_SHED_RAGS = "props/interactable_shed_rags.png"
     LANTERN_1 = "props/lantern_1.png"
     LANTERN_2 = "props/lantern_2.png"
+    MERCHANT_STALL1 = "props/merchant_stall1.png"
     OIL_JUG1 = "props/oil_jug1.png"
     PIE_TIN1 = "props/pie_tin1.png"
     PIE_TIN2 = "props/pie_tin2.png"
