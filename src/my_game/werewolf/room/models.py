@@ -8,10 +8,13 @@ import pygame as pg
 
 from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
+from my_game.core.logger import get_logger
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
+
+logger = get_logger(__name__)
 
 Point = tuple[int, int]
 Polygon = tuple[Point, ...]
@@ -83,6 +86,11 @@ class Prop:
     def from_prop_data(cls, data: PropData) -> Self:
         sprite = load_image(data.image, data.size, data.scale)
         normal_sprite = load_image(data.normal_image, data.size, data.scale) if data.normal_image else None
+        if normal_sprite and sprite.get_size() != normal_sprite.get_size():
+            logger.error(
+                "Sprite size mismatch.", size=sprite.get_size(), normal_size=normal_sprite.get_size(), sprite=data.name
+            )
+            raise ValueError("Sprite size does not match normal sprite size (See above log for details).")
         prop = cls(
             data.name,
             data.description,
@@ -179,6 +187,23 @@ class Character:
             if data.normal_walk_image
             else None
         )
+
+        if normal_idle and idle[0].get_size() != normal_idle[0].get_size():
+            logger.error(
+                "Idle sprite size mismatch.",
+                size=idle[0].get_size(),
+                normal_size=normal_idle[0].get_size(),
+                sprite=data.name,
+            )
+            raise ValueError("Idle Sprite size does not match normal sprite size (See above log for details).")
+        if normal_walk and walk[0].get_size() != normal_walk[0].get_size():
+            logger.error(
+                "Walk sprite size mismatch.",
+                size=walk[0].get_size(),
+                normal_size=normal_walk[0].get_size(),
+                sprite=data.name,
+            )
+            raise ValueError("Walk Sprite size does not match normal sprite size (See above log for details).")
 
         character = cls(
             data.name,
