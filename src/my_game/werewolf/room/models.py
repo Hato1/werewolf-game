@@ -9,6 +9,7 @@ import pygame as pg
 from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
+from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
@@ -22,6 +23,25 @@ def split_frames(sheet: pg.Surface, frame_width: int) -> list[pg.Surface]:
     return [
         sheet.subsurface(pg.Rect(x, 0, frame_width, sheet.get_height())).copy() for x in range(0, width, frame_width)
     ]
+
+
+def scale_image(image: pg.Surface, size: tuple[int, int] | None, scale: float) -> pg.Surface:
+    if size is not None:
+        return pg.transform.smoothscale(image, size)
+    elif scale != 1.0:
+        return pg.transform.smoothscale_by(image, scale)
+    return image
+
+
+def load_image(image: Images, size: tuple[int, int] | None, scale: float) -> pg.Surface:
+    sprite = image.load()
+    return scale_image(sprite, size, scale)
+
+
+def load_spritesheet(image: Images, size: tuple[int, int] | None, scale: float, frame_width: int) -> list[pg.Surface]:
+    sheet = image.load()
+    frames = split_frames(sheet, frame_width)
+    return [scale_image(frame, size, scale) for frame in frames]
 
 
 @dataclass
@@ -47,6 +67,7 @@ class Prop:
     name: str
     description: str
     sprite: pg.Surface
+    normal_sprite: pg.Surface | None
     position: Point
     visible: bool
     clickable: bool
@@ -60,15 +81,13 @@ class Prop:
 
     @classmethod
     def from_prop_data(cls, data: PropData) -> Self:
-        sprite = data.image.load()
-        if data.size is not None:
-            sprite = pg.transform.smoothscale(sprite, data.size)
-        elif data.scale != 1.0:
-            sprite = pg.transform.smoothscale_by(sprite, data.scale)
+        sprite = load_image(data.image, data.size, data.scale)
+        normal_sprite = load_image(data.normal_image, data.size, data.scale) if data.normal_image else None
         prop = cls(
             data.name,
             data.description,
             sprite,
+            normal_sprite,
             data.position,
             data.visible,
             data.clickable,
@@ -97,6 +116,8 @@ class Prop:
             return
         rect = self.sprite.get_rect(topleft=self.position)
         renderer(self.sprite, rect)
+        if self.normal_sprite:
+            renderer(self.normal_sprite, rect)
 
     def get_inventory_sprite(self) -> pg.Surface:
         """Return the sprite used for the inventory."""
@@ -130,7 +151,9 @@ class Character:
     name: str
     description: str
     idle_frames: list[pg.Surface]
+    normal_idle_frames: list[pg.Surface] | None
     walk_frames: list[pg.Surface]
+    normal_walk_frames: list[pg.Surface] | None
     position: pg.Vector2
     depth: int
     speed: float
@@ -144,24 +167,26 @@ class Character:
 
     @classmethod
     def from_character_data(cls, data: CharacterData) -> Self:
-        idle = data.image.load()
         # Walk sheets are made of frames the same size as the idle frame.
-        frame_width = idle.get_width()
-        idle_frames = split_frames(idle, frame_width)
-        walk_frames = split_frames(data.walk_image.load(), frame_width) if data.walk_image else idle_frames
-        if data.size is not None:
-            idle_frames = [pg.transform.smoothscale(f, data.size) for f in idle_frames]
-            walk_frames = [pg.transform.smoothscale(f, data.size) for f in walk_frames]
-        elif data.scale != 1.0:
-            idle_frames = [pg.transform.scale_by(f, data.scale) for f in idle_frames]
-            walk_frames = (
-                idle_frames if data.walk_image is None else [pg.transform.scale_by(f, data.scale) for f in walk_frames]
-            )
+        frame_width = data.image.load().get_width()
+        idle = load_spritesheet(data.image, data.size, data.scale, frame_width)
+        normal_idle = (
+            load_spritesheet(data.normal_image, data.size, data.scale, frame_width) if data.normal_image else None
+        )
+        walk = load_spritesheet(data.walk_image, data.size, data.scale, frame_width) if data.walk_image else idle
+        normal_walk = (
+            load_spritesheet(data.normal_walk_image, data.size, data.scale, frame_width)
+            if data.normal_walk_image
+            else None
+        )
+
         character = cls(
             data.name,
             data.description,
-            idle_frames,
-            walk_frames,
+            idle,
+            normal_idle,
+            walk,
+            normal_walk,
             pg.Vector2(data.position),
             data.depth,
             data.speed,
@@ -174,10 +199,22 @@ class Character:
     def frames(self) -> list[pg.Surface]:
         return self.walk_frames if self.walking else self.idle_frames
 
+    def normal_frames(self) -> list[pg.Surface] | None:
+        if self.walking:
+            return self.normal_walk_frames if self.normal_walk_frames else self.normal_idle_frames
+        return self.normal_idle_frames
+
     @property
     def sprite(self) -> pg.Surface:
         sprite = self.frames[self.frame_index % len(self.frames)]
         return pg.transform.flip(sprite, flip_x=True, flip_y=False) if self.facing_left else sprite
+
+    @property
+    def normal_sprite(self) -> pg.Surface | None:
+        if frames := self.normal_frames():
+            sprite = frames[self.frame_index % len(frames)]
+            return pg.transform.flip(sprite, flip_x=True, flip_y=False) if self.facing_left else sprite
+        return None
 
     @property
     def rect(self) -> pg.Rect:
@@ -223,6 +260,8 @@ class Character:
     def draw(self, renderer: Renderer) -> None:
         """Draw the character in the room."""
         renderer(self.sprite, self.rect)
+        if self.normal_sprite:
+            renderer(self.normal_sprite, self.rect)
 
 
 @dataclass

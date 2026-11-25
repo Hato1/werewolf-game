@@ -36,6 +36,7 @@ def test_room_draws_visible_props_at_their_positions() -> None:
         name="test",
         description="A test prop.",
         sprite=sprite,
+        normal_sprite=None,
         position=(3, 4),
         visible=True,
         clickable=True,
@@ -45,6 +46,7 @@ def test_room_draws_visible_props_at_their_positions() -> None:
         parallax=0.0,
         depth=0,
         baseline=0,
+        walk_to_interact=False,
     )
     room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
 
@@ -63,6 +65,7 @@ def test_hidden_props_are_not_drawn() -> None:
         name="test",
         description="A test prop.",
         sprite=sprite,
+        normal_sprite=None,
         position=(0, 0),
         visible=False,
         clickable=False,
@@ -72,6 +75,7 @@ def test_hidden_props_are_not_drawn() -> None:
         parallax=0.0,
         depth=0,
         baseline=0,
+        walk_to_interact=False,
     )
     room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
 
@@ -221,7 +225,7 @@ def test_room_updates_its_characters() -> None:
 def test_room_builds_characters_from_room_data() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    npc = CharacterData("npc", "An NPC.", Images.MC_IDLE, (5, 6))
+    npc = CharacterData("npc", "An NPC.", Images.MC_IDLE, position=(5, 6))
 
     room = Room.from_room_data(RoomData("char room", "A room with a character.", characters=(npc,)), overwrite=True)
 
@@ -232,8 +236,8 @@ def test_room_builds_characters_from_room_data() -> None:
 def test_character_scale_applies_to_all_frames() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    base_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, (0, 0), walk_image=Images.MC_WALK)
-    scaled_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, (0, 0), walk_image=Images.MC_WALK, scale=2)
+    base_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, walk_image=Images.MC_WALK)
+    scaled_data = CharacterData("npc", "An NPC.", Images.MC_IDLE, walk_image=Images.MC_WALK, scale=2)
     base = Character.from_character_data(base_data)
     scaled = Character.from_character_data(scaled_data)
 

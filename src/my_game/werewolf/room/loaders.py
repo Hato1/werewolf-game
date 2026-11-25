@@ -18,8 +18,11 @@ class CharacterData:
     name: str
     description: str
     image: Images
-    position: Point
+    # Normal image for lighting engine.
+    normal_image: Images | None = None
+    position: Point = (0, 0)
     walk_image: Images | None = None
+    normal_walk_image: Images | None = None
     scale: float = 1.0
     size: tuple[int, int] | None = None
     speed: float = 200.0
@@ -44,6 +47,8 @@ class PropData:
     name: str
     description: str
     image: Images
+    # Normal image for lighting engine.
+    normal_image: Images | None = None
     position: Point = (0, 0)
     visible: bool = True
     clickable: bool = True
