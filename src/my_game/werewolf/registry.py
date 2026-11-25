@@ -10,6 +10,7 @@ from my_game.werewolf.states.options_menu import OptionsMenu
 from my_game.werewolf.states.render_test import RenderTest
 from my_game.werewolf.states.room_state import RoomState
 from my_game.werewolf.states.room_test import RoomTest
+from my_game.werewolf.states.dialogue_state import Dialogue
 
 STATE_FACTORIES: dict[
     WerewolfState,
@@ -20,6 +21,7 @@ STATE_FACTORIES: dict[
     WerewolfState.ROOM: RoomState,
     WerewolfState.RENDER_TEST: RenderTest,
     WerewolfState.OPTIONS_MENU: OptionsMenu,
+    WerewolfState.DIALOGUE: Dialogue,
 }
 STATE_REGISTRY = StateRegistry(STATE_FACTORIES, WerewolfState.MAIN_MENU, WerewolfTransitionData)
 __all__ = ["STATE_REGISTRY", "input_manager"]

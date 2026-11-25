@@ -15,6 +15,7 @@ BACKGROUND = PropData(
     clickable=False,
     depth=9999,
     id="background",
+    background=True
 )
 
 STUDIO = PropData(

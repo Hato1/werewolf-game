@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 
 from my_game.core.state_manager import TransitionData
+from my_game.werewolf.room.models import Room
+from my_game.werewolf.room.loaders import CharacterData
 
 
 class WerewolfState(StrEnum):
@@ -13,8 +15,13 @@ class WerewolfState(StrEnum):
     ROOM = auto()
     RENDER_TEST = auto()
     OPTIONS_MENU = auto()
+    DIALOGUE = auto()
 
 
 @dataclass
 class WerewolfTransitionData(TransitionData):
     flags: dict[str, bool] | None = None
+    current_room: Room | None = None
+
+    #Dialogue
+    dialogue_partner: CharacterData | None =  None

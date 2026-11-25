@@ -66,6 +66,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             MainMenuButton(self.FONT, "enter test room", WerewolfState.TEST_ROOM),
             MainMenuButton(self.FONT, "load", WerewolfState.RENDER_TEST),
             MainMenuButton(self.FONT, "options", WerewolfState.OPTIONS_MENU),
+            MainMenuButton(self.FONT, "dialogue", WerewolfState.DIALOGUE),
         ]
         if sys.platform != "emscripten":
             self.buttons.append(MainMenuButton(self.FONT, "exit", None))
