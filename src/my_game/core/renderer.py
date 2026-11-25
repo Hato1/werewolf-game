@@ -148,14 +148,15 @@ class Renderer:
             pg.display.update()
         pg.display.flip()
 
-    def __call__(
+    def __call__(  # noqa: PLR0913
         self,
         surface: pg.Surface,
         rect: pg.Rect | None = None,
         *,
-        unlit: bool = False,
         fit: bool = False,
-        draw_mode: int = 0,
+        unlit: bool = False,
+        to_normal: bool = False,
+        to_mask: bool = False,
     ) -> None:
         """Draws the given surface to the target rectangle, using the appropriate render backend.
 
@@ -164,21 +165,22 @@ class Renderer:
             rect (pg.Rect | None): The target rectangle. If None, uses the surface's rect.
             unlit (bool): If True, draws to the unlit buffer when using GLRenderer.
             fit (bool): If True, scales the surface to fit the target rectangle.
-            draw_mode (int): additional layers to draw to for lighting purposes.
+            to_normal (bool): If True, draws to the normal buffer when using GLRenderer.
+            to_mask (bool): If True, draws to the mask buffer when using GLRenderer.
         """
+        if sum([to_normal, to_mask, unlit]) > 1:
+            raise ValueError("Only one of to_normal, to_mask, or unlit can be True at a time.")
+
         if fit:
             surface = self.fit(surface)
         target_rect = rect if rect is not None else surface.get_rect()
 
-        draw_normal = 2
-        draw_mask = 1
-
         if self.gl_renderer is None:
             # surface, target_rect = self.scale(surface, target_rect)
             self.surface.blit(surface, target_rect)
-        elif draw_mode == draw_mask:
+        elif to_mask:
             self.gl_renderer.blit_to_light_mask(surface, target_rect)
-        elif draw_mode == draw_normal:
+        elif to_normal:
             self.gl_renderer.blit_to_normals(surface, target_rect)
         elif unlit:
             self.gl_renderer.blit_to_unlit(surface, target_rect)

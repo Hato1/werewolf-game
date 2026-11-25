@@ -744,6 +744,7 @@ class ObjectForm(CTkFrame):
         non_editable_fields = set()
         if isinstance(obj, RoomData):
             non_editable_fields = {"props", "hotspots", "characters", "regions", "points", "walkable_areas"}
+        force_image_if_none = {"image", "walk_image", "normal_image", "normal_walk_image"}
 
         # Create two-column layout
         columns_frame = CTkFrame(self.scrollable_frame)
@@ -800,9 +801,9 @@ class ObjectForm(CTkFrame):
                 widget.select() if field_value else widget.deselect()
                 self.field_widgets[field_name] = widget
 
-            elif isinstance(field_value, Images):
+            elif isinstance(field_value, Images) or (field_value is None and field_name in force_image_if_none):
                 # Images enum: use button with picker
-                display_text = field_value.name
+                display_text = getattr(field_value, "name", "Select Image")
                 widget = CTkButton(
                     field_frame,
                     text=display_text,
@@ -1060,7 +1061,7 @@ class RoomEditor(CTk):
         super().__init__()
 
         # Set window size and scaling
-        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH)
+        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 300)
         default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.9)
         self.geometry(f"{default_width}x{default_height}")
         self._change_scaling_event(self.DEFAULT_SCALING)

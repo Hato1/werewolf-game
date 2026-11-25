@@ -117,7 +117,7 @@ class Prop:
         rect = self.sprite.get_rect(topleft=self.position)
         renderer(self.sprite, rect)
         if self.normal_sprite:
-            renderer(self.normal_sprite, rect)
+            renderer(self.normal_sprite, rect, to_normal=True)
 
     def get_inventory_sprite(self) -> pg.Surface:
         """Return the sprite used for the inventory."""
@@ -261,7 +261,7 @@ class Character:
         """Draw the character in the room."""
         renderer(self.sprite, self.rect)
         if self.normal_sprite:
-            renderer(self.normal_sprite, self.rect)
+            renderer(self.normal_sprite, self.rect, to_normal=True)
 
 
 @dataclass

@@ -44,8 +44,8 @@ class RenderTest(State[WerewolfState, WerewolfTransitionData]):
         if self.renderer is None:
             self.i_hate_python = renderer
         renderer(self.background, renderer.rect, fit=True)
-        renderer(self.light_mask, self.light_mask.get_rect(), draw_mode=1, fit=True)
-        renderer(self.normal_map, self.normal_map.get_rect(), draw_mode=2, fit=True)
+        renderer(self.light_mask, self.light_mask.get_rect(), to_mask=True, fit=True)
+        renderer(self.normal_map, self.normal_map.get_rect(), to_normal=True, fit=True)
         renderer(self.prompt, self.prompt_rect, unlit=True)
         GLRenderer.light_z = self.light_z
 
