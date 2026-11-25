@@ -31,7 +31,6 @@ class Images(StrEnum):
     FOREST_ENTRANCE = "forest_entrance.png"
     INNK_EYES1 = "innk_eyes1.png"
     INNK_MOUTH1 = "innk_mouth1.png"
-    MERCHANT_STALL1 = "merchant_stall1.png"
     MOON_SCREENSHOT = "moon_screenshot.png"
     MOON_SCREENSHOT_TREES = "moon_screenshot_trees.png"
     ROOM_TEST = "room_test.png"
@@ -117,6 +116,7 @@ class Images(StrEnum):
     MC_WALK_NORMAL = "characters/mc_walk-Normal.png"
     MC_WALK = "characters/mc_walk.png"
     MC_WALK_SMALL = "characters/mc_walk_small.png"
+    MERCHANT_STALL1 = "props/merchant_stall1.png"
 
     # Miscellaneous
     PLAYER_PORTRAIT_WOLF = "krita_files/player_portrait_wolf.png"
