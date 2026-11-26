@@ -14,6 +14,7 @@ from types import ModuleType
 from typing import Any
 
 from my_game.werewolf.assets import Images
+from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, InteractionData, ObjectKind, ObjectRef, Verb
 from my_game.werewolf.room import characters, props
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
@@ -51,8 +52,8 @@ def _python_expression(value: Any, indent: int = 0, *, use_catalog: bool = True)
     """Render a room data value as a Python expression for rooms.py."""
     if use_catalog and (reference := _catalog_reference(value)) is not None:
         return reference
-    if isinstance(value, Images):
-        return f"Images.{value.name}"
+    if isinstance(value, Enum):
+        return f"{type(value).__name__}.{value.name}"
     if is_dataclass(value):
         padding = " " * (indent + 4)
         arguments = [
@@ -140,6 +141,17 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
     }
     if used_types:
         updated = _set_import(updated, "my_game.werewolf.room.loaders", used_types)
+
+    interaction_names = {
+        definition.__name__
+        for definition in (ChangeRoom, Describe, InteractionData, ObjectRef)
+        if re.search(rf"\b{definition.__name__}\(", updated)
+    }
+    interaction_names.update(
+        enum_type.__name__ for enum_type in (Verb, ObjectKind) if re.search(rf"\b{enum_type.__name__}\.", updated)
+    )
+    if interaction_names:
+        updated = _set_import(updated, "my_game.werewolf.interactions.definitions", interaction_names)
 
     if "characters." in updated:
         updated = _set_import(

@@ -12,6 +12,7 @@ from my_game.core.logger import get_logger
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
+from my_game.werewolf.interactions.definitions import InteractionData
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
 logger = get_logger(__name__)
@@ -66,6 +67,7 @@ class Prop:
         baseline: Reference point for prop positioning relative to its sprite.
         walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
         id: Stable identifier for interaction references.
+        interactions: Interaction rules attached to this prop.
     """
 
     name: str
@@ -83,6 +85,7 @@ class Prop:
     baseline: int
     walk_to_interact: bool = False
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
     def from_prop_data(cls, data: PropData) -> Self:
@@ -109,6 +112,7 @@ class Prop:
             data.baseline,
             data.walk_to_interact,
             id=data.id,
+            interactions=data.interactions,
         )
         return prop
 
@@ -155,6 +159,7 @@ class Character:
         facing_left: Whether the sprite is mirrored to face left.
         walking: Whether the character moved during the last update.
         id: Stable identifier for interaction references.
+        interactions: Interaction rules attached to this character.
     """
 
     SPEED = 200.0
@@ -177,6 +182,7 @@ class Character:
     frame_index: int = 0
     frame_time: float = 0.0
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
     def from_character_data(cls, data: CharacterData) -> Self:
@@ -223,6 +229,7 @@ class Character:
             data.path,
             loop=data.loop,
             id=data.id,
+            interactions=data.interactions,
         )
         return character
 
@@ -359,16 +366,18 @@ class Hotspot:
         description: Hotspot's description.
         polygon: List of coordinate tuples defining the hotspot's shape.
         id: Stable identifier for interaction references.
+        interactions: Interaction rules attached to this hotspot.
     """
 
     name: str
     description: str
     polygon: Polygon
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
     def from_hotspot_data(cls, data: HotspotData) -> Self:
-        hotspot = cls(data.name, data.description, data.polygon)
+        hotspot = cls(data.name, data.description, data.polygon, id=data.id, interactions=data.interactions)
         return hotspot
 
     def look(self):
@@ -393,12 +402,14 @@ class Region:
         description: Region's description.
         polygon: List of coordinate tuples defining the region's shape.
         id: Stable identifier for interaction references.
+        interactions: Interaction rules attached to this region.
     """
 
     name: str
     description: str = ""
     polygon: Polygon = ()
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
     def enter(self):
         """Called when the player enters the region."""
@@ -419,6 +430,7 @@ class Region:
             data.description,
             data.polygon,
             id=data.id,
+            interactions=data.interactions,
         )
         return region
 
@@ -432,12 +444,14 @@ class NamedPoint:
         description: Point's description.
         position: Coordinates of the point.
         id: Stable identifier for interaction references.
+        interactions: Interaction rules attached to this point.
     """
 
     name: str
     description: str = ""
     position: tuple[int, int] = (0, 0)
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
     def from_point_data(cls, data: NamedPointData) -> Self:
@@ -446,6 +460,7 @@ class NamedPoint:
             data.description,
             data.position,
             id=data.id,
+            interactions=data.interactions,
         )
 
 
@@ -504,18 +519,16 @@ class Room:
         for sorted_prop_and_character in sorted(prop_and_character, key=lambda p: p.depth, reverse=True):
             sorted_prop_and_character.draw(renderer)
 
-    def get_clicked_prop(self, point: Point) -> Prop | None:
-        """Return the topmost visible, clickable prop at the given point."""
-        for prop in sorted(self.props, key=lambda p: p.depth, reverse=True):
-            if prop.visible and prop.clickable and prop.rect.collidepoint(point):
-                return prop
-        return None
-
-    def get_clicked_character(self, point: Point) -> Character | None:
-        """Return the topmost character at the given point."""
-        for character in sorted(self.characters, key=lambda c: c.depth, reverse=True):
-            if character.rect.collidepoint(point):
-                return character
+    def get_clicked(self, point: Point) -> Prop | Character | None:
+        """Return the topmost clickable object at the given point."""
+        clickable_objects: list[Prop | Character] = [*self.props, *self.characters]
+        for object in clickable_objects:
+            if (
+                getattr(object, "clickable", True)
+                and getattr(object, "visible", True)
+                and object.rect.collidepoint(point)
+            ):
+                return object
         return None
 
     def on_enter(self, renderer: Renderer) -> None:

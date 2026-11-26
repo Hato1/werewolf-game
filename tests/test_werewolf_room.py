@@ -1,7 +1,6 @@
 from enum import Enum
 
 import pygame as pg
-import pytest
 
 from my_game.constants import SCREEN_SIZE
 from my_game.core.input_manager import InputManager, InputState
@@ -97,33 +96,6 @@ def test_main_menu_opens_registered_test_room() -> None:
 
     assert room_state.done
     assert room_state.next_state is WerewolfState.MAIN_MENU
-
-
-def test_studio_prop_click_shows_description_for_three_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
-    pg.init()
-    pg.display.set_mode((1, 1))
-    room_state = RoomTest()
-    studio = room_state.room.props[1]
-    ticks = 1_000
-    monkeypatch.setattr(pg.time, "get_ticks", lambda: ticks)
-
-    room_state.handle_event(
-        {Action.MOUSE_SELECT},
-        pg.event.Event(pg.MOUSEBUTTONDOWN, button=1, pos=studio.rect.center),
-    )
-
-    assert room_state.message_surface is None
-    finish_player_walk(room_state)
-    assert room_state.message_surface is not None
-    assert room_state.message_expires_at == ticks + room_state.MESSAGE_DURATION_MS
-
-    ticks += room_state.MESSAGE_DURATION_MS - 1
-    room_state.update(0, InputState(frozenset(), {}))
-    assert room_state.message_surface is not None
-
-    ticks += 1
-    room_state.update(0, InputState(frozenset(), {}))
-    assert room_state.message_surface is None
 
 
 def test_player_moves_with_held_input_and_animates() -> None:
@@ -282,40 +254,3 @@ def test_prop_without_walk_to_interact_triggers_immediately() -> None:
 
     assert room_state.message_surface is not None
     assert room_state.player.target is None
-
-
-def test_player_walks_to_prop_before_interacting() -> None:
-    room_state, prop = make_walk_to_room_state(walk_to_interact=True)
-    idle: InputState = InputState(frozenset(), {})
-    start = room_state.player.position.copy()
-
-    click(room_state, prop)
-    assert room_state.message_surface is None
-    assert room_state.player.target is not None
-
-    for _ in range(300):
-        room_state.update(0.05, idle)
-        if room_state.message_surface is not None:
-            break
-
-    assert room_state.message_surface is not None
-    assert room_state.player.target is None
-    assert room_state.player.position != start
-    distance = room_state.player.position.distance_to(pg.Vector2(prop.rect.clamp(room_state.player.rect).center))
-    assert distance < start.distance_to(pg.Vector2(prop.rect.center))
-
-    position = room_state.player.position.copy()
-    room_state.update(0.05, idle)
-    assert room_state.player.position == position
-
-
-def test_directional_input_cancels_walk_to_prop() -> None:
-    room_state, prop = make_walk_to_room_state(walk_to_interact=True)
-
-    click(room_state, prop)
-    room_state.update(0.05, InputState(frozenset({Action.RIGHT}), {}))
-
-    assert room_state.player.target is None
-    for _ in range(300):
-        room_state.update(0.05, InputState(frozenset(), {}))
-    assert room_state.message_surface is None

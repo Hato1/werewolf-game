@@ -13,12 +13,25 @@ from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
 from my_game.werewolf.assets import Fonts
 from my_game.werewolf.inputs import Action
+from my_game.werewolf.interactions.definitions import ObjectKind, Verb
+from my_game.werewolf.interactions.executor import InteractionSystem, InteractionTarget
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.characters import PLAYER
 from my_game.werewolf.room.loaders import RoomData
-from my_game.werewolf.room.models import Player, Prop, Room
+from my_game.werewolf.room.models import Character, Player, Prop, Region, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 from my_game.werewolf.ui.player_ui import UIPanel
+
+
+def get_object_kind(target: object) -> ObjectKind:
+    if isinstance(target, Prop):
+        return ObjectKind.PROP
+    elif isinstance(target, Character):
+        return ObjectKind.CHARACTER
+    elif isinstance(target, Region):
+        return ObjectKind.REGION
+    else:
+        raise TypeError(f"Unsupported type {type(target)} from given target: {target}")
 
 
 class RoomState(State[WerewolfState, WerewolfTransitionData]):
@@ -37,6 +50,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_expires_at = 0
         self.player = Player.from_character_data(PLAYER)
         self.ui = UIPanel()
+        self.interactions = InteractionSystem()
         self.renderer: Renderer
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
@@ -54,22 +68,15 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
         self.message_expires_at = pg.time.get_ticks() + self.MESSAGE_DURATION_MS
 
-    def on_prop_clicked(self, prop: Prop) -> None:
-        """Hook for subclasses; by default the prop's description is shown."""
-        if prop.name == props.GRAVEYARD_CHAINS.name:
-            self.change_room(rooms.CHURCH_CEMETARY)
-        else:
-            self.show_message(prop.description)
+    def interact_with(self, target: InteractionTarget) -> None:
+        """Dispatch an INTERACT interaction on a room object."""
+        kind = get_object_kind(target)
+        self.interactions.dispatch(target, kind, Verb.INTERACT, self)
 
     def handle_mouse_select(self, pos: tuple[int, int]) -> None:
-        prop = self.room.get_clicked_prop(pos)
         self.player.cancel_walk()
-        if prop is None:
-            return
-        if prop.walk_to_interact:
-            self.player.walk_to(prop.rect, lambda: self.on_prop_clicked(prop))
-        else:
-            self.on_prop_clicked(prop)
+        if clicked_object := self.room.get_clicked(pos):
+            self.interact_with(clicked_object)
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         """Can also have custom functions passed in, if we want to do that later for some reason"""

@@ -6,6 +6,7 @@ Only plain data lives in the files; textures are referenced by their `Images` en
 from dataclasses import dataclass, field
 
 from my_game.werewolf.assets import Images
+from my_game.werewolf.interactions.definitions import InteractionData
 
 Point = tuple[int, int]
 Polygon = tuple[Point, ...]
@@ -30,6 +31,7 @@ class CharacterData:
     path: tuple[Point, ...] = ()
     loop: bool = False
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -40,6 +42,7 @@ class HotspotData:
     description: str
     polygon: Polygon = field(default_factory=tuple)
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -62,6 +65,7 @@ class PropData:
     baseline: int = 0
     walk_to_interact: bool = False
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -72,6 +76,7 @@ class RegionData:
     description: str
     polygon: Polygon = field(default_factory=tuple)
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,6 +87,7 @@ class NamedPointData:
     description: str
     position: Point
     id: str = ""
+    interactions: tuple[InteractionData, ...] = ()
 
 
 @dataclass(frozen=True)
