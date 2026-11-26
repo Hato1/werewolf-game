@@ -1,8 +1,11 @@
 title: Start
 ---
 Test Character: Why are there two of me?
-Player: This is really confusing
-Test Character: I'm confused too
+-> This is really confusing
+-> Two of you? There are two of me!
+Test Character: Well look, I'm confused too
+Test Character: But that's no reason to be rude
+-> Well what should we do now?
 ===
 title: Other
 ---

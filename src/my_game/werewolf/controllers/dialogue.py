@@ -33,6 +33,7 @@ if __import__("sys").platform == "emscripten":
 class Line:
     name: str
     dialogue: str
+    options: list[str]
     done: bool = False
 
 
@@ -65,16 +66,23 @@ class Dialogue:
         in_text = False
 
         for line in lines:
-            if not in_text and line[:7] == "title: " and line[7:].strip().lower() == title.lower():
+            if not in_text and line.strip()[:7] == "title: " and line[7:].strip().lower() == title.lower():
                 in_text = True
             elif in_text:
                 if line.strip() == "---" or line.strip() == "":
                     continue
                 elif line.strip() == "===":
                     break
+                elif line.strip()[:2] == "->":
+                    split_index = 0
+                    if line.count(":") > 0:
+                        split_index = line.index(":")
+                    else:
+                        split_index = line.index(">")
+                    node.lines[len(node.lines) - 1].options.append(line[split_index + 1 :].strip())
                 else:
                     colon_index = line.index(":")
-                    line_node = Line(line[:colon_index].strip(), line[colon_index + 1 :].strip())
+                    line_node = Line(line[:colon_index].strip(), line[colon_index + 1 :].strip(), list(""))
                     node.lines.append(line_node)
         return node
 

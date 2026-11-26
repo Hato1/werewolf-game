@@ -61,15 +61,64 @@ class Converser:
         self.textbox_rect = self.textbox_surf.get_rect(bottomleft=self.textbox_loc)
 
         self.line: Line | None = None
-        self.line_surf: pg.Surface | None = None
-        self.line_rect: pg.Rect | None = None
 
-    def set_line(self, line: Line):
+        self.says = ""
+        self.says_surf = pg.Surface((0, 0))
+        self.says_rect = self.says_surf.get_rect()
+
+        self.opt_1 = ""
+        self.opt_1_surf = pg.Surface((0, 0))
+        self.opt_1_rect = self.opt_1_surf.get_rect()
+
+        self.opt_2 = ""
+        self.opt_2_surf = pg.Surface((0, 0))
+        self.opt_2_rect = self.opt_2_surf.get_rect()
+
+    def set_line(self, line: Line, pos):
         self.line = line
-        self.line_surf = pg.Font.render(
-            self.FONT, line.dialogue, DIALOGUE_ANTI_ALIAS, pg.Color("White"), None, self.textbox_width - self.BORDER * 2
-        )
-        self.line_rect = self.line_surf.get_rect(topleft=self.textbox_rect.__getattribute__("topleft"))
+
+        if self.name.strip() == line.name.strip():
+            self.says = line.dialogue
+            self.says_surf = pg.Font.render(
+                self.FONT, self.says, DIALOGUE_ANTI_ALIAS, pg.Color("White"), None, self.textbox_width - self.BORDER * 2
+            )
+            self.says_rect = self.says_surf.get_rect(topleft=self.textbox_rect.__getattribute__("topleft"))
+        else:
+            self.says = ""
+
+        if self.name.strip() == "Player" and len(line.options) > 0:
+            self.opt_1 = line.options[pos]
+            if len(line.options) - 1 == pos:
+                self.opt_2 = ""
+            elif len(line.options) > pos:
+                self.opt_2 = line.options[pos + 1]
+
+            textbox_topleft = self.textbox_rect.__getattribute__("topleft")
+
+            self.opt_1_surf = pg.Font.render(
+                self.FONT,
+                "* " + self.opt_1,
+                DIALOGUE_ANTI_ALIAS,
+                pg.Color("White"),
+                None,
+                self.textbox_width - self.BORDER * 2,
+            )
+            self.opt_1_rect = self.opt_1_surf.get_rect(topleft=textbox_topleft)
+
+            self.opt_2_surf = pg.Font.render(
+                self.FONT,
+                "* " + self.opt_2,
+                DIALOGUE_ANTI_ALIAS,
+                pg.Color("White"),
+                None,
+                self.textbox_width - self.BORDER * 2,
+            )
+            self.opt_2_rect = self.opt_2_surf.get_rect(
+                topleft=(textbox_topleft[0], int(textbox_topleft[1] + self.textbox_height / 2))
+            )
+        else:
+            self.opt_1 = ""
+            self.opt_2 = ""
 
     def draw(self, renderer):
         renderer(self.outline_surf, self.outline_rect, unlit=True)
@@ -77,7 +126,11 @@ class Converser:
         renderer(self.surf, self.rect, unlit=True)
         renderer(self.textbox_surf, self.textbox_rect, unlit=True)
         if self.line:
-            renderer(self.line_surf, self.line_rect, unlit=True)
+            renderer(self.says_surf, self.says_rect, unlit=True)
+        if self.opt_1:
+            renderer(self.opt_1_surf, self.opt_1_rect, unlit=True)
+        if self.opt_2:
+            renderer(self.opt_2_surf, self.opt_2_rect, unlit=True)
 
 
 class DialogueView(State[WerewolfState, WerewolfTransitionData]):
@@ -121,12 +174,9 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
 
         if not line:
             logger.error("No line returned")
-        if line.name == self.player.name:
-            self.player.set_line(line)
-        elif line.name == self.talker.name:
-            self.talker.set_line(line)
-        else:
-            logger.error("Invalid name: " + line.name)
+
+        self.player.set_line(line, 0)
+        self.talker.set_line(line, 0)
 
     def handle_keyboard(self, actions: set[Enum]) -> None:
         if Action.UI_SELECT in actions:
