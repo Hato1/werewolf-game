@@ -1,17 +1,19 @@
 """Room definitions for the werewolf game."""
 
-from my_game.werewolf.assets import Images
-from my_game.werewolf.interactions.definitions import ChangeRoom, InteractionData, Verb
+from my_game.werewolf.assets import Dialogue, Images
+from my_game.werewolf.interactions.definitions import ChangeRoom, EnterDialogue, InteractionData, Verb
 from my_game.werewolf.room import characters, props, regions  # noqa: F401
 from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
 
 TEST_ROOM = RoomData(
     name="Test Room",
+    id="Test Room",
     description="A room for testing the room rendering system.",
     props=(
         props.BACKGROUND_INN,
         PropData(
             name="Studio",
+            id="Studio",
             description="a tiny studio model.",
             image=Images.STUDIO,
             normal_image=None,
@@ -28,6 +30,7 @@ TEST_ROOM = RoomData(
         ),
         PropData(
             name="Prop2",
+            id="Prop2",
             description="New prop",
             image=Images.LANTERN_1,
             normal_image=None,
@@ -54,6 +57,7 @@ TEST_ROOM = RoomData(
     regions=(
         RegionData(
             name="Test Region",
+            id="Test Region",
             description="A region for testing purposes.",
             polygon=((10, 10), (100, 10), (100, 100), (10, 100)),
         ),
@@ -61,6 +65,7 @@ TEST_ROOM = RoomData(
     points=(
         NamedPointData(
             name="Test Point",
+            id="Test Point",
             description="A test named point.",
             position=(324, 100),
         ),
@@ -76,6 +81,7 @@ CHURCH_CEMETARY = RoomData(
         props.BACKGROUND_CHURCH_CEMETARY,
         PropData(
             name="chains",
+            id="chains",
             description="New prop",
             image=Images.CHAINS_1,
             normal_image=None,
@@ -95,6 +101,7 @@ CHURCH_CEMETARY = RoomData(
     characters=(
         CharacterData(
             name="groundskeeper",
+            id="groundskeeper",
             description="New character",
             image=Images.CHAR_GRNDK,
             normal_image=None,
@@ -107,6 +114,7 @@ CHURCH_CEMETARY = RoomData(
             depth=0,
             path=(),
             loop=False,
+            interactions=(InteractionData(verb=Verb.INTERACT, effects=(EnterDialogue(Dialogue.GROUNDSKEEPER),)),),
         ),
     ),
     regions=(),
@@ -116,10 +124,12 @@ CHURCH_CEMETARY = RoomData(
 
 INN = RoomData(
     name="Inn Room",
+    id="Inn Room",
     description="A room set in the inn.",
     props=(
         PropData(
             name="Inn Background",
+            id="Inn Background",
             description="The inn background.",
             image=Images.INN,
             normal_image=Images.BACKGROUND_INN_NN,
@@ -136,6 +146,7 @@ INN = RoomData(
         ),
         PropData(
             name="tankard",
+            id="tankard",
             description="An interactable set of graveyard chains.",
             image=Images.TANKARD_2,
             normal_image=None,
@@ -152,6 +163,7 @@ INN = RoomData(
         ),
         PropData(
             name="table",
+            id="table",
             description="New prop",
             image=Images.INN_TABLE,
             normal_image=None,
@@ -168,6 +180,7 @@ INN = RoomData(
         ),
         PropData(
             name="lamp",
+            id="lamp",
             description="New prop",
             image=Images.INN_LAMP,
             normal_image=None,
@@ -187,6 +200,7 @@ INN = RoomData(
     characters=(
         CharacterData(
             name="innkeeper",
+            id="innkeeper",
             description="New character",
             image=Images.CHAR_INNK,
             normal_image=Images.CHAR_INNK_NN,
@@ -199,6 +213,7 @@ INN = RoomData(
             depth=75,
             path=(),
             loop=False,
+            interactions=(InteractionData(verb=Verb.INTERACT, effects=(EnterDialogue(Dialogue.INNKEEPER),)),),
         ),
     ),
     regions=(),
@@ -208,11 +223,13 @@ INN = RoomData(
 
 TOWN_CENTER = RoomData(
     name="Town Center Room",
+    id="Town Center Room",
     description="A room set in the town center.",
     props=(
         props.BACKGROUND_TOWN_CENTER,
         PropData(
             name="drag marks",
+            id="drag marks",
             description="New prop",
             image=Images.DRAG_MARKS,
             normal_image=None,
@@ -237,10 +254,12 @@ TOWN_CENTER = RoomData(
 
 TOWN_ENTRANCE = RoomData(
     name="Town Entrance Room",
+    id="Town Entrance Room",
     description="A room set in the town entrance.",
     props=(
         PropData(
             name="background town entrance",
+            id="background town entrance",
             description="New prop",
             image=Images.BACKGROUND_TOWN_ENTRANCE_COPY,
             normal_image=None,
@@ -257,6 +276,7 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             name="ammo",
+            id="ammo",
             description="New prop",
             image=Images.AMMO_2,
             normal_image=None,
@@ -273,6 +293,7 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             name="supplies",
+            id="supplies",
             description="New prop",
             image=Images.SUPPLIES1,
             normal_image=None,
@@ -289,6 +310,7 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             name="oil jug",
+            id="oil jug",
             description="New prop",
             image=Images.OIL_JUG1,
             normal_image=None,
@@ -305,6 +327,7 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             name="peddler stall",
+            id="peddler stall",
             description="New prop",
             image=Images.MERCHANT_STALL1,
             normal_image=None,
@@ -323,7 +346,8 @@ TOWN_ENTRANCE = RoomData(
     hotspots=(),
     characters=(
         CharacterData(
-            name="Character0",
+            name="Peddler",
+            id="Peddler",
             description="New character",
             image=Images.CHAR_MERCHANT,
             normal_image=None,
@@ -336,6 +360,7 @@ TOWN_ENTRANCE = RoomData(
             depth=25,
             path=(),
             loop=False,
+            interactions=(InteractionData(verb=Verb.INTERACT, effects=(EnterDialogue(Dialogue.PEDDLER),)),),
         ),
     ),
     regions=(),
@@ -345,11 +370,13 @@ TOWN_ENTRANCE = RoomData(
 
 TOWN_HALL = RoomData(
     name="Town Hall Room",
+    id="Town Hall Room",
     description="A room set in the town hall.",
     props=(
         props.BACKGROUND_TOWN_HALL,
         PropData(
             name="Sky",
+            id="Sky",
             description="New prop",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -366,6 +393,7 @@ TOWN_HALL = RoomData(
         ),
         PropData(
             name="Tree and Cart",
+            id="Tree and Cart",
             description="New prop",
             image=Images.BACKGROUND_TOWN_HALL_2,
             normal_image=None,
@@ -390,11 +418,13 @@ TOWN_HALL = RoomData(
 
 WOODS = RoomData(
     name="Woods Room",
+    id="Woods Room",
     description="A room set in the woods.",
     props=(
         props.BACKGROUND_WOODS,
         PropData(
             name="Prop1",
+            id="Prop1",
             description="New prop",
             image=Images.WOODS_1,
             normal_image=None,
@@ -411,6 +441,7 @@ WOODS = RoomData(
         ),
         PropData(
             name="pie tin",
+            id="pie tin",
             description="New prop",
             image=Images.PIE_TIN2,
             normal_image=None,
@@ -427,6 +458,7 @@ WOODS = RoomData(
         ),
         PropData(
             name="tax collector corpse",
+            id="tax collector corpse",
             description="New prop",
             image=Images.TAX_COLLECTOR_CORPSE,
             normal_image=None,
@@ -443,6 +475,7 @@ WOODS = RoomData(
         ),
         PropData(
             name="box of coins",
+            id="box of coins",
             description="New prop",
             image=Images.BOX_COINS,
             normal_image=None,
@@ -459,6 +492,7 @@ WOODS = RoomData(
         ),
         PropData(
             name="branch pile",
+            id="branch pile",
             description="New prop",
             image=Images.BRANCHES1,
             normal_image=None,
@@ -483,10 +517,12 @@ WOODS = RoomData(
 
 INSIDE_TOWN_HALL = RoomData(
     name="INSIDE_TOWN_HALL",
+    id="INSIDE_TOWN_HALL",
     description="",
     props=(
         PropData(
             name="hall_background",
+            id="hall_background",
             description="New prop",
             image=Images.BACKGROUND_HALL,
             normal_image=None,
@@ -503,6 +539,7 @@ INSIDE_TOWN_HALL = RoomData(
         ),
         PropData(
             name="dresser",
+            id="dresser",
             description="New prop",
             image=Images.DRESSER_1,
             normal_image=None,
@@ -519,6 +556,7 @@ INSIDE_TOWN_HALL = RoomData(
         ),
         PropData(
             name="boots",
+            id="boots",
             description="New prop",
             image=Images.BOOTS_1,
             normal_image=None,
@@ -538,6 +576,7 @@ INSIDE_TOWN_HALL = RoomData(
     characters=(
         CharacterData(
             name="Mayor",
+            id="Mayor",
             description="New character",
             image=Images.CHAR_ELDER,
             normal_image=None,
@@ -550,6 +589,7 @@ INSIDE_TOWN_HALL = RoomData(
             depth=0,
             path=(),
             loop=False,
+            interactions=(InteractionData(verb=Verb.INTERACT, effects=(EnterDialogue(Dialogue.MAYOR),)),),
         ),
     ),
     regions=(),
@@ -559,10 +599,12 @@ INSIDE_TOWN_HALL = RoomData(
 
 CHURCH_INTERIOR = RoomData(
     name="church_interior",
+    id="church_interior",
     description="",
     props=(
         PropData(
             name="church_background",
+            id="church_background",
             description="New prop",
             image=Images.BACKGROUND_CHURCH,
             normal_image=None,
@@ -579,6 +621,7 @@ CHURCH_INTERIOR = RoomData(
         ),
         PropData(
             name="clothes basket",
+            id="clothes basket",
             description="New prop",
             image=Images.CLOTHES_BASKET_1,
             normal_image=None,
@@ -598,6 +641,7 @@ CHURCH_INTERIOR = RoomData(
     characters=(
         CharacterData(
             name="nun",
+            id="nun",
             description="New character",
             image=Images.CHAR_NUN,
             normal_image=None,
@@ -610,6 +654,7 @@ CHURCH_INTERIOR = RoomData(
             depth=0,
             path=(),
             loop=False,
+            interactions=(InteractionData(verb=Verb.INTERACT, effects=(EnterDialogue(Dialogue.NUN),)),),
         ),
     ),
     regions=(),
@@ -619,10 +664,12 @@ CHURCH_INTERIOR = RoomData(
 
 SHED = RoomData(
     name="shed",
+    id="shed",
     description="",
     props=(
         PropData(
             name="shed background",
+            id="shed background",
             description="New prop",
             image=Images.CEMETARY_SHED,
             normal_image=None,
@@ -639,6 +686,7 @@ SHED = RoomData(
         ),
         PropData(
             name="door handle",
+            id="door handle",
             description="New prop",
             image=Images.DOOR_HANDLE2,
             normal_image=None,
@@ -655,6 +703,7 @@ SHED = RoomData(
         ),
         PropData(
             name="hook",
+            id="hook",
             description="New prop",
             image=Images.INTERACTABLE_SHED_HOOK,
             normal_image=None,
@@ -671,6 +720,7 @@ SHED = RoomData(
         ),
         PropData(
             name="chest",
+            id="chest",
             description="New prop",
             image=Images.CHEST_1,
             normal_image=None,
@@ -687,6 +737,7 @@ SHED = RoomData(
         ),
         PropData(
             name="rags",
+            id="rags",
             description="New prop",
             image=Images.RAGS_1,
             normal_image=None,

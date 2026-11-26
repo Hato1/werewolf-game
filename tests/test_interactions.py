@@ -53,11 +53,12 @@ def finish_player_walk(room_state: RoomState) -> None:
 def test_chains_interaction_changes_room() -> None:
     prop = PropData(
         "chains",
+        "chains",
         "Teleporting chains",
         image=props.GRAVEYARD_CHAINS.image,
         interactions=(InteractionData(verb=Verb.INTERACT, effects=(ChangeRoom(room_id="church_cemetary"),)),),
     )
-    room_state = make_room_state(RoomData("Chain room", "A room with chains.", props=(prop,)))
+    room_state = make_room_state(RoomData("Chain room", "Chain room", "A room with chains.", props=(prop,)))
 
     click(room_state, room_state.room.props[0].rect.center)
     # finish_player_walk(room_state)
@@ -68,6 +69,7 @@ def test_chains_interaction_changes_room() -> None:
 def test_highest_priority_interaction_is_applied(monkeypatch: pytest.MonkeyPatch) -> None:
     prop = PropData(
         name="Prop",
+        id="prop",
         description="A prop.",
         image=props.STUDIO.image,
         position=(100, 100),
@@ -76,7 +78,7 @@ def test_highest_priority_interaction_is_applied(monkeypatch: pytest.MonkeyPatch
             InteractionData(verb=Verb.INTERACT, effects=(Describe("high priority"),), priority=10),
         ),
     )
-    room_state = make_room_state(RoomData("Priority room", "A room with a prop.", props=(prop,)))
+    room_state = make_room_state(RoomData("Priority room", "Priority room", "A room with a prop.", props=(prop,)))
     messages: list[str] = []
     monkeypatch.setattr(room_state, "show_message", messages.append)
 
@@ -86,8 +88,8 @@ def test_highest_priority_interaction_is_applied(monkeypatch: pytest.MonkeyPatch
 
 
 def test_prop_without_interactions_uses_its_description(monkeypatch: pytest.MonkeyPatch) -> None:
-    prop = PropData(name="Prop", description="A plain prop.", image=props.STUDIO.image, position=(100, 100))
-    room_state = make_room_state(RoomData("Description room", "A room with a prop.", props=(prop,)))
+    prop = PropData(name="Prop", id="prop", description="A plain prop.", image=props.STUDIO.image, position=(100, 100))
+    room_state = make_room_state(RoomData("Description room", "Description room", "A room with a prop.", props=(prop,)))
     messages: list[str] = []
     monkeypatch.setattr(room_state, "show_message", messages.append)
 
@@ -105,7 +107,9 @@ def test_character_click_dispatches_its_interaction(monkeypatch: pytest.MonkeyPa
         id="npc",
         interactions=(InteractionData(verb=Verb.INTERACT, effects=(Describe("Hello!"),)),),
     )
-    room_state = make_room_state(RoomData("Character room", "A room with a character.", characters=(character,)))
+    room_state = make_room_state(
+        RoomData("Character room", "Character room", "A room with a character.", characters=(character,))
+    )
     messages: list[str] = []
     monkeypatch.setattr(room_state, "show_message", messages.append)
 
@@ -117,11 +121,12 @@ def test_character_click_dispatches_its_interaction(monkeypatch: pytest.MonkeyPa
 def test_interaction_definitions_survive_editor_source_generation() -> None:
     prop = PropData(
         name="Chains",
+        id="chains",
         description="Chains.",
         image=Images.CHAINS_1,
         interactions=(InteractionData(verb=Verb.INTERACT, effects=(ChangeRoom(room_id="church_cemetary"),)),),
     )
-    room = replace(RoomData("Test", "Test room.", id="test_room"), props=(prop,))
+    room = replace(RoomData(name="Test", description="Test room.", id="test_room"), props=(prop,))
 
     updated = update_room_source("ROOM = None\n", {"ROOM": room})
     ast.parse(updated)

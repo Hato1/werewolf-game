@@ -4,6 +4,7 @@ This state handles displaying a room, responding to prop clicks,
 showing timed messages, and handling room transitions.
 """
 
+from dataclasses import dataclass
 from enum import Enum
 
 import pygame as pg
@@ -11,7 +12,7 @@ import pygame as pg
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
-from my_game.werewolf.assets import Fonts
+from my_game.werewolf.assets import Dialogue, Fonts
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.interactions.definitions import ObjectKind, Verb
 from my_game.werewolf.interactions.executor import InteractionSystem, InteractionTarget
@@ -21,6 +22,23 @@ from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Character, Player, Prop, Region, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 from my_game.werewolf.ui.player_ui import UIPanel
+
+
+@dataclass
+class Flags:
+    """Simple container for keeping track of misc game progress variables.
+
+    Probably should be moved into its own file to prevent circular imports.
+    TODO: Save and load from disk to persist game progress.
+    """
+
+    # Activates on interacting with the body in the woods.
+    # Used to enable dialogue option with the Mayor.
+    woods_body_found: bool = False
+
+    # Activates when the player tells the mayor about the suspect.
+    # Used for something or other.
+    mayor_told_suspect: bool = False
 
 
 def get_object_kind(target: object) -> ObjectKind:
@@ -52,6 +70,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.ui = UIPanel()
         self.interactions = InteractionSystem()
         self.renderer: Renderer
+        self.flags = Flags()
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
         super().enter(transition_data, renderer)
@@ -63,6 +82,17 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.room.on_exit(self.renderer)
         self.room = Room.from_room_data(room)
         self.room.on_enter(self.renderer)
+
+    def enter_dialogue_state(self, dialogue: Dialogue) -> None:
+        """Enter a dialogue state with the given dialogue."""
+        raise NotImplementedError()
+
+        # Add to transition data here.
+        self.transition_data.dialogue = dialogue
+        self.transition_data.flags = self.flags
+
+        self.next_state = WerewolfState.DIALOGUE
+        self.done = True
 
     def show_message(self, text: str) -> None:
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)

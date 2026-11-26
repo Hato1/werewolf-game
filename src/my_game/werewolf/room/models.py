@@ -70,6 +70,7 @@ class Prop:
         interactions: Interaction rules attached to this prop.
     """
 
+    id: str
     name: str
     description: str
     sprite: pg.Surface
@@ -84,7 +85,6 @@ class Prop:
     depth: int
     baseline: int
     walk_to_interact: bool = False
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
@@ -97,21 +97,21 @@ class Prop:
             )
             raise ValueError("Sprite size does not match normal sprite size (See above log for details).")
         prop = cls(
-            data.name,
-            data.description,
-            sprite,
-            normal_sprite,
-            data.position,
-            data.visible,
-            data.clickable,
-            Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
-            data.scale,
-            data.size,
-            data.parallax,
-            data.depth,
-            data.baseline,
-            data.walk_to_interact,
             id=data.id,
+            name=data.name,
+            description=data.description,
+            sprite=sprite,
+            normal_sprite=normal_sprite,
+            position=data.position,
+            visible=data.visible,
+            clickable=data.clickable,
+            hotspot=Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
+            scale=data.scale,
+            size=data.size,
+            parallax=data.parallax,
+            depth=data.depth,
+            baseline=data.baseline,
+            walk_to_interact=data.walk_to_interact,
             interactions=data.interactions,
         )
         return prop
@@ -165,6 +165,7 @@ class Character:
     SPEED = 200.0
     FRAME_DURATION = 0.1
 
+    id: str
     name: str
     description: str
     idle_frames: list[pg.Surface]
@@ -181,7 +182,6 @@ class Character:
     walking: bool = False
     frame_index: int = 0
     frame_time: float = 0.0
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
@@ -217,18 +217,18 @@ class Character:
             raise ValueError("Walk Sprite size does not match normal sprite size (See above log for details).")
 
         character = cls(
-            data.name,
-            data.description,
-            idle,
-            normal_idle,
-            walk,
-            normal_walk,
-            pg.Vector2(data.position),
-            data.depth,
-            data.speed,
-            data.path,
-            loop=data.loop,
             id=data.id,
+            name=data.name,
+            description=data.description,
+            idle_frames=idle,
+            normal_idle_frames=normal_idle,
+            walk_frames=walk,
+            normal_walk_frames=normal_walk,
+            position=pg.Vector2(data.position),
+            depth=data.depth,
+            speed=data.speed,
+            path=data.path,
+            loop=data.loop,
             interactions=data.interactions,
         )
         return character
@@ -369,15 +369,21 @@ class Hotspot:
         interactions: Interaction rules attached to this hotspot.
     """
 
+    id: str
     name: str
     description: str
     polygon: Polygon
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
     def from_hotspot_data(cls, data: HotspotData) -> Self:
-        hotspot = cls(data.name, data.description, data.polygon, id=data.id, interactions=data.interactions)
+        hotspot = cls(
+            id=data.id,
+            name=data.name,
+            description=data.description,
+            polygon=data.polygon,
+            interactions=data.interactions,
+        )
         return hotspot
 
     def look(self):
@@ -405,10 +411,10 @@ class Region:
         interactions: Interaction rules attached to this region.
     """
 
+    id: str
     name: str
     description: str = ""
     polygon: Polygon = ()
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
     def enter(self):
@@ -426,10 +432,10 @@ class Region:
     @classmethod
     def from_region_data(cls, data: RegionData) -> Self:
         region = cls(
-            data.name,
-            data.description,
-            data.polygon,
             id=data.id,
+            name=data.name,
+            description=data.description,
+            polygon=data.polygon,
             interactions=data.interactions,
         )
         return region
@@ -447,19 +453,19 @@ class NamedPoint:
         interactions: Interaction rules attached to this point.
     """
 
+    id: str
     name: str
     description: str = ""
     position: tuple[int, int] = (0, 0)
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
     @classmethod
     def from_point_data(cls, data: NamedPointData) -> Self:
         return cls(
-            data.name,
-            data.description,
-            data.position,
             id=data.id,
+            name=data.name,
+            description=data.description,
+            position=data.position,
             interactions=data.interactions,
         )
 

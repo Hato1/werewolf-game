@@ -396,6 +396,7 @@ class RoomViewport(CTkFrame):
 
         # Create a new region
         new_region = RegionData(
+            id=f"region_{len(self.app_state.current_room.regions) + 1}",
             name=f"Region {len(self.app_state.current_room.regions) + 1}",
             description="",
             polygon=polygon,
@@ -1187,6 +1188,7 @@ class RoomEditor(CTk):
         updated_room: RoomData
         if tab_name == "Props":
             new_item_prop = PropData(
+                id=f"prop_{current_index}",
                 name=f"Prop{current_index}",
                 description="New prop",
                 image=Images.LANTERN_1,
@@ -1196,6 +1198,7 @@ class RoomEditor(CTk):
             updated_room = replace(current_room, props=(*current_room.props, new_item_prop))
         elif tab_name == "Characters":
             new_item_char = CharacterData(
+                id=f"character_{current_index}",
                 name=f"Character{current_index}",
                 description="New character",
                 image=Images.MC_IDLE,
@@ -1206,6 +1209,7 @@ class RoomEditor(CTk):
             updated_room = replace(current_room, characters=(*current_room.characters, new_item_char))
         elif tab_name == "Regions":
             new_item_region = RegionData(
+                id=f"region_{current_index}",
                 name=f"Region{current_index}",
                 description="New region",
                 polygon=((10, 10), (100, 10), (100, 100), (10, 100)),
@@ -1214,6 +1218,7 @@ class RoomEditor(CTk):
             updated_room = replace(current_room, regions=(*current_room.regions, new_item_region))
         elif tab_name == "Points":
             new_item_point = NamedPointData(
+                id=f"point_{current_index}",
                 name=f"Point{current_index}",
                 description="New point",
                 position=(240, 75),
@@ -1307,7 +1312,7 @@ class RoomEditor(CTk):
             counter += 1
 
         # Create a new room with default values
-        new_room = RoomData(name=room_name, description="")
+        new_room = RoomData(id=room_name, name=room_name, description="")
 
         # Add to room data using the Python variable name as key
         self.app_state.room_data[var_name] = new_room

@@ -16,6 +16,7 @@ Polygon = tuple[Point, ...]
 class CharacterData:
     """Data representation of a character."""
 
+    id: str
     name: str
     description: str
     image: Images
@@ -30,7 +31,6 @@ class CharacterData:
     depth: int = 0
     path: tuple[Point, ...] = ()
     loop: bool = False
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
 
@@ -38,10 +38,10 @@ class CharacterData:
 class HotspotData:
     """Data representation of a hotspot."""
 
+    id: str
     name: str
     description: str
     polygon: Polygon = field(default_factory=tuple)
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
 
@@ -49,6 +49,7 @@ class HotspotData:
 class PropData:
     """Data representation of a prop."""
 
+    id: str
     name: str
     description: str
     image: Images
@@ -64,7 +65,6 @@ class PropData:
     depth: int = 0
     baseline: int = 0
     walk_to_interact: bool = False
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
 
@@ -72,10 +72,10 @@ class PropData:
 class RegionData:
     """Data representation of a region."""
 
+    id: str
     name: str
     description: str
     polygon: Polygon = field(default_factory=tuple)
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
 
@@ -83,10 +83,10 @@ class RegionData:
 class NamedPointData:
     """Data representation of a point."""
 
+    id: str
     name: str
     description: str
     position: Point
-    id: str = ""
     interactions: tuple[InteractionData, ...] = ()
 
 
@@ -94,6 +94,7 @@ class NamedPointData:
 class RoomData:
     """Data representation of a room."""
 
+    id: str
     name: str
     description: str
     props: tuple[PropData, ...] = field(default_factory=tuple)
@@ -102,4 +103,3 @@ class RoomData:
     regions: tuple[RegionData, ...] = field(default_factory=tuple)
     points: tuple[NamedPointData, ...] = field(default_factory=tuple)
     walkable_areas: tuple[Polygon, ...] = field(default_factory=tuple)
-    id: str = ""

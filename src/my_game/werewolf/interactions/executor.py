@@ -3,10 +3,12 @@
 from typing import Protocol
 
 from my_game.core.logger import get_logger
+from my_game.werewolf.assets import Dialogue
 from my_game.werewolf.interactions.definitions import (
     ChangeRoom,
     Describe,
     Effect,
+    EnterDialogue,
     InteractionData,
     ObjectKind,
     ObjectRef,
@@ -32,6 +34,8 @@ class InteractionContext(Protocol):
     def show_message(self, text: str) -> None: ...
 
     def change_room(self, room: RoomData) -> None: ...
+
+    def enter_dialogue_state(self, dialogue: Dialogue) -> None: ...
 
 
 class InteractionSystem:
@@ -59,5 +63,7 @@ class InteractionSystem:
                 ctx.show_message(text if text is not None else target.description)
             case ChangeRoom(room_id=room_id):
                 ctx.change_room(get_room(room_id))
+            case EnterDialogue(dialogue=dialogue):
+                ctx.enter_dialogue_state(dialogue)
             case unknown:
                 raise TypeError(f"Unsupported interaction effect: {unknown!r}")
