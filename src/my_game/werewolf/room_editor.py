@@ -740,10 +740,11 @@ class ObjectForm(CTkFrame):
         all_fields = list(fields(obj))
 
         # Skip collection fields when editing a room (props, characters, regions, etc.)
-        # These are managed through the add/delete UI buttons
-        non_editable_fields = set()
+        # These are managed through the add/delete UI buttons. Interaction rules need a
+        # dedicated editor, so they are read-only in the generic object form for now.
+        non_editable_fields = {"interactions"}
         if isinstance(obj, RoomData):
-            non_editable_fields = {"props", "hotspots", "characters", "regions", "points", "walkable_areas"}
+            non_editable_fields |= {"props", "hotspots", "characters", "regions", "points", "walkable_areas"}
         force_image_if_none = {"image", "walk_image", "normal_image", "normal_walk_image"}
 
         # Create two-column layout

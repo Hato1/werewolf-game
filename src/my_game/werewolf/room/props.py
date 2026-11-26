@@ -14,6 +14,7 @@ BACKGROUND = PropData(
     size=(960, 540),
     clickable=False,
     depth=9999,
+    id="background",
 )
 
 STUDIO = PropData(
@@ -24,6 +25,7 @@ STUDIO = PropData(
     scale=0.025,
     depth=0,
     walk_to_interact=True,
+    id="studio",
 )
 
 BACKGROUND_CHURCH_CEMETARY = PropData(
@@ -33,6 +35,7 @@ BACKGROUND_CHURCH_CEMETARY = PropData(
     scale=1,
     clickable=False,
     depth=9999,
+    id="church_cemetary_background",
 )
 
 BACKGROUND_INN = PropData(
@@ -42,6 +45,7 @@ BACKGROUND_INN = PropData(
     scale=1,
     clickable=False,
     depth=9999,
+    id="inn_background",
 )
 
 BACKGROUND_TOWN_CENTER = PropData(
@@ -51,6 +55,7 @@ BACKGROUND_TOWN_CENTER = PropData(
     size=(960 // 2, 540 // 2),
     clickable=False,
     depth=9999,
+    id="town_center_background",
 )
 
 BACKGROUND_TOWN_ENTRANCE = PropData(
@@ -60,6 +65,7 @@ BACKGROUND_TOWN_ENTRANCE = PropData(
     size=(960 // 2, 540 // 2),
     clickable=False,
     depth=9999,
+    id="town_entrance_background",
 )
 
 BACKGROUND_TOWN_HALL = PropData(
@@ -69,6 +75,7 @@ BACKGROUND_TOWN_HALL = PropData(
     size=(960 // 2, 540 // 2),
     clickable=False,
     depth=9999,
+    id="town_hall_background",
 )
 
 BACKGROUND_WOODS = PropData(
@@ -78,6 +85,7 @@ BACKGROUND_WOODS = PropData(
     scale=1,
     clickable=False,
     depth=9999,
+    id="woods_background",
 )
 
 GRAVEYARD_CHAINS = PropData(
@@ -89,4 +97,5 @@ GRAVEYARD_CHAINS = PropData(
     clickable=True,
     depth=500,
     walk_to_interact=True,
+    id="graveyard_chains",
 )

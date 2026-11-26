@@ -65,6 +65,7 @@ class Prop:
         depth: Rendering depth (higher values render on top).
         baseline: Reference point for prop positioning relative to its sprite.
         walk_to_interact: Whether the player walks up to the prop before its interaction triggers.
+        id: Stable identifier for interaction references.
     """
 
     name: str
@@ -81,6 +82,7 @@ class Prop:
     depth: int
     baseline: int
     walk_to_interact: bool = False
+    id: str = ""
 
     @classmethod
     def from_prop_data(cls, data: PropData) -> Self:
@@ -106,6 +108,7 @@ class Prop:
             data.depth,
             data.baseline,
             data.walk_to_interact,
+            id=data.id,
         )
         return prop
 
@@ -151,6 +154,7 @@ class Character:
         loop: Whether to restart the path once the last waypoint is reached.
         facing_left: Whether the sprite is mirrored to face left.
         walking: Whether the character moved during the last update.
+        id: Stable identifier for interaction references.
     """
 
     SPEED = 200.0
@@ -172,6 +176,7 @@ class Character:
     walking: bool = False
     frame_index: int = 0
     frame_time: float = 0.0
+    id: str = ""
 
     @classmethod
     def from_character_data(cls, data: CharacterData) -> Self:
@@ -217,6 +222,7 @@ class Character:
             data.speed,
             data.path,
             loop=data.loop,
+            id=data.id,
         )
         return character
 
@@ -352,11 +358,13 @@ class Hotspot:
         name: Hotspot's display name.
         description: Hotspot's description.
         polygon: List of coordinate tuples defining the hotspot's shape.
+        id: Stable identifier for interaction references.
     """
 
     name: str
     description: str
     polygon: Polygon
+    id: str = ""
 
     @classmethod
     def from_hotspot_data(cls, data: HotspotData) -> Self:
@@ -382,11 +390,15 @@ class Region:
 
     Attributes:
         name: Region's display name.
+        description: Region's description.
         polygon: List of coordinate tuples defining the region's shape.
+        id: Stable identifier for interaction references.
     """
 
     name: str
-    polygon: Polygon
+    description: str = ""
+    polygon: Polygon = ()
+    id: str = ""
 
     def enter(self):
         """Called when the player enters the region."""
@@ -402,18 +414,39 @@ class Region:
 
     @classmethod
     def from_region_data(cls, data: RegionData) -> Self:
-        region = cls(data.name, data.polygon)
+        region = cls(
+            data.name,
+            data.description,
+            data.polygon,
+            id=data.id,
+        )
         return region
 
 
 @dataclass(frozen=True)
 class NamedPoint:
+    """A named location in a room.
+
+    Attributes:
+        name: Point's display name.
+        description: Point's description.
+        position: Coordinates of the point.
+        id: Stable identifier for interaction references.
+    """
+
     name: str
-    position: tuple[int, int]
+    description: str = ""
+    position: tuple[int, int] = (0, 0)
+    id: str = ""
 
     @classmethod
     def from_point_data(cls, data: NamedPointData) -> Self:
-        return cls(data.name, data.position)
+        return cls(
+            data.name,
+            data.description,
+            data.position,
+            id=data.id,
+        )
 
 
 @dataclass
@@ -476,6 +509,13 @@ class Room:
         for prop in sorted(self.props, key=lambda p: p.depth, reverse=True):
             if prop.visible and prop.clickable and prop.rect.collidepoint(point):
                 return prop
+        return None
+
+    def get_clicked_character(self, point: Point) -> Character | None:
+        """Return the topmost character at the given point."""
+        for character in sorted(self.characters, key=lambda c: c.depth, reverse=True):
+            if character.rect.collidepoint(point):
+                return character
         return None
 
     def on_enter(self, renderer: Renderer) -> None:

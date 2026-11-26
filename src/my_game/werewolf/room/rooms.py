@@ -64,6 +64,7 @@ TEST_ROOM = RoomData(
 CHURCH_CEMETARY = RoomData(
     name="Church Cemetary Room",
     description="A room set in the church cemetary.",
+    id="church_cemetary",
     props=(
         props.BACKGROUND_CHURCH_CEMETARY,
         PropData(

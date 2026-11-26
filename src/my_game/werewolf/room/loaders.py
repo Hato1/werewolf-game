@@ -29,6 +29,7 @@ class CharacterData:
     depth: int = 0
     path: tuple[Point, ...] = ()
     loop: bool = False
+    id: str = ""
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,7 @@ class HotspotData:
     name: str
     description: str
     polygon: Polygon = field(default_factory=tuple)
+    id: str = ""
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,7 @@ class PropData:
     depth: int = 0
     baseline: int = 0
     walk_to_interact: bool = False
+    id: str = ""
 
 
 @dataclass(frozen=True)
@@ -68,6 +71,7 @@ class RegionData:
     name: str
     description: str
     polygon: Polygon = field(default_factory=tuple)
+    id: str = ""
 
 
 @dataclass(frozen=True)
@@ -77,6 +81,7 @@ class NamedPointData:
     name: str
     description: str
     position: Point
+    id: str = ""
 
 
 @dataclass(frozen=True)
@@ -91,3 +96,4 @@ class RoomData:
     regions: tuple[RegionData, ...] = field(default_factory=tuple)
     points: tuple[NamedPointData, ...] = field(default_factory=tuple)
     walkable_areas: tuple[Polygon, ...] = field(default_factory=tuple)
+    id: str = ""

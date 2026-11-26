@@ -10,6 +10,7 @@ PLAYER = CharacterData(
     position=(240, 75),
     walk_image=Images.MC_WALK,
     scale=1,
+    id="player",
 )
 
 
@@ -20,4 +21,5 @@ TEST_CHARACTER = CharacterData(
     position=(80, 60),
     walk_image=Images.MC_WALK,
     scale=1,
+    id="test_character",
 )
