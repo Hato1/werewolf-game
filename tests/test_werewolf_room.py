@@ -85,14 +85,14 @@ def test_hidden_props_are_not_drawn() -> None:
     assert renderer.surface.get_at((0, 0)) == pg.Color("black")
 
 
-def test_main_menu_opens_registered_test_room() -> None:
+def test_main_menu_opens_registered_room() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
 
     menu = MainMenu()
     room_state = RoomTest()
 
-    assert menu.buttons[0].next_state is WerewolfState.TEST_ROOM
+    assert menu.buttons[0].next_state is WerewolfState.ROOM
 
     room_state.handle_event({Action.UI_CANCEL}, pg.event.Event(pg.KEYDOWN, key=pg.K_ESCAPE))
 

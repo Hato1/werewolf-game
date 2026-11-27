@@ -10,6 +10,7 @@ class WerewolfState(StrEnum):
     MAIN_MENU = auto()
     PROLOGUE = auto()
     TEST_ROOM = auto()
+    ROOM = auto()
     RENDER_TEST = auto()
     OPTIONS_MENU = auto()
 

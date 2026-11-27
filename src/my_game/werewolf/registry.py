@@ -8,6 +8,7 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 from my_game.werewolf.states.main_menu import MainMenu
 from my_game.werewolf.states.options_menu import OptionsMenu
 from my_game.werewolf.states.render_test import RenderTest
+from my_game.werewolf.states.room_state import RoomState
 from my_game.werewolf.states.room_test import RoomTest
 
 STATE_FACTORIES: dict[
@@ -16,6 +17,7 @@ STATE_FACTORIES: dict[
 ] = {
     WerewolfState.MAIN_MENU: MainMenu,
     WerewolfState.TEST_ROOM: RoomTest,
+    WerewolfState.ROOM: RoomState,
     WerewolfState.RENDER_TEST: RenderTest,
     WerewolfState.OPTIONS_MENU: OptionsMenu,
 }

@@ -60,9 +60,9 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     # Distance from bottom of the screen to display the message in pixels.
     MESSAGE_DISPLAY_OFFSET = 8
 
-    def __init__(self, room: RoomData) -> None:
+    def __init__(self, room: RoomData | None = None) -> None:
         super().__init__()
-        self.room = Room.from_room_data(room)
+        self.room = Room.from_room_data(room or rooms.INN)
         self.message_font = Fonts.PICO8.load(self.MESSAGE_FONT_SIZE)
         # By having only one message surface, we ensure that only one message is shown at a time.
         self.message_surface: pg.Surface | None = None
@@ -173,6 +173,9 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             # Example: Add a test item to the inventory
             test_prop = Prop.from_prop_data(props.GRAVEYARD_CHAINS)
             self.ui.inventory.add_item(test_prop)
+        elif Action.UI_CANCEL in actions:
+            self.done = True
+            self.next_state = WerewolfState.MAIN_MENU
 
     def update(self, dt: float, input_state: InputState) -> None:
         self.player.update(dt, input_state)
