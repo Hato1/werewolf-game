@@ -28,6 +28,7 @@ TEST_ROOM = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="Prop2",
@@ -59,6 +60,7 @@ TEST_ROOM = RoomData(
                     once=False,
                 ),
             ),
+            background=False,
         ),
     ),
     characters=(),
@@ -108,6 +110,7 @@ CHURCH_CEMETARY = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(
@@ -120,6 +123,7 @@ CHURCH_CEMETARY = RoomData(
             position=(240, 75),
             walk_image=Images.CHAR_GRNDK,
             normal_walk_image=None,
+            portrait=Images.GRNDK_FACE1,
             scale=1.0,
             size=None,
             speed=200.0,
@@ -169,6 +173,7 @@ INN = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="tankard",
@@ -187,6 +192,7 @@ INN = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="table",
@@ -205,6 +211,7 @@ INN = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="lamp",
@@ -223,6 +230,7 @@ INN = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(
@@ -235,6 +243,7 @@ INN = RoomData(
             position=(76, 79),
             walk_image=Images.CHAR_INNK,
             normal_walk_image=None,
+            portrait=Images.INNK_FACE1,
             scale=1.0,
             size=None,
             speed=200.0,
@@ -325,6 +334,7 @@ TOWN_CENTER = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(),
@@ -355,6 +365,7 @@ TOWN_ENTRANCE = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="ammo",
@@ -373,6 +384,7 @@ TOWN_ENTRANCE = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="supplies",
@@ -391,6 +403,7 @@ TOWN_ENTRANCE = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="oil jug",
@@ -409,6 +422,7 @@ TOWN_ENTRANCE = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="peddler stall",
@@ -427,6 +441,7 @@ TOWN_ENTRANCE = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(
@@ -439,6 +454,7 @@ TOWN_ENTRANCE = RoomData(
             position=(155, 91),
             walk_image=Images.CHAR_MERCHANT,
             normal_walk_image=None,
+            portrait=Images.MERCHANT_FACE1,
             scale=1.0,
             size=None,
             speed=200.0,
@@ -489,6 +505,7 @@ TOWN_HALL = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="Tree and Cart",
@@ -507,6 +524,7 @@ TOWN_HALL = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(),
@@ -538,6 +556,7 @@ WOODS = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="pie tin",
@@ -556,6 +575,7 @@ WOODS = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="tax collector corpse",
@@ -574,6 +594,7 @@ WOODS = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="box of coins",
@@ -592,6 +613,7 @@ WOODS = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="branch pile",
@@ -610,6 +632,7 @@ WOODS = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(),
@@ -640,6 +663,7 @@ INSIDE_TOWN_HALL = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="dresser",
@@ -658,6 +682,7 @@ INSIDE_TOWN_HALL = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="boots",
@@ -676,6 +701,7 @@ INSIDE_TOWN_HALL = RoomData(
             baseline=0,
             walk_to_interact=True,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(
@@ -688,6 +714,7 @@ INSIDE_TOWN_HALL = RoomData(
             position=(284, 56),
             walk_image=Images.CHAR_ELDER,
             normal_walk_image=None,
+            portrait=Images.ELDER_FACE1,
             scale=1.0,
             size=None,
             speed=200.0,
@@ -737,6 +764,7 @@ CHURCH_INTERIOR = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="clothes basket",
@@ -755,6 +783,7 @@ CHURCH_INTERIOR = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(
@@ -767,6 +796,7 @@ CHURCH_INTERIOR = RoomData(
             position=(160, 87),
             walk_image=Images.MC_WALK,
             normal_walk_image=None,
+            portrait=Images.NUN_FACE1,
             scale=1.0,
             size=None,
             speed=200.0,
@@ -816,6 +846,7 @@ SHED = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="door handle",
@@ -834,6 +865,7 @@ SHED = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="hook",
@@ -852,6 +884,7 @@ SHED = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="chest",
@@ -870,6 +903,7 @@ SHED = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
         PropData(
             id="rags",
@@ -888,6 +922,7 @@ SHED = RoomData(
             baseline=0,
             walk_to_interact=False,
             interactions=(),
+            background=False,
         ),
     ),
     characters=(),
