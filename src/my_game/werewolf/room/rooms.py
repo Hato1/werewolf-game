@@ -1,6 +1,6 @@
 """Room definitions for the werewolf game."""
 
-from my_game.werewolf.assets import Dialogue, Images
+from my_game.werewolf.assets import DialogueFile, Images
 from my_game.werewolf.interactions.definitions import ChangeRoom, EnterDialogue, InteractionData, Verb, WalkTo
 from my_game.werewolf.room import characters, props, regions  # noqa: F401
 from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
@@ -132,7 +132,7 @@ CHURCH_CEMETARY = RoomData(
                     verb=Verb.INTERACT,
                     effects=(
                         EnterDialogue(
-                            dialogue=Dialogue.GROUNDSKEEPER,
+                            dialogue=DialogueFile.GROUNDSKEEPER,
                         ),
                     ),
                     priority=0,
@@ -247,7 +247,7 @@ INN = RoomData(
                     verb=Verb.INTERACT,
                     effects=(
                         EnterDialogue(
-                            dialogue=Dialogue.INNKEEPER,
+                            dialogue=DialogueFile.INNKEEPER,
                         ),
                     ),
                     priority=0,
@@ -451,7 +451,7 @@ TOWN_ENTRANCE = RoomData(
                     verb=Verb.INTERACT,
                     effects=(
                         EnterDialogue(
-                            dialogue=Dialogue.PEDDLER,
+                            dialogue=DialogueFile.PEDDLER,
                         ),
                     ),
                     priority=0,
@@ -700,7 +700,7 @@ INSIDE_TOWN_HALL = RoomData(
                     verb=Verb.INTERACT,
                     effects=(
                         EnterDialogue(
-                            dialogue=Dialogue.MAYOR,
+                            dialogue=DialogueFile.MAYOR,
                         ),
                     ),
                     priority=0,
@@ -779,7 +779,7 @@ CHURCH_INTERIOR = RoomData(
                     verb=Verb.INTERACT,
                     effects=(
                         EnterDialogue(
-                            dialogue=Dialogue.NUN,
+                            dialogue=DialogueFile.NUN,
                         ),
                     ),
                     priority=0,

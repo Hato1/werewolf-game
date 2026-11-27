@@ -5,7 +5,7 @@ from functools import partial
 from typing import Protocol
 
 from my_game.core.logger import get_logger
-from my_game.werewolf.assets import Dialogue
+from my_game.werewolf.assets import DialogueFile
 from my_game.werewolf.interactions.definitions import (
     AllOf,
     AnyOf,
@@ -49,7 +49,7 @@ class InteractionContext(Protocol):
 
     def change_room(self, room: RoomData) -> None: ...
 
-    def enter_dialogue_state(self, dialogue: Dialogue) -> None: ...
+    def enter_dialogue_state(self, dialogue: DialogueFile) -> None: ...
 
     def walk_to(self, target: InteractionTarget, on_arrive: Callable[[], None]) -> None: ...
 

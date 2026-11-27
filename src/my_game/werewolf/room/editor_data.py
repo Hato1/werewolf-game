@@ -13,7 +13,7 @@ from enum import Enum
 from types import ModuleType
 from typing import Any
 
-from my_game.werewolf.assets import Dialogue, Images
+from my_game.werewolf.assets import DialogueFile, Images
 from my_game.werewolf.interactions.definitions import (
     AllOf,
     AnyOf,
@@ -145,7 +145,7 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
     lines.extend(additions)
     updated = "\n".join(lines).rstrip() + "\n"
 
-    asset_names = {asset_type.__name__ for asset_type in (Images, Dialogue) if f"{asset_type.__name__}." in updated}
+    asset_names = {asset_type.__name__ for asset_type in (Images, DialogueFile) if f"{asset_type.__name__}." in updated}
     if asset_names:
         updated = _set_import(updated, "my_game.werewolf.assets", asset_names)
 

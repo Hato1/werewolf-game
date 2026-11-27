@@ -215,7 +215,7 @@ class Fonts(Enum):
 
 
 @unique
-class Dialogue(Enum):
+class DialogueFile(Enum):
     # Is this a sane way to handle storing/retrieving passages of text?
     GROUNDSKEEPER = "groundskeeper.yarn"
     INNKEEPER = "innkeeper.yarn"

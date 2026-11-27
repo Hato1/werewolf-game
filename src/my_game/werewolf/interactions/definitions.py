@@ -8,7 +8,7 @@ written back to Python source by the room editor. Runtime behaviour lives in
 from dataclasses import dataclass
 from enum import StrEnum, auto
 
-from my_game.werewolf.assets import Dialogue
+from my_game.werewolf.assets import DialogueFile
 
 
 class Verb(StrEnum):
@@ -101,7 +101,7 @@ class ChangeRoom(Effect):
 class EnterDialogue(Effect):
     """Enter a dialogue with the given ID."""
 
-    dialogue: Dialogue
+    dialogue: DialogueFile
 
 
 @dataclass(frozen=True)

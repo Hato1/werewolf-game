@@ -12,7 +12,7 @@ import pygame as pg
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
-from my_game.werewolf.assets import Dialogue, Fonts
+from my_game.werewolf.assets import DialogueFile, Fonts
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.interactions.definitions import ObjectKind, Verb
 from my_game.werewolf.interactions.executor import InteractionSystem, InteractionTarget
@@ -109,7 +109,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
             return
         self.active_region_ids = current_regions
 
-    def enter_dialogue_state(self, dialogue: Dialogue) -> None:
+    def enter_dialogue_state(self, dialogue: DialogueFile) -> None:
         """Enter a dialogue state with the given dialogue."""
 
         # Add to transition data here.

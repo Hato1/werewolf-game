@@ -6,8 +6,8 @@ from my_game.constants import DIALOGUE_ANTI_ALIAS, DIALOGUE_FONT_SIZE, SCREEN_SI
 from my_game.core.logger import get_logger
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
-from my_game.werewolf.assets import Fonts
-from my_game.werewolf.controllers.dialogue import Dialogue, Line
+from my_game.werewolf.assets import DialogueFile, Fonts
+from my_game.werewolf.controllers.dialogue import DialogueParser, Line
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room.characters import PLAYER, TEST_CHARACTER
 from my_game.werewolf.room.props import BACKGROUND_TOWN_HALL
@@ -148,7 +148,7 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
         self.player: Converser
         self.talker: Converser
 
-        self.dialogue: Dialogue
+        self.dialogue_parser: DialogueParser
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer):
         self.transition_data = transition_data
@@ -163,14 +163,16 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
         self.talker = Converser("Test Character", TEST_CHARACTER.image.load())
 
         # dialogue
-        self.dialogue = Dialogue(self.player.name, self.talker.name)
+        if not self.transition_data.dialogue:
+            raise ValueError("No dialogue provided in transition data to dialogue state")
+        self.dialogue_parser = DialogueParser(self.player.name, self.talker.name, self.transition_data.dialogue)
         self.next_line()
 
     def next_line(self):
-        if not self.dialogue:
+        if not self.dialogue_parser:
             logger.error("No dialogue object")
             return
-        line = self.dialogue.get_next_line()
+        line = self.dialogue_parser.get_next_line()
 
         if not line:
             logger.error("No line returned")

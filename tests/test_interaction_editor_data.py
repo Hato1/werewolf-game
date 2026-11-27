@@ -2,7 +2,7 @@
 
 import pytest
 
-from my_game.werewolf.assets import Dialogue
+from my_game.werewolf.assets import DialogueFile
 from my_game.werewolf.interactions.definitions import (
     AllOf,
     AnyOf,
@@ -36,7 +36,7 @@ def test_definitions_round_trip_through_editor_values() -> None:
         Describe(text="Hello."),
         WalkTo(),
         ChangeRoom(room_id="church_cemetary"),
-        EnterDialogue(dialogue=Dialogue.MAYOR),
+        EnterDialogue(dialogue=DialogueFile.MAYOR),
         SetFlag(flag="seen", value=True),
         FlagIs(flag="ready"),
         FlagIs(flag="blocked", value=False),
