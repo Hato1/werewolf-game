@@ -282,6 +282,23 @@ class Character:
     def rect(self) -> pg.Rect:
         return self.sprite.get_rect(topleft=self.position)
 
+    @property
+    def feet_rect(self) -> pg.Rect:
+        """A rect centered around the character's feet approximately.
+
+        Currently unused, but could be used for collision detection.
+        """
+        return pg.Rect(
+            self.position_int[0] + self.rect.width * 0.3,
+            self.position_int[1] + self.rect.height * 0.9,
+            self.rect.width * 0.4,
+            self.rect.height * 0.10,
+        )
+
+    @property
+    def feet_position(self) -> tuple[int, int]:
+        return self.feet_rect.center
+
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).
 
@@ -324,6 +341,12 @@ class Character:
         renderer(self.sprite, self.rect)
         if self.normal_sprite:
             renderer(self.normal_sprite, self.rect, to_normal=True)
+
+        # Draw a rect at the character's feet for debugging purposes.
+        # surface = pg.Surface(self.feet_rect.size)
+        # surface.fill(pg.Color("red"))
+        # rect = surface.get_rect(center=self.feet_rect.center)
+        # renderer(surface, rect)
 
     def contains_point(self, point: Point) -> bool:
         """Check if the point is within the prop's clickable area."""
