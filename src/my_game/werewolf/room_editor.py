@@ -6,10 +6,11 @@ Type ignore statements are used for the following unavoidable issues:
 - Optional value indexing: Occurs with optional list items from form state
 """
 
+import argparse
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
-from tkinter import Event
+from tkinter import Event, TclError
 from tkinter.constants import LEFT, NW, TOP
 from typing import Any, NamedTuple, TypeVar, cast
 
@@ -49,9 +50,13 @@ logger = get_logger(__name__)
 ItemT = TypeVar("ItemT", PropData, CharacterData, RegionData, NamedPointData)
 TYPES = PropData | CharacterData | RegionData | NamedPointData
 
+parser = argparse.ArgumentParser()
+parser.add_argument("scale", type=int, nargs="?", help="Scale the room viewport by this value", default=2)
+args = parser.parse_args()
+
 DEFAULT_THEME = "dark-blue"
 NATIVE_WINDOW_RESOLUTION = (480, 208)
-MULTIPLIER = 2  # Adjust this if you want to scale the room canvas size
+MULTIPLIER = args.scale
 SCALED_WINDOW_RESOLUTION = (NATIVE_WINDOW_RESOLUTION[0] * MULTIPLIER, NATIVE_WINDOW_RESOLUTION[1] * MULTIPLIER)
 
 
@@ -1034,9 +1039,18 @@ class ObjectForm(CTkFrame):
         return changes
 
 
+def maximize_window(app: CTk):
+    try:
+        # Windows & macOS
+        app.state("zoomed")
+    except TclError:
+        # Linux (X11 / Wayland)
+        app.attributes("-zoomed", True)  # noqa: FBT003
+
+
 class RoomEditor(CTk):
     SPACING = 20
-    DEFAULT_SCALING = "100%"
+    DEFAULT_SCALING = "100%" if args.scale <= 2 else "200%"  # noqa: PLR2004
 
     LEFT_SIDEBAR_WIDTH = 140
     RIGHT_SIDEBAR_WIDTH = 140
@@ -1045,10 +1059,13 @@ class RoomEditor(CTk):
         super().__init__()
 
         # Set window size and scaling
-        default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 300)
-        default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.9)
-        self.geometry(f"{default_width}x{default_height}")
+        # default_width = int(self.LEFT_SIDEBAR_WIDTH + SCALED_WINDOW_RESOLUTION[0] + self.RIGHT_SIDEBAR_WIDTH + 300)
+        # default_height = int(SCALED_WINDOW_RESOLUTION[1] * 1.9)
+        # # default_width = int(self.winfo_screenwidth() * 0.8)
+        # # default_height = int(self.winfo_screenheight() * 0.8)
+        # self.geometry(f"{default_width}x{default_height}+0+0")
         self._change_scaling_event(self.DEFAULT_SCALING)
+        maximize_window(self)
 
         # Load rooms
         room_data = named_values(rooms, RoomData)
