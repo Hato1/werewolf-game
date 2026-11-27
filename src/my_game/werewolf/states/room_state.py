@@ -4,6 +4,7 @@ This state handles displaying a room, responding to prop clicks,
 showing timed messages, and handling room transitions.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
@@ -97,6 +98,13 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def show_message(self, text: str) -> None:
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
         self.message_expires_at = pg.time.get_ticks() + self.MESSAGE_DURATION_MS
+
+    def walk_to(self, target: InteractionTarget, on_arrive: Callable[[], None]) -> None:
+        """Walk the player up to an interaction target before continuing its effects."""
+        rect = getattr(target, "rect", None)
+        if not isinstance(rect, pg.Rect):
+            raise TypeError(f"Interaction target {target!r} has no walkable rect.")
+        self.player.walk_to(rect, on_arrive)
 
     def interact_with(self, target: InteractionTarget) -> None:
         """Dispatch an INTERACT interaction on a room object."""

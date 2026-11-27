@@ -13,8 +13,17 @@ from enum import Enum
 from types import ModuleType
 from typing import Any
 
-from my_game.werewolf.assets import Images
-from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, InteractionData, ObjectKind, ObjectRef, Verb
+from my_game.werewolf.assets import Dialogue, Images
+from my_game.werewolf.interactions.definitions import (
+    ChangeRoom,
+    Describe,
+    EnterDialogue,
+    InteractionData,
+    ObjectKind,
+    ObjectRef,
+    Verb,
+    WalkTo,
+)
 from my_game.werewolf.room import characters, props
 from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
 
@@ -55,15 +64,15 @@ def _python_expression(value: Any, indent: int = 0, *, use_catalog: bool = True)
     if isinstance(value, Enum):
         return f"{type(value).__name__}.{value.name}"
     if is_dataclass(value):
+        members = fields(value)
+        if not members:
+            return f"{type(value).__name__}()"
         padding = " " * (indent + 4)
         arguments = [
-            f"{padding}{field.name}={_python_expression(getattr(value, field.name), indent + 4)},"
-            for field in fields(value)
+            f"{padding}{field.name}={_python_expression(getattr(value, field.name), indent + 4)}," for field in members
         ]
         return f"{type(value).__name__}(\n" + "\n".join(arguments) + f"\n{' ' * indent})"
     if isinstance(value, tuple):
-        if not value:
-            return "()"
         elements = ", ".join(_python_expression(item, indent) for item in value)
         return f"({elements}{',' if len(value) == 1 else ''})"
     return repr(value)
@@ -131,8 +140,9 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
     lines.extend(additions)
     updated = "\n".join(lines).rstrip() + "\n"
 
-    if "Images." in updated:
-        updated = _set_import(updated, "my_game.werewolf.assets", {"Images"})
+    asset_names = {asset_type.__name__ for asset_type in (Images, Dialogue) if f"{asset_type.__name__}." in updated}
+    if asset_names:
+        updated = _set_import(updated, "my_game.werewolf.assets", asset_names)
 
     used_types = {
         data_type.__name__
@@ -144,7 +154,7 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
 
     interaction_names = {
         definition.__name__
-        for definition in (ChangeRoom, Describe, InteractionData, ObjectRef)
+        for definition in (ChangeRoom, Describe, EnterDialogue, InteractionData, ObjectRef, WalkTo)
         if re.search(rf"\b{definition.__name__}\(", updated)
     }
     interaction_names.update(
@@ -189,6 +199,7 @@ def _restore_hotspot(raw_value: str) -> HotspotData | None:
     if value is None:
         return None
     return HotspotData(
+        id=value["id"],
         name=value["name"],
         description=value["description"],
         polygon=tuple(tuple(point) for point in value.get("polygon", ())),

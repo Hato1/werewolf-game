@@ -1,7 +1,7 @@
 """Room definitions for the werewolf game."""
 
 from my_game.werewolf.assets import Dialogue, Images
-from my_game.werewolf.interactions.definitions import ChangeRoom, EnterDialogue, InteractionData, Verb
+from my_game.werewolf.interactions.definitions import ChangeRoom, EnterDialogue, InteractionData, Verb, WalkTo
 from my_game.werewolf.room import characters, props, regions  # noqa: F401
 from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
 
@@ -47,7 +47,10 @@ TEST_ROOM = RoomData(
             interactions=(
                 InteractionData(
                     verb=Verb.INTERACT,
-                    effects=(ChangeRoom(room_id="church_cemetary"),),
+                    effects=(
+                        WalkTo(),
+                        ChangeRoom(room_id="church_cemetary"),
+                    ),
                 ),
             ),
         ),

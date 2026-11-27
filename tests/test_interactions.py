@@ -11,7 +11,7 @@ from my_game.core.input_manager import InputManager, InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, InteractionData, Verb
+from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, InteractionData, Verb, WalkTo
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.editor_data import update_room_source
 from my_game.werewolf.room.loaders import CharacterData, PropData, RoomData
@@ -118,19 +118,65 @@ def test_character_click_dispatches_its_interaction(monkeypatch: pytest.MonkeyPa
     assert messages == ["Hello!"]
 
 
+def make_walk_to_room_state(monkeypatch: pytest.MonkeyPatch) -> tuple[RoomState, list[str]]:
+    """Create a room whose prop walks to itself between two effects."""
+    prop = PropData(
+        id="far_prop",
+        name="Far prop",
+        description="A far away prop.",
+        image=props.STUDIO.image,
+        position=(100, 100),
+        interactions=(
+            InteractionData(
+                verb=Verb.INTERACT,
+                effects=(Describe("before"), WalkTo(), Describe("after")),
+            ),
+        ),
+    )
+    room_state = make_room_state(RoomData("Walk room", "Walk room", "A room with a prop.", props=(prop,)))
+    messages: list[str] = []
+    monkeypatch.setattr(room_state, "show_message", messages.append)
+    return room_state, messages
+
+
+def test_walk_to_defers_following_effects_until_arrival(monkeypatch: pytest.MonkeyPatch) -> None:
+    room_state, messages = make_walk_to_room_state(monkeypatch)
+
+    click(room_state, room_state.room.props[0].rect.center)
+
+    assert messages == ["before"]
+    assert room_state.player.target is not None
+    finish_player_walk(room_state)
+    assert messages == ["before", "after"]
+
+
+def test_cancelling_walk_to_skips_following_effects(monkeypatch: pytest.MonkeyPatch) -> None:
+    room_state, messages = make_walk_to_room_state(monkeypatch)
+
+    click(room_state, room_state.room.props[0].rect.center)
+    room_state.update(0.05, InputState(frozenset({Action.RIGHT}), {}))
+
+    assert room_state.player.target is None
+    idle: InputState = InputState(frozenset(), {})
+    for _ in range(300):
+        room_state.update(0.05, idle)
+    assert messages == ["before"]
+
+
 def test_interaction_definitions_survive_editor_source_generation() -> None:
     prop = PropData(
         name="Chains",
         id="chains",
         description="Chains.",
         image=Images.CHAINS_1,
-        interactions=(InteractionData(verb=Verb.INTERACT, effects=(ChangeRoom(room_id="church_cemetary"),)),),
+        interactions=(InteractionData(verb=Verb.INTERACT, effects=(WalkTo(), ChangeRoom(room_id="church_cemetary"))),),
     )
-    room = replace(RoomData(name="Test", description="Test room.", id="test_room"), props=(prop,))
+    room = replace(RoomData(id="test_room", name="Test", description="Test room."), props=(prop,))
 
     updated = update_room_source("ROOM = None\n", {"ROOM": room})
     ast.parse(updated)
 
     assert "Verb.INTERACT" in updated
+    assert "WalkTo()" in updated
     assert "ChangeRoom(" in updated
-    assert "from my_game.werewolf.interactions.definitions import ChangeRoom, InteractionData, Verb" in updated
+    assert "from my_game.werewolf.interactions.definitions import ChangeRoom, InteractionData, Verb, WalkTo" in updated

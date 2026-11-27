@@ -47,6 +47,13 @@ class Describe(Effect):
 
 
 @dataclass(frozen=True)
+class WalkTo(Effect):
+    """Walk the player up to the selected object before applying later effects."""
+
+    # No fields: the target is the object the interaction was dispatched on.
+
+
+@dataclass(frozen=True)
 class ChangeRoom(Effect):
     """Move the player to the room with the given ID."""
 
