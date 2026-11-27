@@ -40,7 +40,7 @@ def test_room_draws_visible_props_at_their_positions() -> None:
         position=(3, 4),
         visible=True,
         clickable=True,
-        hotspot=None,
+        clickable_area=None,
         scale=1.0,
         size=None,
         parallax=0.0,
@@ -48,7 +48,7 @@ def test_room_draws_visible_props_at_their_positions() -> None:
         baseline=0,
         walk_to_interact=False,
     )
-    room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
+    room = Room("test", "A test room.", props=[prop], characters=[])
 
     room.draw(renderer)
 
@@ -70,7 +70,7 @@ def test_hidden_props_are_not_drawn() -> None:
         position=(0, 0),
         visible=False,
         clickable=False,
-        hotspot=None,
+        clickable_area=None,
         scale=1.0,
         size=None,
         parallax=0.0,
@@ -78,7 +78,7 @@ def test_hidden_props_are_not_drawn() -> None:
         baseline=0,
         walk_to_interact=False,
     )
-    room = Room("test", "A test room.", props=[prop], hotspots=[], characters=[])
+    room = Room("test", "A test room.", props=[prop], characters=[])
 
     room.draw(renderer)
 

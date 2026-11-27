@@ -361,24 +361,6 @@ class RoomViewport(CTkFrame):
                 width=int(2 * MULTIPLIER),
             )
 
-        # for index, hotspot in enumerate(room.hotspots):
-        #     self._draw_polygon("hotspots", index, hotspot.polygon, "#00d8ff")
-
-        # for index, area in enumerate(room.walkable_areas):
-        #     self._draw_polygon("walkable_areas", index, area, "#ffffff")
-        # for index, point in enumerate(room.points):
-        #     x, y = self._canvas_scale(point[0]), self._canvas_scale(point[1])
-        #     radius = int(5 * self.scale)
-        #     self.room_canvas.create_oval(
-        #         x - radius,
-        #         y - radius,
-        #         x + radius,
-        #         y + radius,
-        #         fill="#ff55dd",
-        #         outline="",
-        #         tags=("content", f"points:{index}"),
-        #     )
-
     def start_region_creation(self) -> None:
         """Start creating a new region by clicking vertices."""
         self.creating_region = True
@@ -745,7 +727,7 @@ class ObjectForm(CTkFrame):
         # dedicated editor, so they are read-only in the generic object form for now.
         non_editable_fields = {"interactions"}
         if isinstance(obj, RoomData):
-            non_editable_fields |= {"props", "hotspots", "characters", "regions", "points", "walkable_areas"}
+            non_editable_fields |= {"props", "characters", "regions", "points", "walkable_areas"}
         force_image_if_none = {"image", "walk_image", "normal_image", "normal_walk_image"}
 
         # Create two-column layout

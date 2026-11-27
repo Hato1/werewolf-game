@@ -36,17 +36,6 @@ class CharacterData:
 
 
 @dataclass(frozen=True)
-class HotspotData:
-    """Data representation of a hotspot."""
-
-    id: str
-    name: str
-    description: str
-    polygon: Polygon = field(default_factory=tuple)
-    interactions: tuple[InteractionData, ...] = ()
-
-
-@dataclass(frozen=True)
 class PropData:
     """Data representation of a prop."""
 
@@ -59,7 +48,7 @@ class PropData:
     position: Point = (0, 0)
     visible: bool = True
     clickable: bool = True
-    hotspot: HotspotData | None = None
+    clickable_area: Polygon | None = None
     scale: float = 1.0
     size: tuple[int, int] | None = None
     parallax: float = 0.0
@@ -101,7 +90,6 @@ class RoomData:
     name: str
     description: str
     props: tuple[PropData, ...] = field(default_factory=tuple)
-    hotspots: tuple[HotspotData, ...] = field(default_factory=tuple)
     characters: tuple[CharacterData, ...] = field(default_factory=tuple)
     regions: tuple[RegionData, ...] = field(default_factory=tuple)
     points: tuple[NamedPointData, ...] = field(default_factory=tuple)

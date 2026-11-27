@@ -29,7 +29,6 @@ class ObjectKind(StrEnum):
     CHARACTER = auto()
     REGION = auto()
     POINT = auto()
-    HOTSPOT = auto()
 
 
 @dataclass(frozen=True)

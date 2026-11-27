@@ -25,7 +25,7 @@ from my_game.werewolf.interactions.definitions import (
     WalkTo,
 )
 from my_game.werewolf.room import characters, props
-from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
+from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
 
 
 def named_values[T](module: ModuleType, value_type: type[T]) -> dict[str, T]:
@@ -146,7 +146,7 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
 
     used_types = {
         data_type.__name__
-        for data_type in (CharacterData, HotspotData, PropData, RegionData, NamedPointData, RoomData)
+        for data_type in (CharacterData, PropData, RegionData, NamedPointData, RoomData)
         if re.search(rf"\b{data_type.__name__}\(", updated)
     }
     if used_types:
@@ -193,19 +193,6 @@ def _restore_tuple(raw_value: str) -> tuple[Any, ...]:
     return tuples(json.loads(raw_value))
 
 
-def _restore_hotspot(raw_value: str) -> HotspotData | None:
-    """Parse an optional nested hotspot from its JSON representation."""
-    value = json.loads(raw_value)
-    if value is None:
-        return None
-    return HotspotData(
-        id=value["id"],
-        name=value["name"],
-        description=value["description"],
-        polygon=tuple(tuple(point) for point in value.get("polygon", ())),
-    )
-
-
 def _restore_optional(raw_value: str, field_name: str) -> Any:
     """Parse an optional field whose current value does not reveal its type."""
     normalized = raw_value.strip()
@@ -224,8 +211,6 @@ def restore_value(raw_value: str, current: Any, field_name: str) -> Any:
         return Images[raw_value.strip()]
     if isinstance(current, tuple):
         return _restore_tuple(raw_value)
-    if field_name == "hotspot":
-        return _restore_hotspot(raw_value)
     if current is None:
         return _restore_optional(raw_value, field_name)
     converters: dict[type, Callable[[str], Any]] = {
@@ -246,8 +231,6 @@ def replace_room_contents(room: RoomData, kind: str, values: tuple[Any, ...]) ->
         return replace(room, props=values)
     if kind == "characters":
         return replace(room, characters=values)
-    if kind == "hotspots":
-        return replace(room, hotspots=values)
     if kind == "regions":
         return replace(room, regions=values)
     if kind == "points":

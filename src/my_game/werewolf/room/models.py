@@ -17,7 +17,6 @@ from my_game.werewolf.interactions.definitions import InteractionData
 from my_game.werewolf.room.geometry import Point, Polygon, point_in_polygon
 from my_game.werewolf.room.loaders import (
     CharacterData,
-    HotspotData,
     NamedPointData,
     PropData,
     RegionData,
@@ -71,7 +70,7 @@ class Prop:
         position: Top-left coordinate of the prop's sprite.
         visible: Whether the prop is drawn.
         clickable: Whether the prop can be interacted with.
-        hotspot: Optional interactive area within the prop.
+        clickable_area: Optional interactive area within the prop.
         scale: Uniform scale factor applied to the image (ignored when size is set).
         size: Exact pixel size to stretch the image to.
         parallax: Parallax effect factor.
@@ -90,7 +89,7 @@ class Prop:
     position: Point
     visible: bool
     clickable: bool
-    hotspot: Hotspot | None
+    clickable_area: Polygon | None
     scale: float
     size: tuple[int, int] | None
     parallax: float
@@ -117,7 +116,7 @@ class Prop:
             position=data.position,
             visible=data.visible,
             clickable=data.clickable,
-            hotspot=Hotspot.from_hotspot_data(data.hotspot) if data.hotspot is not None else None,
+            clickable_area=data.clickable_area,
             scale=data.scale,
             size=data.size,
             parallax=data.parallax,
@@ -152,9 +151,9 @@ class Prop:
         return self.sprite
 
     def contains_point(self, point: Point) -> bool:
-        """Check if the point is within the prop's clickable area or its hotspot."""
-        if self.hotspot is not None:
-            return self.hotspot.contains_point(point)
+        """Check if the point is within the prop's clickable area."""
+        if self.clickable_area:
+            return point_in_polygon(point, self.clickable_area)
         # TODO: Use pixel perfect collision with get_mask(self.sprite) and pg.Mask.overlap
         return self.rect.collidepoint(point)
 
@@ -327,7 +326,7 @@ class Character:
             renderer(self.normal_sprite, self.rect, to_normal=True)
 
     def contains_point(self, point: Point) -> bool:
-        """Check if the point is within the prop's clickable area or its hotspot."""
+        """Check if the point is within the prop's clickable area."""
         # TODO: Use pixel perfect collision with get_mask(self.sprite) and pg.Mask.overlap
         return self.rect.collidepoint(point)
 
@@ -385,50 +384,6 @@ class Player(Character):
             self.cancel_walk()
             if on_arrive is not None:
                 on_arrive()
-
-
-@dataclass
-class Hotspot:
-    """Hotspot represents an interactive area within a room.
-
-    TODO: Delete Hotspot class, region class fulfills its purpose.
-
-    Attributes:
-        name: Hotspot's display name.
-        description: Hotspot's description.
-        polygon: List of coordinate tuples defining the hotspot's shape.
-        id: Stable identifier for interaction references.
-        interactions: Interaction rules attached to this hotspot.
-    """
-
-    id: str
-    name: str
-    description: str
-    polygon: Polygon
-    interactions: tuple[InteractionData, ...] = ()
-
-    @classmethod
-    def from_hotspot_data(cls, data: HotspotData) -> Self:
-        hotspot = cls(
-            id=data.id,
-            name=data.name,
-            description=data.description,
-            polygon=data.polygon,
-            interactions=data.interactions,
-        )
-        return hotspot
-
-    def look(self):
-        """Called when the player uses the 'look' verb on the hotspot."""
-        pass
-
-    def use(self):
-        """Called when the player uses the 'use' verb on the hotspot."""
-        pass
-
-    def contains_point(self, point: Point) -> bool:
-        """Check if the given point is within the hotspot's polygon."""
-        return point_in_polygon(point, self.polygon)
 
 
 @dataclass
@@ -514,7 +469,6 @@ class Room:
         name: Room's display name.
         description: Room's description.
         props: Objects within the room, including the background.
-        hotspots: Interactive areas within the room.
         characters: Entities within the room that the player can converse with.
         regions: Distinct areas within the room with specific properties or rules.
         points: Specific coordinates within the room of interest.
@@ -527,7 +481,6 @@ class Room:
     description: str
     props: list[Prop] = field(default_factory=list)
     characters: list[Character] = field(default_factory=list)
-    hotspots: list[Hotspot] = field(default_factory=list)
     regions: list[Region] = field(default_factory=list)
     points: list[NamedPoint] = field(default_factory=list)
     walkable_areas: list[Polygon] = field(default_factory=list)
@@ -541,7 +494,6 @@ class Room:
             description=data.description,
             props=[Prop.from_prop_data(prop) for prop in data.props],
             characters=[Character.from_character_data(ch) for ch in data.characters],
-            hotspots=[Hotspot.from_hotspot_data(hs) for hs in data.hotspots],
             regions=[Region.from_region_data(r) for r in data.regions],
             points=[NamedPoint.from_point_data(p) for p in data.points],
             walkable_areas=list(data.walkable_areas),
