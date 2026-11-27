@@ -25,6 +25,7 @@ class CharacterData:
     position: Point = (0, 0)
     walk_image: Images | None = None
     normal_walk_image: Images | None = None
+    portrait: Images | None = None
     scale: float = 1.0
     size: tuple[int, int] | None = None
     speed: float = 200.0
