@@ -19,14 +19,9 @@ Ideally, by figuring out which components and behaviors are common to all dialog
 by reducing redundancies where possible.
 """
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
-from my_game.werewolf.assets import Fonts
-
-if __import__("sys").platform == "emscripten":
-    from platform import window  # type: ignore[attr-defined]
+from my_game.werewolf.assets import DialogueFile, Fonts
 
 
 @dataclass
@@ -43,7 +38,7 @@ class Node:
     lines: list
 
 
-class Dialogue:
+class DialogueParser:
     FONT = Fonts.PICO8.load(6)
     unique_id = None
     char_id = None
@@ -51,15 +46,8 @@ class Dialogue:
     script = None  # array of messages
     responses = None  # optional array of responses to load new dialogues or end current one
 
-    def __find_read_node(self, file: Path, title: str) -> Node:
-
-        dialogue = ""
-        if sys.platform == "emscripten":
-            dialogue_file = window.localStorage.getItem(file.stem)
-            print(dialogue_file)
-        else:
-            dialogue_file = Path.open(file)
-            dialogue = dialogue_file.read()
+    def __find_read_node(self, dialogue_file: DialogueFile, title: str) -> Node:
+        dialogue = dialogue_file.load()
 
         lines = dialogue.split("\n")
         node = Node(title, [])
@@ -96,16 +84,15 @@ class Dialogue:
             self.pos += 1
         return line
 
-    def __init__(self, char_id, npc_id):
+    def __init__(self, char_id, npc_id, dialogue: DialogueFile):
         self.char_id = char_id
         self.npc_id = npc_id
         self.act = 1  # Will be updated when there are multiple phases
         # self.inventory = saved
         # self.knoweldge = saved
-        self.file = Path("src/my_game/werewolf/assets/dialogue/dialogue_test.yarn")
         self.Node: Node | None = None
         self.pos = 0
-        self.node = self.__find_read_node(self.file, "Start")
+        self.node = self.__find_read_node(dialogue, "Start")
 
     # def write_text(self, screen: pg.Surface, text):
     #     anti_alias = True

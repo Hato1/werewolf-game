@@ -6,7 +6,7 @@ from my_game.constants import DIALOGUE_ANTI_ALIAS, DIALOGUE_FONT_SIZE, SCREEN_SI
 from my_game.core.logger import get_logger
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
-from my_game.werewolf.assets import DialogueFile, Fonts
+from my_game.werewolf.assets import Fonts
 from my_game.werewolf.controllers.dialogue import DialogueParser, Line
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.room.characters import PLAYER, TEST_CHARACTER
