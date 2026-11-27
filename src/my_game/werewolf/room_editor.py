@@ -8,11 +8,12 @@ Type ignore statements are used for the following unavoidable issues:
 
 import argparse
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
+from enum import Enum
 from pathlib import Path
-from tkinter import Event, TclError
+from tkinter import Event, Misc, TclError
 from tkinter.constants import LEFT, NW, TOP
-from typing import Any, NamedTuple, TypeVar, cast
+from typing import Any, Literal, NamedTuple, TypeVar, cast, get_args, get_origin
 
 from customtkinter import (
     CTk,
@@ -40,6 +41,8 @@ from PIL import Image, ImageTk
 
 from my_game.core.logger import get_logger
 from my_game.werewolf.assets import Images
+from my_game.werewolf.interactions import editor_data as interaction_editor_data
+from my_game.werewolf.interactions.definitions import Condition, Effect, InteractionData, Verb
 from my_game.werewolf.room import rooms
 from my_game.werewolf.room.editor_data import named_values, update_room_source
 from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
@@ -585,6 +588,257 @@ class MainTabview(CTkTabview):
             tab_data.selector_button.set("")
 
 
+DefinitionKind = Literal["condition", "effect"]
+
+
+def _definition_types(kind: DefinitionKind) -> tuple[type[Condition | Effect], ...]:
+    """Return the selectable definition classes for a kind."""
+    if kind == "condition":
+        return interaction_editor_data.CONDITION_TYPES
+    return interaction_editor_data.EFFECT_TYPES
+
+
+class DefinitionWidget(CTkFrame):
+    """Edit one condition or effect definition using dataclass-driven fields."""
+
+    def __init__(
+        self,
+        master: CTkFrame,
+        kind: DefinitionKind,
+        value: Condition | Effect | dict[str, Any] | None = None,
+        room_ids: Sequence[str] = (),
+    ) -> None:
+        super().__init__(master)
+        self.kind = kind
+        self.room_ids = tuple(room_ids)
+        self.field_widgets: dict[str, object] = {}
+        self.type_menu: CTkOptionMenu
+        self._rebuild(value)
+
+    def _rebuild(self, value: Condition | Effect | dict[str, Any] | None) -> None:
+        """Rebuild widgets for the currently selected definition type."""
+        for child in self.winfo_children():
+            cast(Any, child).destroy()
+        self.field_widgets.clear()
+
+        types = _definition_types(self.kind)
+        names = tuple(definition_type.__name__ for definition_type in types)
+        if isinstance(value, dict):
+            selected_type = str(value.get("type", names[0]))
+        elif value is not None:
+            selected_type = type(value).__name__
+        else:
+            selected_type = names[0]
+        if selected_type not in names:
+            selected_type = names[0]
+
+        self.type_menu = CTkOptionMenu(self, values=list(names), command=self._on_type_change)
+        self.type_menu.set(selected_type)
+        self.type_menu.pack(side="left")
+
+        self.fields_frame = CTkFrame(self)
+        self.fields_frame.pack(side="left", fill="x", expand=True)
+
+        definition_type = interaction_editor_data.DEFINITION_REGISTRY[selected_type]
+        if isinstance(value, dict):
+            values = value
+        elif value is not None:
+            values = interaction_editor_data.definition_to_dict(value)
+        else:
+            values = {}
+        for field_info in fields(cast(Any, definition_type)):
+            field_row = CTkFrame(self.fields_frame)
+            field_row.pack(fill="x", pady=1)
+            CTkLabel(field_row, text=field_info.name, width=80, anchor="w").pack(side="left")
+            widget = self._make_field_widget(field_row, field_info.name, field_info.type, values.get(field_info.name))
+            cast(Any, widget).pack(side="left", fill="x", expand=True)
+            self.field_widgets[field_info.name] = widget
+
+    def _on_type_change(self, value: str) -> None:
+        """Rebuild fields for the definition type chosen in the dropdown."""
+        self._rebuild({"type": value})
+
+    def _make_field_widget(self, master: CTkFrame, field_name: str, field_type: Any, current: Any) -> Misc:
+        """Create a widget appropriate for one definition field."""
+        if field_type is bool:
+            widget = CTkSwitch(master, text="")
+            widget.select() if current else widget.deselect()
+            return widget
+
+        if field_name == "room_id" and self.room_ids:
+            room_widget = CTkOptionMenu(master, values=list(self.room_ids))
+            room_widget.set(str(current) if current in self.room_ids else self.room_ids[0])
+            return room_widget
+
+        if isinstance(field_type, type) and issubclass(field_type, Enum):
+            enum_widget = CTkOptionMenu(master, values=[member.name for member in field_type])
+            enum_widget.set(str(current) if current is not None else next(iter(field_type)).name)
+            return enum_widget
+
+        if field_type is Condition or (isinstance(field_type, type) and issubclass(field_type, Condition)):
+            return DefinitionWidget(master, "condition", current, self.room_ids)
+
+        origin = get_origin(field_type)
+        if origin is tuple:
+            item_type = next(iter(get_args(field_type)), None)
+            if item_type is Condition or (isinstance(item_type, type) and issubclass(item_type, Condition)):
+                current_definitions = current if isinstance(current, list) else []
+                return DefinitionListWidget(master, "condition", current_definitions, self.room_ids)
+
+        entry = CTkEntry(master)
+        if current is not None:
+            entry.insert(0, str(current))
+        return entry
+
+    def get_value(self) -> dict[str, Any]:
+        """Return the widget-friendly dictionary represented by this row."""
+        result: dict[str, Any] = {"type": self.type_menu.get()}
+        for name, widget in self.field_widgets.items():
+            if isinstance(widget, CTkSwitch):
+                result[name] = bool(widget.get())
+            elif isinstance(widget, (CTkOptionMenu, CTkEntry)):
+                result[name] = widget.get()
+            elif isinstance(widget, (DefinitionWidget, DefinitionListWidget)):
+                result[name] = widget.get_value()
+        return result
+
+
+class DefinitionListWidget(CTkFrame):
+    """Edit an ordered list of conditions or effects."""
+
+    def __init__(
+        self,
+        master: CTkFrame | CTkScrollableFrame,
+        kind: DefinitionKind,
+        values: Sequence[dict[str, Any]] = (),
+        room_ids: Sequence[str] = (),
+    ) -> None:
+        super().__init__(master)
+        self.kind = kind
+        self.room_ids = tuple(room_ids)
+        self.rows: list[DefinitionWidget] = []
+
+        self.rows_frame = CTkFrame(self)
+        self.rows_frame.pack(fill="x")
+        for value in values:
+            self._add_row(value)
+
+        self.add_button = CTkButton(
+            self,
+            text=f"Add {'condition' if kind == 'condition' else 'effect'}",
+            command=self._add_row,
+        )
+        self.add_button.pack(fill="x", pady=(3, 0))
+
+    def _add_row(self, value: dict[str, Any] | None = None) -> None:
+        """Append an editable definition row."""
+        row_frame = CTkFrame(self.rows_frame)
+        row_frame.pack(fill="x", pady=2)
+
+        definition_widget = DefinitionWidget(row_frame, self.kind, value, self.room_ids)
+        definition_widget.pack(side="left", fill="x", expand=True)
+
+        remove_button = CTkButton(
+            row_frame,
+            text="X",
+            width=28,
+            command=lambda: self._remove_row(row_frame, definition_widget),  # type: ignore[misc]
+        )
+        remove_button.pack(side="right")
+        self.rows.append(definition_widget)
+
+    def _remove_row(self, row_frame: CTkFrame, definition_widget: DefinitionWidget) -> None:
+        """Remove a definition row."""
+        self.rows.remove(definition_widget)
+        row_frame.destroy()
+
+    def get_value(self) -> list[dict[str, Any]]:
+        """Return all rows as widget-friendly dictionaries."""
+        return [row.get_value() for row in self.rows]
+
+
+class InteractionEditorDialog(CTkToplevel):
+    """Modal editor for a single interaction definition."""
+
+    def __init__(
+        self,
+        master: Misc,
+        interaction: InteractionData | None = None,
+        room_ids: Sequence[str] = (),
+    ) -> None:
+        super().__init__(master)
+        self.title("Edit Interaction" if interaction is not None else "Add Interaction")
+        self.geometry("720x680")
+        self.transient(cast(Any, master))
+        self.grab_set()
+        self.room_ids = tuple(room_ids)
+        self.result: InteractionData | None = None
+
+        data: dict[str, Any] = (
+            interaction_editor_data.interaction_to_dict(interaction)
+            if interaction is not None
+            else {"verb": Verb.INTERACT.name, "priority": 0, "once": False, "conditions": [], "effects": []}
+        )
+
+        content = CTkScrollableFrame(self)
+        content.pack(fill="both", expand=True, padx=10, pady=10)
+
+        verb_frame = CTkFrame(content)
+        verb_frame.pack(fill="x", pady=3)
+        CTkLabel(verb_frame, text="Verb", width=80, anchor="w").pack(side="left")
+        self.verb_menu = CTkOptionMenu(verb_frame, values=[verb.name for verb in Verb])
+        self.verb_menu.set(str(data["verb"]))
+        self.verb_menu.pack(side="left")
+
+        priority_frame = CTkFrame(content)
+        priority_frame.pack(fill="x", pady=3)
+        CTkLabel(priority_frame, text="Priority", width=80, anchor="w").pack(side="left")
+        self.priority_entry = CTkEntry(priority_frame)
+        self.priority_entry.insert(0, str(data["priority"]))
+        self.priority_entry.pack(side="left", fill="x", expand=True)
+
+        once_frame = CTkFrame(content)
+        once_frame.pack(fill="x", pady=3)
+        CTkLabel(once_frame, text="Once", width=80, anchor="w").pack(side="left")
+        self.once_switch = CTkSwitch(once_frame, text="")
+        self.once_switch.select() if data["once"] else self.once_switch.deselect()
+        self.once_switch.pack(side="left")
+
+        CTkLabel(content, text="Conditions (all must pass)", font=CTkFont(size=12, weight="bold")).pack(
+            anchor="w", pady=(10, 2)
+        )
+        self.conditions_widget = DefinitionListWidget(content, "condition", data["conditions"], self.room_ids)
+        self.conditions_widget.pack(fill="x")
+
+        CTkLabel(content, text="Effects", font=CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(10, 2))
+        self.effects_widget = DefinitionListWidget(content, "effect", data["effects"], self.room_ids)
+        self.effects_widget.pack(fill="x")
+
+        buttons = CTkFrame(content)
+        buttons.pack(fill="x", pady=(10, 0))
+        CTkButton(buttons, text="Save", command=self._on_save).pack(side="left", padx=(0, 5))
+        CTkButton(buttons, text="Cancel", command=self.destroy).pack(side="left")
+
+    def get_value_dict(self) -> dict[str, Any]:
+        """Return the dialog state as a widget-friendly dictionary."""
+        return {
+            "verb": self.verb_menu.get(),
+            "priority": self.priority_entry.get(),
+            "once": bool(self.once_switch.get()),
+            "conditions": self.conditions_widget.get_value(),
+            "effects": self.effects_widget.get_value(),
+        }
+
+    def _on_save(self) -> None:
+        """Validate and store the edited interaction before closing."""
+        try:
+            self.result = interaction_editor_data.interaction_from_dict(self.get_value_dict())
+        except (KeyError, TypeError, ValueError) as error:
+            logger.warning("Invalid interaction definition: %s", error)
+            return
+        self.destroy()
+
+
 class ObjectForm(CTkFrame):
     def __init__(self, parent: CTk, app_state: AppState) -> None:
         super().__init__(parent)
@@ -717,6 +971,102 @@ class ObjectForm(CTkFrame):
             # Show selected object attributes
             self.title_label.configure(text=f"{type(selected).__name__}: {selected.name}")
             self._add_field_widgets(selected)
+            self._add_interactions_section(selected)
+
+        save_button = CTkButton(
+            self.scrollable_frame,
+            text="Apply Changes",
+            command=self._on_save_changes,
+        )
+        save_button.pack(fill="x", padx=5, pady=(10, 0))
+
+    def _add_interactions_section(self, obj: TYPES) -> None:
+        """Show the dedicated interaction list for the selected object."""
+        section = CTkFrame(self.scrollable_frame)
+        section.pack(fill="x", padx=5, pady=(10, 0))
+        CTkLabel(section, text="Interactions", font=CTkFont(size=12, weight="bold")).pack(anchor="w")
+
+        for index, interaction in enumerate(obj.interactions):
+            row = CTkFrame(section)
+            row.pack(fill="x", pady=2)
+            CTkLabel(row, text=interaction_editor_data.interaction_label(interaction), anchor="w").pack(
+                side="left", fill="x", expand=True
+            )
+            CTkButton(
+                row,
+                text="Edit",
+                width=50,
+                command=lambda item_index=index: self._edit_interaction(item_index),  # type: ignore[misc]
+            ).pack(side="right", padx=(2, 0))
+            CTkButton(
+                row,
+                text="Delete",
+                width=50,
+                command=lambda item_index=index: self._delete_interaction(item_index),  # type: ignore[misc]
+            ).pack(side="right")
+
+        CTkButton(section, text="Add Interaction", command=self._add_interaction).pack(fill="x", pady=(5, 0))
+
+    def _room_ids(self) -> tuple[str, ...]:
+        """Return stable room IDs available to `ChangeRoom` effects."""
+        ids = (room.id or name for name, room in self.app_state.room_data.items())
+        return tuple(sorted(dict.fromkeys(ids)))
+
+    def _add_interaction(self) -> None:
+        """Open the interaction editor and append a new definition."""
+        selected = self.app_state.selected
+        if selected is None:
+            return
+        dialog = InteractionEditorDialog(self.master, None, self._room_ids())
+        dialog.wait_window()
+        if dialog.result is None:
+            return
+        self._persist_interactions((*selected.interactions, dialog.result))
+
+    def _edit_interaction(self, index: int) -> None:
+        """Open the interaction editor for an existing definition."""
+        selected = self.app_state.selected
+        if selected is None or index >= len(selected.interactions):
+            return
+        dialog = InteractionEditorDialog(self.master, selected.interactions[index], self._room_ids())
+        dialog.wait_window()
+        if dialog.result is None:
+            return
+        interactions = tuple(
+            dialog.result if item_index == index else interaction
+            for item_index, interaction in enumerate(selected.interactions)
+        )
+        self._persist_interactions(interactions)
+
+    def _delete_interaction(self, index: int) -> None:
+        """Delete an interaction from the selected object."""
+        selected = self.app_state.selected
+        if selected is None or index >= len(selected.interactions):
+            return
+        interactions = tuple(
+            interaction for item_index, interaction in enumerate(selected.interactions) if item_index != index
+        )
+        self._persist_interactions(interactions)
+
+    def _persist_interactions(self, interactions: tuple[InteractionData, ...]) -> None:
+        """Write interaction changes back into the selected object and room."""
+        selected = self.app_state.selected
+        if selected is None:
+            return
+
+        updated_object = cast(TYPES, replace(selected, interactions=interactions))
+        current_room = self.app_state.current_room
+        updated_room = self._update_room_with_object(selected, updated_object, current_room)
+        if updated_room is None:
+            return
+
+        room_name = self.app_state.current_room_name
+        self.app_state.room_data[room_name] = updated_room
+        self.app_state.selected = updated_object
+        self._redraw_viewport()
+        if isinstance(self.master, RoomEditor):
+            self.master.main_tabview.refresh_tree(updated_room)
+        self._refresh_form()
 
     def _add_field_widgets(self, obj: RoomData | TYPES) -> None:
         """Add input widgets for all fields of the given object."""
@@ -809,14 +1159,6 @@ class ObjectForm(CTkFrame):
                 self.field_widgets[field_name] = widget
 
             widget.pack(side="right", fill="x", expand=True)
-
-        # Save button
-        save_button = CTkButton(
-            self.scrollable_frame,
-            text="Apply Changes",
-            command=self._on_save_changes,
-        )
-        save_button.pack(fill="x", padx=5, pady=(10, 0))
 
     def _update_room_with_object(
         self, selected: object, updated_object: object, current_room: RoomData
