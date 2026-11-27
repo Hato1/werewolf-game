@@ -187,7 +187,7 @@ def test_region_enter_and_exit_dispatch_interactions(monkeypatch: pytest.MonkeyP
         id="region",
         name="Region",
         description="A region.",
-        polygon=((200, 50), (280, 50), (280, 100), (200, 100)),
+        polygon=((200, 50), (480, 50), (480, 300), (200, 300)),
         interactions=(
             InteractionData(verb=Verb.ENTER, effects=(Describe("entered"),)),
             InteractionData(verb=Verb.EXIT, effects=(Describe("exited"),)),

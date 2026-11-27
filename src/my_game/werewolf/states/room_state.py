@@ -92,7 +92,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         """
         room = self.room
         regions = tuple(room.regions)
-        position = self.player.position_int
+        position = self.player.feet_position
 
         current_regions = {region.id for region in regions if region.contains_point(position)}
         for region in regions:
