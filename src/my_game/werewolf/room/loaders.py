@@ -31,6 +31,7 @@ class CharacterData:
     depth: int = 0
     path: tuple[Point, ...] = ()
     loop: bool = False
+    clickable: bool = True
     interactions: tuple[InteractionData, ...] = ()
 
 
@@ -76,6 +77,8 @@ class RegionData:
     name: str
     description: str
     polygon: Polygon = field(default_factory=tuple)
+    depth: int = 0
+    clickable: bool = True
     interactions: tuple[InteractionData, ...] = ()
 
 

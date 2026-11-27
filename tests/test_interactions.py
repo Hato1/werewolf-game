@@ -14,7 +14,8 @@ from my_game.werewolf.inputs import Action
 from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, InteractionData, Verb, WalkTo
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.editor_data import update_room_source
-from my_game.werewolf.room.loaders import CharacterData, PropData, RoomData
+from my_game.werewolf.room.geometry import point_in_polygon
+from my_game.werewolf.room.loaders import CharacterData, PropData, RegionData, RoomData
 from my_game.werewolf.room.models import Room
 from my_game.werewolf.state_data import WerewolfTransitionData
 from my_game.werewolf.states.room_state import RoomState
@@ -161,6 +162,59 @@ def test_cancelling_walk_to_skips_following_effects(monkeypatch: pytest.MonkeyPa
     for _ in range(300):
         room_state.update(0.05, idle)
     assert messages == ["before"]
+
+
+def test_point_in_polygon_identifies_inside_and_outside() -> None:
+    polygon = ((0, 0), (10, 0), (10, 10), (0, 10))
+
+    assert point_in_polygon((5, 5), polygon)
+    assert not point_in_polygon((15, 5), polygon)
+
+
+def test_region_enter_and_exit_dispatch_interactions(monkeypatch: pytest.MonkeyPatch) -> None:
+    region = RegionData(
+        id="region",
+        name="Region",
+        description="A region.",
+        polygon=((200, 50), (280, 50), (280, 100), (200, 100)),
+        interactions=(
+            InteractionData(verb=Verb.ENTER, effects=(Describe("entered"),)),
+            InteractionData(verb=Verb.EXIT, effects=(Describe("exited"),)),
+        ),
+    )
+    room_state = make_room_state(
+        RoomData(id="region_room", name="Region room", description="A room with a region.", regions=(region,))
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(room_state, "show_message", messages.append)
+    idle: InputState = InputState(frozenset(), {})
+
+    room_state.update(0.0, idle)
+    assert messages == ["entered"]
+
+    room_state.update(1.0, InputState(frozenset({Action.RIGHT}), {}))
+    assert messages == ["entered", "exited"]
+
+    room_state.update(0.0, idle)
+    assert messages == ["entered", "exited"]
+
+
+def test_region_without_interactions_is_silent(monkeypatch: pytest.MonkeyPatch) -> None:
+    region = RegionData(
+        id="region",
+        name="Region",
+        description="A region.",
+        polygon=((200, 50), (280, 50), (280, 100), (200, 100)),
+    )
+    room_state = make_room_state(
+        RoomData(id="silent_region_room", name="Region room", description="A room with a region.", regions=(region,))
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(room_state, "show_message", messages.append)
+
+    room_state.update(0.0, InputState(frozenset(), {}))
+
+    assert messages == []
 
 
 def test_interaction_definitions_survive_editor_source_generation() -> None:

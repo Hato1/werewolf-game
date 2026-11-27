@@ -72,6 +72,8 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.interactions = InteractionSystem()
         self.renderer: Renderer
         self.flags = Flags()
+        self.active_region_ids: set[str] = set()
+        self._reset_proximity_state()
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
         super().enter(transition_data, renderer)
@@ -83,6 +85,39 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         self.room.on_exit(self.renderer)
         self.room = Room.from_room_data(room)
         self.room.on_enter(self.renderer)
+        self._reset_proximity_state()
+
+    def _reset_proximity_state(self) -> None:
+        """Forget transient proximity state, treating points at the player's feet as occupied."""
+        self.active_region_ids = set()
+
+    def _dispatch_proximity(self, target: InteractionTarget, verb: Verb) -> None:
+        """Dispatch a non-click interaction without falling back to a description."""
+        self.interactions.dispatch(target, get_object_kind(target), verb, self)
+
+    def _update_proximity_interactions(self) -> None:
+        """Fire ENTER/EXIT interactions as the player moves between regions.
+
+        TODO: Add priority handling for overlapping regions.
+        """
+        room = self.room
+        regions = tuple(room.regions)
+        position = self.player.position_int
+
+        current_regions = {region.id for region in regions if region.contains_point(position)}
+        for region in regions:
+            # If the room has changed during iteration, stop processing.
+            if self.room is not room:
+                return
+            if region.id in current_regions and region.id not in self.active_region_ids:
+                region.enter()
+                self._dispatch_proximity(region, Verb.ENTER)
+            elif region.id not in current_regions and region.id in self.active_region_ids:
+                region.exit()
+                self._dispatch_proximity(region, Verb.EXIT)
+        if self.room is not room:
+            return
+        self.active_region_ids = current_regions
 
     def enter_dialogue_state(self, dialogue: Dialogue) -> None:
         """Enter a dialogue state with the given dialogue."""
@@ -142,6 +177,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def update(self, dt: float, input_state: InputState) -> None:
         self.player.update(dt, input_state)
         self.room.update(dt, input_state)
+        self._update_proximity_interactions()
         if self.message_surface is not None and pg.time.get_ticks() >= self.message_expires_at:
             self.message_surface = None
 

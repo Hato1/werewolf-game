@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import cache
 from typing import ClassVar, Self
 
 import pygame as pg
@@ -13,12 +14,17 @@ from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.interactions.definitions import InteractionData
-from my_game.werewolf.room.loaders import CharacterData, HotspotData, NamedPointData, PropData, RegionData, RoomData
+from my_game.werewolf.room.geometry import Point, Polygon, point_in_polygon
+from my_game.werewolf.room.loaders import (
+    CharacterData,
+    HotspotData,
+    NamedPointData,
+    PropData,
+    RegionData,
+    RoomData,
+)
 
 logger = get_logger(__name__)
-
-Point = tuple[int, int]
-Polygon = tuple[Point, ...]
 
 
 def split_frames(sheet: pg.Surface, frame_width: int) -> list[pg.Surface]:
@@ -46,6 +52,12 @@ def load_spritesheet(image: Images, size: tuple[int, int] | None, scale: float, 
     sheet = image.load()
     frames = split_frames(sheet, frame_width)
     return [scale_image(frame, size, scale) for frame in frames]
+
+
+@cache
+def get_mask(image: pg.Surface) -> pg.Mask:
+    """Return the mask used for pixel-perfect collision detection."""
+    return pg.mask.from_surface(image)
 
 
 @dataclass
@@ -139,6 +151,13 @@ class Prop:
         # TODO: Implement inventory-specific sprite handling if needed.
         return self.sprite
 
+    def contains_point(self, point: Point) -> bool:
+        """Check if the point is within the prop's clickable area or its hotspot."""
+        if self.hotspot is not None:
+            return self.hotspot.contains_point(point)
+        # TODO: Use pixel perfect collision with get_mask(self.sprite) and pg.Mask.overlap
+        return self.rect.collidepoint(point)
+
 
 @dataclass
 class Character:
@@ -183,6 +202,7 @@ class Character:
     frame_index: int = 0
     frame_time: float = 0.0
     interactions: tuple[InteractionData, ...] = ()
+    clickable: bool = True
 
     @classmethod
     def from_character_data(cls, data: CharacterData) -> Self:
@@ -230,12 +250,17 @@ class Character:
             path=data.path,
             loop=data.loop,
             interactions=data.interactions,
+            clickable=data.clickable,
         )
         return character
 
     @property
     def frames(self) -> list[pg.Surface]:
         return self.walk_frames if self.walking else self.idle_frames
+
+    @property
+    def position_int(self) -> tuple[int, int]:
+        return round(self.position.x), round(self.position.y)
 
     def normal_frames(self) -> list[pg.Surface] | None:
         if self.walking:
@@ -256,7 +281,7 @@ class Character:
 
     @property
     def rect(self) -> pg.Rect:
-        return self.sprite.get_rect(topleft=(round(self.position.x), round(self.position.y)))
+        return self.sprite.get_rect(topleft=self.position)
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).
@@ -300,6 +325,11 @@ class Character:
         renderer(self.sprite, self.rect)
         if self.normal_sprite:
             renderer(self.normal_sprite, self.rect, to_normal=True)
+
+    def contains_point(self, point: Point) -> bool:
+        """Check if the point is within the prop's clickable area or its hotspot."""
+        # TODO: Use pixel perfect collision with get_mask(self.sprite) and pg.Mask.overlap
+        return self.rect.collidepoint(point)
 
 
 @dataclass
@@ -361,6 +391,8 @@ class Player(Character):
 class Hotspot:
     """Hotspot represents an interactive area within a room.
 
+    TODO: Delete Hotspot class, region class fulfills its purpose.
+
     Attributes:
         name: Hotspot's display name.
         description: Hotspot's description.
@@ -395,8 +427,8 @@ class Hotspot:
         pass
 
     def contains_point(self, point: Point) -> bool:
-        """Check if the given point is within the hotspot."""
-        raise NotImplementedError
+        """Check if the given point is within the hotspot's polygon."""
+        return point_in_polygon(point, self.polygon)
 
 
 @dataclass
@@ -413,9 +445,11 @@ class Region:
 
     id: str
     name: str
-    description: str = ""
-    polygon: Polygon = ()
-    interactions: tuple[InteractionData, ...] = ()
+    description: str
+    polygon: Polygon
+    depth: int
+    clickable: bool
+    interactions: tuple[InteractionData, ...]
 
     def enter(self):
         """Called when the player enters the region."""
@@ -426,8 +460,8 @@ class Region:
         pass
 
     def contains_point(self, point: Point) -> bool:
-        """Check if the given point is within the region."""
-        raise NotImplementedError
+        """Check if the given point is within the region's polygon."""
+        return point_in_polygon(point, self.polygon)
 
     @classmethod
     def from_region_data(cls, data: RegionData) -> Self:
@@ -436,6 +470,8 @@ class Region:
             name=data.name,
             description=data.description,
             polygon=data.polygon,
+            depth=data.depth,
+            clickable=data.clickable,
             interactions=data.interactions,
         )
         return region
@@ -525,16 +561,14 @@ class Room:
         for sorted_prop_and_character in sorted(prop_and_character, key=lambda p: p.depth, reverse=True):
             sorted_prop_and_character.draw(renderer)
 
-    def get_clicked(self, point: Point) -> Prop | Character | None:
+    def get_clicked(self, point: Point) -> Prop | Character | Region | None:
         """Return the topmost clickable object at the given point."""
-        clickable_objects: list[Prop | Character] = [*self.props, *self.characters]
-        for object in clickable_objects:
-            if (
-                getattr(object, "clickable", True)
-                and getattr(object, "visible", True)
-                and object.rect.collidepoint(point)
-            ):
-                return object
+        clickable_things: list[Prop | Character | Region] = [*self.props, *self.characters, *self.regions]
+        clickable_things = [thing for thing in clickable_things if thing.clickable and getattr(thing, "visible", True)]
+        clickable_things.sort(key=lambda obj: obj.depth, reverse=True)
+        for thing in clickable_things:
+            if thing.contains_point(point):
+                return thing
         return None
 
     def on_enter(self, renderer: Renderer) -> None:

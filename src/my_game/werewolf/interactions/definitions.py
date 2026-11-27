@@ -14,7 +14,12 @@ from my_game.werewolf.assets import Dialogue
 class Verb(StrEnum):
     """Action that triggers an interaction."""
 
+    # Mouse click on an object
     INTERACT = auto()
+
+    # Player enters a region
+    ENTER = auto()
+    EXIT = auto()
 
 
 class ObjectKind(StrEnum):

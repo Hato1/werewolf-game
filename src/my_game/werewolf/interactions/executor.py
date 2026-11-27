@@ -26,9 +26,14 @@ logger = get_logger(__name__)
 class InteractionTarget(Protocol):
     """Runtime object that can carry interaction definitions."""
 
-    id: str
-    description: str
-    interactions: tuple[InteractionData, ...]
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def description(self) -> str: ...
+
+    @property
+    def interactions(self) -> tuple[InteractionData, ...]: ...
 
 
 class InteractionContext(Protocol):
@@ -50,7 +55,14 @@ class InteractionSystem:
         """Apply the highest-priority matching interaction, or describe the target."""
         logger.debug("Dispatching interaction.", target=ObjectRef(kind=kind, id=target.id), verb=verb)
         interaction = self._matching_interaction(target, verb)
-        effects = interaction.effects if interaction is not None else (Describe(),)
+        if interaction is None:
+            # Only a plain click falls back to describing the target. Proximity
+            # verbs such as ENTER and ARRIVE are silent when nothing is defined.
+            if verb is not Verb.INTERACT:
+                return
+            effects: tuple[Effect, ...] = (Describe(),)
+        else:
+            effects = interaction.effects
         self._apply_effects(effects, target, ctx)
 
     @staticmethod
