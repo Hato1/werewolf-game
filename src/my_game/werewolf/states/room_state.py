@@ -111,7 +111,6 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
 
     def enter_dialogue_state(self, dialogue: Dialogue) -> None:
         """Enter a dialogue state with the given dialogue."""
-        raise NotImplementedError()
 
         # Add to transition data here.
         self.transition_data.dialogue = dialogue

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 
 from my_game.core.state_manager import TransitionData
+from my_game.werewolf.assets import Dialogue
 from my_game.werewolf.room.loaders import CharacterData
 from my_game.werewolf.room.models import Room
 
@@ -24,4 +25,5 @@ class WerewolfTransitionData(TransitionData):
     current_room: Room | None = None
 
     # Dialogue
+    dialogue: Dialogue | None = None
     dialogue_partner: CharacterData | None = None
