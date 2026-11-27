@@ -370,6 +370,18 @@ def test_flag_interaction_definitions_survive_editor_source_generation() -> None
     )
 
 
+def test_generated_source_uses_double_quoted_strings() -> None:
+    room = RoomData(id="quotes", name="Quote's room", description='Says "hello".')
+
+    updated = update_room_source("ROOM = None\n", {"ROOM": room})
+
+    ast.parse(updated)
+    assert 'id="quotes"' in updated
+    assert 'name="Quote\'s room"' in updated
+    assert 'description="Says \\"hello\\"."' in updated
+    assert "'quotes'" not in updated
+
+
 def test_interaction_definitions_survive_editor_source_generation() -> None:
     prop = PropData(
         name="Chains",

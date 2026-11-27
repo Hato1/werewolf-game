@@ -80,7 +80,11 @@ def _python_expression(value: Any, indent: int = 0, *, use_catalog: bool = True)
     if isinstance(value, tuple):
         elements = ", ".join(_python_expression(item, indent) for item in value)
         return f"({elements}{',' if len(value) == 1 else ''})"
-    return repr(value)
+    if isinstance(value, str):
+        rendered = json.dumps(value, ensure_ascii=False)
+    else:
+        rendered = repr(value)
+    return rendered
 
 
 def _set_import(source: str, module_name: str, names: set[str]) -> str:

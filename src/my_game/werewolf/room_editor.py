@@ -7,6 +7,8 @@ Type ignore statements are used for the following unavoidable issues:
 """
 
 import argparse
+import shutil
+import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, fields, replace
 from enum import Enum
@@ -61,6 +63,8 @@ DEFAULT_THEME = "dark-blue"
 NATIVE_WINDOW_RESOLUTION = (480, 208)
 MULTIPLIER = args.scale
 SCALED_WINDOW_RESOLUTION = (NATIVE_WINDOW_RESOLUTION[0] * MULTIPLIER, NATIVE_WINDOW_RESOLUTION[1] * MULTIPLIER)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ROOMS_FILE = PROJECT_ROOT / "src/my_game/werewolf/room/rooms.py"
 
 
 def run() -> None:
@@ -73,6 +77,37 @@ def run() -> None:
         app = RoomEditor()
         app.mainloop()
         new_instance = app.new_instance_requested
+
+
+def _ruff_command(rooms_file: Path, args: tuple[str, ...]) -> list[str] | None:
+    """Build a Ruff command using the project runner when available."""
+    if shutil.which("uv") is not None:
+        return ["uv", "run", "ruff", *args, str(rooms_file.relative_to(PROJECT_ROOT))]
+    if (ruff := shutil.which("ruff")) is not None:
+        return [ruff, *args, str(rooms_file)]
+    return None
+
+
+def _run_ruff_fix(rooms_file: Path) -> None:
+    """Apply Ruff's safe fixes and formatting to rooms.py after saving."""
+    for args in (("check", "--fix"), ("format",)):
+        command = _ruff_command(rooms_file, args)
+        if command is None:
+            logger.warning("✗ Ruff not found; skipped ruff %s", " ".join(args))
+            return
+
+        try:
+            result = subprocess.run(command, cwd=PROJECT_ROOT, capture_output=True, text=True, check=False)
+        except (OSError, subprocess.SubprocessError) as error:
+            logger.warning("✗ Could not run ruff %s: %s", " ".join(args), error)
+            return
+
+        if result.returncode != 0:
+            output = result.stderr.strip() or result.stdout.strip() or f"exit code {result.returncode}"
+            logger.warning("✗ Ruff %s failed on %s: %s", " ".join(args), rooms_file, output)
+            return
+
+    logger.warning("✓ Ruff fixed and formatted %s", rooms_file)
 
 
 @dataclass
@@ -1500,15 +1535,16 @@ class RoomEditor(CTk):
 
     def on_save(self) -> None:
         """Save changes made to room data back to rooms.py."""
-        rooms_file = Path("src/my_game/werewolf/room/rooms.py")
-
         try:
-            current_source = rooms_file.read_text()
+            current_source = ROOMS_FILE.read_text()
             updated_source = update_room_source(current_source, self.app_state.room_data)
-            rooms_file.write_text(updated_source)
-            logger.warning(f"✓ Saved {len(self.app_state.room_data)} room(s) to {rooms_file}")
+            ROOMS_FILE.write_text(updated_source)
+            logger.warning(f"✓ Saved {len(self.app_state.room_data)} room(s) to {ROOMS_FILE}")
         except (OSError, ValueError, SyntaxError) as e:
             logger.warning(f"✗ Error saving rooms: {e}")
+            return
+
+        _run_ruff_fix(ROOMS_FILE)
 
     def on_select_item(self, item_name: str, get_items: Callable[[RoomData], Sequence]) -> None:
         """Generic item selection handler for props, characters, regions, and points."""
