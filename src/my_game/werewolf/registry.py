@@ -5,12 +5,12 @@ from collections.abc import Callable
 from my_game.core.state_manager import State, StateRegistry
 from my_game.werewolf.inputs import input_manager
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
+from my_game.werewolf.states.dialogue_state import DialogueView
 from my_game.werewolf.states.main_menu import MainMenu
 from my_game.werewolf.states.options_menu import OptionsMenu
 from my_game.werewolf.states.render_test import RenderTest
 from my_game.werewolf.states.room_state import RoomState
 from my_game.werewolf.states.room_test import RoomTest
-from my_game.werewolf.states.dialogue_state import DialogueView
 
 STATE_FACTORIES: dict[
     WerewolfState,

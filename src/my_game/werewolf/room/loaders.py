@@ -56,7 +56,7 @@ class PropData:
     baseline: int = 0
     walk_to_interact: bool = False
     interactions: tuple[InteractionData, ...] = ()
-    background: bool = False # For keeping the background during dialogue
+    background: bool = False  # For keeping the background during dialogue
 
 
 @dataclass(frozen=True)
