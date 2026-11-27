@@ -15,12 +15,17 @@ from typing import Any
 
 from my_game.werewolf.assets import Dialogue, Images
 from my_game.werewolf.interactions.definitions import (
+    AllOf,
+    AnyOf,
     ChangeRoom,
     Describe,
     EnterDialogue,
+    FlagIs,
     InteractionData,
+    Not,
     ObjectKind,
     ObjectRef,
+    SetFlag,
     Verb,
     WalkTo,
 )
@@ -154,7 +159,19 @@ def update_room_source(source: str, updates: dict[str, RoomData]) -> str:
 
     interaction_names = {
         definition.__name__
-        for definition in (ChangeRoom, Describe, EnterDialogue, InteractionData, ObjectRef, WalkTo)
+        for definition in (
+            AllOf,
+            AnyOf,
+            ChangeRoom,
+            Describe,
+            EnterDialogue,
+            FlagIs,
+            InteractionData,
+            Not,
+            ObjectRef,
+            SetFlag,
+            WalkTo,
+        )
         if re.search(rf"\b{definition.__name__}\(", updated)
     }
     interaction_names.update(

@@ -39,6 +39,39 @@ class ObjectRef:
     id: str
 
 
+class Condition:
+    """Marker base class for conditions stored in interaction definitions."""
+
+
+@dataclass(frozen=True)
+class FlagIs(Condition):
+    """Pass when a named runtime flag has the expected value."""
+
+    flag: str
+    value: bool = True
+
+
+@dataclass(frozen=True)
+class Not(Condition):
+    """Pass when the wrapped condition does not."""
+
+    condition: Condition
+
+
+@dataclass(frozen=True)
+class AllOf(Condition):
+    """Pass when every wrapped condition passes."""
+
+    conditions: tuple[Condition, ...]
+
+
+@dataclass(frozen=True)
+class AnyOf(Condition):
+    """Pass when at least one wrapped condition passes."""
+
+    conditions: tuple[Condition, ...]
+
+
 class Effect:
     """Marker base class for effects stored in interaction definitions."""
 
@@ -72,6 +105,14 @@ class EnterDialogue(Effect):
 
 
 @dataclass(frozen=True)
+class SetFlag(Effect):
+    """Set a named runtime flag to the given value."""
+
+    flag: str
+    value: bool = True
+
+
+@dataclass(frozen=True)
 class InteractionData:
     """A verb and its effects, attached to a room object definition."""
 
@@ -79,3 +120,7 @@ class InteractionData:
     effects: tuple[Effect, ...]
     # Higher priority interactions are checked first.
     priority: int = 0
+    # Every condition must pass for the interaction to be eligible.
+    conditions: tuple[Condition, ...] = ()
+    # When true, the interaction is consumed after its first dispatch.
+    once: bool = False

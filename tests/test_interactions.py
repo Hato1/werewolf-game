@@ -11,7 +11,18 @@ from my_game.core.input_manager import InputManager, InputState
 from my_game.core.renderer import Renderer
 from my_game.werewolf.assets import Images
 from my_game.werewolf.inputs import Action
-from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, InteractionData, Verb, WalkTo
+from my_game.werewolf.interactions.definitions import (
+    AllOf,
+    AnyOf,
+    ChangeRoom,
+    Describe,
+    FlagIs,
+    InteractionData,
+    Not,
+    SetFlag,
+    Verb,
+    WalkTo,
+)
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.editor_data import update_room_source
 from my_game.werewolf.room.geometry import point_in_polygon
@@ -215,6 +226,148 @@ def test_region_without_interactions_is_silent(monkeypatch: pytest.MonkeyPatch) 
     room_state.update(0.0, InputState(frozenset(), {}))
 
     assert messages == []
+
+
+def test_set_flag_enables_conditional_interaction(monkeypatch: pytest.MonkeyPatch) -> None:
+    setter = PropData(
+        id="setter",
+        name="Setter",
+        description="Sets a flag.",
+        image=props.STUDIO.image,
+        position=(50, 50),
+        size=(20, 20),
+        interactions=(InteractionData(verb=Verb.INTERACT, effects=(SetFlag(flag="unlocked", value=True),)),),
+    )
+    gated = PropData(
+        id="gated",
+        name="Gated",
+        description="A gated prop.",
+        image=props.STUDIO.image,
+        position=(300, 50),
+        size=(20, 20),
+        interactions=(
+            InteractionData(
+                verb=Verb.INTERACT,
+                effects=(Describe("unlocked"),),
+                priority=10,
+                conditions=(FlagIs(flag="unlocked"),),
+            ),
+            InteractionData(verb=Verb.INTERACT, effects=(Describe("locked"),), priority=0),
+        ),
+    )
+    room_state = make_room_state(
+        RoomData(id="flags_room", name="Flags room", description="A room.", props=(setter, gated))
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(room_state, "show_message", messages.append)
+
+    click(room_state, room_state.room.props[1].rect.center)
+    click(room_state, room_state.room.props[0].rect.center)
+    click(room_state, room_state.room.props[1].rect.center)
+
+    assert messages == ["locked", "unlocked"]
+    assert room_state.get_flag("unlocked")
+
+
+def test_composite_conditions_gate_an_interaction(monkeypatch: pytest.MonkeyPatch) -> None:
+    prop = PropData(
+        id="conditional",
+        name="Conditional",
+        description="A conditional prop.",
+        image=props.STUDIO.image,
+        position=(100, 100),
+        interactions=(
+            InteractionData(
+                verb=Verb.INTERACT,
+                effects=(Describe("allowed"),),
+                priority=10,
+                conditions=(
+                    AllOf((FlagIs(flag="ready"), Not(FlagIs(flag="blocked")))),
+                    AnyOf((FlagIs(flag="a"), FlagIs(flag="b"))),
+                ),
+            ),
+            InteractionData(verb=Verb.INTERACT, effects=(Describe("denied"),), priority=0),
+        ),
+    )
+    room_state = make_room_state(
+        RoomData(id="conditions_room", name="Conditions room", description="A room.", props=(prop,))
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(room_state, "show_message", messages.append)
+
+    click(room_state, room_state.room.props[0].rect.center)
+    room_state.set_flag("ready", value=True)
+    room_state.set_flag("a", value=True)
+    click(room_state, room_state.room.props[0].rect.center)
+    room_state.set_flag("blocked", value=True)
+    click(room_state, room_state.room.props[0].rect.center)
+
+    assert messages == ["denied", "allowed", "denied"]
+
+
+def test_once_interaction_falls_back_after_first_use(monkeypatch: pytest.MonkeyPatch) -> None:
+    prop = PropData(
+        id="once_prop",
+        name="Once prop",
+        description="A prop with a one-shot interaction.",
+        image=props.STUDIO.image,
+        position=(100, 100),
+        interactions=(
+            InteractionData(verb=Verb.INTERACT, effects=(Describe("once"),), priority=10, once=True),
+            InteractionData(verb=Verb.INTERACT, effects=(Describe("again"),), priority=0),
+        ),
+    )
+    room_state = make_room_state(RoomData(id="once_room", name="Once room", description="A room.", props=(prop,)))
+    messages: list[str] = []
+    monkeypatch.setattr(room_state, "show_message", messages.append)
+
+    click(room_state, room_state.room.props[0].rect.center)
+    click(room_state, room_state.room.props[0].rect.center)
+
+    assert messages == ["once", "again"]
+
+
+def test_flags_are_loaded_and_saved_with_transition_data() -> None:
+    room_state = make_room_state(RoomData(id="flags_room", name="Flags room", description="A room."))
+    transition_data = WerewolfTransitionData(flags={"from_previous": True})
+
+    room_state.enter(transition_data, room_state.renderer)
+    assert room_state.get_flag("from_previous")
+
+    room_state.set_flag("set_here", value=True)
+    returned = room_state.exit()
+
+    assert returned is transition_data
+    assert returned.flags == {"from_previous": True, "set_here": True}
+
+
+def test_flag_interaction_definitions_survive_editor_source_generation() -> None:
+    prop = PropData(
+        id="flags",
+        name="Flags",
+        description="Flags.",
+        image=Images.CHAINS_1,
+        interactions=(
+            InteractionData(
+                verb=Verb.INTERACT,
+                effects=(SetFlag(flag="seen", value=True),),
+                conditions=(FlagIs(flag="ready"), Not(FlagIs(flag="blocked"))),
+                once=True,
+            ),
+        ),
+    )
+    room = replace(RoomData(id="test_room", name="Test", description="Test room."), props=(prop,))
+
+    updated = update_room_source("ROOM = None\n", {"ROOM": room})
+    ast.parse(updated)
+
+    assert "SetFlag(" in updated
+    assert "FlagIs(" in updated
+    assert "Not(" in updated
+    assert "once=True" in updated
+    assert (
+        "from my_game.werewolf.interactions.definitions import FlagIs, InteractionData, Not, SetFlag, Verb" in updated
+    )
 
 
 def test_interaction_definitions_survive_editor_source_generation() -> None:

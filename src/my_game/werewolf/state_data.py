@@ -16,4 +16,5 @@ class WerewolfState(StrEnum):
 
 
 @dataclass
-class WerewolfTransitionData(TransitionData): ...
+class WerewolfTransitionData(TransitionData):
+    flags: dict[str, bool] | None = None

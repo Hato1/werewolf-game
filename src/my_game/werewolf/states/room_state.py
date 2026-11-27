@@ -5,7 +5,6 @@ showing timed messages, and handling room transitions.
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from enum import Enum
 
 import pygame as pg
@@ -17,29 +16,13 @@ from my_game.werewolf.assets import Dialogue, Fonts
 from my_game.werewolf.inputs import Action
 from my_game.werewolf.interactions.definitions import ObjectKind, Verb
 from my_game.werewolf.interactions.executor import InteractionSystem, InteractionTarget
+from my_game.werewolf.interactions.flags import Flags
 from my_game.werewolf.room import props, rooms
 from my_game.werewolf.room.characters import PLAYER
 from my_game.werewolf.room.loaders import RoomData
 from my_game.werewolf.room.models import Character, Player, Prop, Region, Room
 from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 from my_game.werewolf.ui.player_ui import UIPanel
-
-
-@dataclass
-class Flags:
-    """Simple container for keeping track of misc game progress variables.
-
-    Probably should be moved into its own file to prevent circular imports.
-    TODO: Save and load from disk to persist game progress.
-    """
-
-    # Activates on interacting with the body in the woods.
-    # Used to enable dialogue option with the Mayor.
-    woods_body_found: bool = False
-
-    # Activates when the player tells the mayor about the suspect.
-    # Used for something or other.
-    mayor_told_suspect: bool = False
 
 
 def get_object_kind(target: object) -> ObjectKind:
@@ -78,7 +61,14 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer) -> None:
         super().enter(transition_data, renderer)
         self.renderer = renderer
+        if transition_data.flags is not None:
+            self.flags = Flags.from_mapping(transition_data.flags)
         self.room.on_enter(renderer)
+
+    def exit(self) -> WerewolfTransitionData:
+        """Persist flags before leaving this state."""
+        self.transition_data.flags = self.flags.as_dict()
+        return super().exit()
 
     def change_room(self, room: RoomData) -> None:
         self.player.cancel_walk()
@@ -125,7 +115,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
 
         # Add to transition data here.
         self.transition_data.dialogue = dialogue
-        self.transition_data.flags = self.flags
+        self.transition_data.flags = self.flags.as_dict()
 
         self.next_state = WerewolfState.DIALOGUE
         self.done = True
@@ -133,6 +123,14 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
     def show_message(self, text: str) -> None:
         self.message_surface = self.message_font.render(text, antialias=True, color=self.MESSAGE_COLOR)
         self.message_expires_at = pg.time.get_ticks() + self.MESSAGE_DURATION_MS
+
+    def get_flag(self, flag: str) -> bool:
+        """Return whether a runtime flag is set."""
+        return self.flags.get(flag)
+
+    def set_flag(self, flag: str, *, value: bool) -> None:
+        """Set a runtime flag."""
+        self.flags.set(flag, value=value)
 
     def walk_to(self, target: InteractionTarget, on_arrive: Callable[[], None]) -> None:
         """Walk the player up to an interaction target before continuing its effects."""
