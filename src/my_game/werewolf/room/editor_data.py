@@ -217,7 +217,7 @@ def _restore_optional(raw_value: str, field_name: str) -> Any:
         return None
     if field_name in {"size", "path", "position", "polygon"}:
         return _restore_tuple(raw_value)
-    if field_name in {"image", "walk_image", "normal_image", "normal_walk_image"}:
+    if field_name in {"image", "walk_image", "normal_image", "normal_walk_image", "portrait"}:
         return Images[normalized]
     raise ValueError(f"Unsupported field value for {field_name}.")
 

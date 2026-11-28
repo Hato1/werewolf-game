@@ -190,6 +190,7 @@ class Character:
     normal_idle_frames: list[pg.Surface] | None
     walk_frames: list[pg.Surface]
     normal_walk_frames: list[pg.Surface] | None
+    portrait: pg.Surface | None
     position: pg.Vector2
     depth: int
     speed: float
@@ -243,6 +244,7 @@ class Character:
             normal_idle_frames=normal_idle,
             walk_frames=walk,
             normal_walk_frames=normal_walk,
+            portrait=data.portrait.load() if data.portrait else None,
             position=pg.Vector2(data.position),
             depth=data.depth,
             speed=data.speed,

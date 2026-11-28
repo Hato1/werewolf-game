@@ -1083,7 +1083,7 @@ class ObjectForm(CTkFrame):
         non_editable_fields = {"interactions"}
         if isinstance(obj, RoomData):
             non_editable_fields |= {"props", "characters", "regions", "points", "walkable_areas"}
-        force_image_if_none = {"image", "walk_image", "normal_image", "normal_walk_image"}
+        force_image_if_none = {"image", "walk_image", "normal_image", "normal_walk_image", "portrait"}
 
         # Create two-column layout
         columns_frame = CTkFrame(self.scrollable_frame)
