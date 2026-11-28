@@ -79,7 +79,7 @@ class DialogueParser:
                     node.lines.append(line_node)
         return node
 
-    def get_next_line(self) -> Line:
+    def get_next_line(self, selected=-1) -> Line:
 
         if self.pos >= len(self.node.lines):
             line = Line("", "", [], done=True)
@@ -88,6 +88,8 @@ class DialogueParser:
         line = self.node.lines[self.pos]
         if line.done:
             pass
+        elif len(line.options) > 0:
+            self.pos += 1
         else:
             self.pos += 1
         return line
