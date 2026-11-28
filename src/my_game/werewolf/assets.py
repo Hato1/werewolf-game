@@ -291,6 +291,7 @@ class Sounds(Enum):
 class Fonts(Enum):
     # This monospace font looks best in lowercase at pt size multiples of 6.
     PICO8 = "pico-8.ttf"
+    BITMGOTHIC = "bitmgothic.ttf"
 
     @cache
     def load(self, size: int = 20) -> pg.Font:
