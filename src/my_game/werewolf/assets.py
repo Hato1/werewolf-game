@@ -1,8 +1,11 @@
 """Asset catalog for the werewolf game."""
 
+import re
 from enum import Enum, StrEnum, unique
 from functools import cache
 from importlib.resources import files
+from pathlib import Path
+from typing import Any, cast
 
 import pygame as pg
 
@@ -195,6 +198,79 @@ class Images(StrEnum):
     def load_custom(self, file_name) -> pg.Surface:
         logger.error(f"Debug image loader called with file_name: {file_name}")
         return load_image(IMAGES_PATH / file_name)
+
+
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+
+
+def _identifier(text: str) -> str:
+    """Convert a filename fragment into a safe enum member fragment."""
+    cleaned = re.sub(r"[^0-9A-Za-z]+", "_", text).strip("_").upper()
+    if not cleaned:
+        return "IMAGE"
+    if cleaned[0].isdigit():
+        return f"IMAGE_{cleaned}"
+    return cleaned
+
+
+def _member_name(path: Path, used_names: set[str]) -> str:
+    """Choose a unique, readable enum member name for an image path."""
+    stem = _identifier(path.stem)
+    prefix = ""
+    candidates = [stem]
+    for part in reversed(path.parent.parts):
+        prefix = f"{_identifier(part)}_{prefix}" if prefix else _identifier(part)
+        candidates.append(f"{prefix}_{stem}")
+    for candidate in candidates:
+        if candidate not in used_names:
+            return candidate
+
+    base = candidates[-1]
+    suffix = 1
+    while f"{base}_{suffix}" in used_names:
+        suffix += 1
+    return f"{base}_{suffix}"
+
+
+def populate_images_enum(
+    root: Path | None = None,
+    *,
+    image_enum: type[StrEnum] = Images,
+) -> tuple[str, ...]:
+    """Register image files that are not already members of an image enum."""
+    directory = root if root is not None else Path(str(IMAGES_PATH))
+    if not directory.is_dir():
+        logger.warning("Image directory does not exist: %s", directory)
+        return ()
+
+    enum_type = cast(Any, image_enum)
+    known_values = {member.value for member in image_enum}
+    used_names = set(enum_type._member_map_)
+    added: list[str] = []
+
+    for path in sorted(directory.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_SUFFIXES:
+            continue
+        value = path.relative_to(directory).as_posix()
+        if value in known_values:
+            continue
+
+        name = _member_name(path.relative_to(directory), used_names)
+        member = cast(Any, str.__new__(image_enum, value))
+        member._name_ = name  # pylint: disable=attribute-defined-outside-init
+        member._value_ = value
+        setattr(image_enum, name, member)
+        enum_type._member_map_[name] = member
+        enum_type._value2member_map_[value] = member
+        enum_type._member_names_.append(name)
+
+        known_values.add(value)
+        used_names.add(name)
+        added.append(name)
+
+    if added:
+        logger.info("Registered %d missing image(s): %s", len(added), ", ".join(added))
+    return tuple(added)
 
 
 @unique
