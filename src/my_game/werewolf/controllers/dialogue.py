@@ -67,7 +67,12 @@ class DialogueParser:
                         split_index = line.index(":")
                     else:
                         split_index = line.index(">")
-                    node.lines[len(node.lines) - 1].options.append(line[split_index + 1 :].strip())
+
+                    if len(node.lines[len(node.lines) - 1].options) > 0:
+                        node.lines[len(node.lines) - 1].options.append(line[split_index + 1 :].strip())
+                    else:
+                        line_node = Line("", "", [line[split_index + 1 :].strip()])
+                        node.lines.append(line_node)
                 else:
                     colon_index = line.index(":")
                     line_node = Line(line[:colon_index].strip(), line[colon_index + 1 :].strip(), list(""))
@@ -75,11 +80,14 @@ class DialogueParser:
         return node
 
     def get_next_line(self) -> Line:
+
+        if self.pos >= len(self.node.lines):
+            line = Line("", "", [], done=True)
+            return line
+
         line = self.node.lines[self.pos]
         if line.done:
             pass
-        if self.pos >= len(self.node.lines) - 1:
-            line.done = True
         else:
             self.pos += 1
         return line

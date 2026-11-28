@@ -151,7 +151,7 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
         self.dialogue_parser: DialogueParser
 
     def enter(self, transition_data: WerewolfTransitionData, renderer: Renderer):
-        self.transition_data = transition_data
+        super().enter(transition_data, renderer)
         self.renderer = renderer
 
         # backgrounds
@@ -176,6 +176,11 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
 
         if not line:
             logger.error("No line returned")
+            return
+        elif line.done:
+            self.done = True
+            self.next_state = WerewolfState(str(self.transition_data.previous_state))
+            return
 
         self.player.set_line(line, 0)
         self.talker.set_line(line, 0)
@@ -200,6 +205,3 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
         renderer(self.bg_surf, self.bg_rect, unlit=True)
         self.player.draw(renderer)
         self.talker.draw(renderer)
-
-    def exit(self):
-        pass
