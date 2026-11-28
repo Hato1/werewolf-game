@@ -936,7 +936,7 @@ class ObjectForm(CTkFrame):
     def _get_parsed_value(self, field_type: object, value: str) -> object:  # noqa: PLR0911
         """Helper to get the parsed value for a given type."""
         # Check for NormalisedColor type
-        if field_type is tuple and getattr(field_type, "__args__", None) == (float, float, float):
+        if field_type == tuple[float, float, float]:
             return self._parse_normalised_color(value)
 
         # Check for int type
@@ -1441,6 +1441,7 @@ class ObjectForm(CTkFrame):
                     changes[field_name] = new_value
             except (ValueError, TypeError) as e:
                 logger.error("Error parsing field %s: %s", field_name, e)
+                raise
 
         return changes
 

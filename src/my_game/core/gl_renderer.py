@@ -179,7 +179,7 @@ class GLRenderer:
 
     # create a render object to use with the draw queue.
     def create_outline_render_object(
-        self, surf: pg.Surface, intensity: float, _z_index: int, offset: tuple, pixel_size: tuple
+        self, surf: pg.Surface, intensity: float, _z_index: int, offset: tuple[int, int], pixel_size: tuple[int, int]
     ):
         """Create an outline render object for drawing objects that need to have per-instance shader variables.
 
@@ -187,8 +187,8 @@ class GLRenderer:
             surf (pg.Surface): The surface to draw.
             intensity (float): 0-1 Scale for the outline strength of the shader to draw.
             z_index (int): The draw order of the object. Higher number will be drawn on top.
-            offset (tuple): Offset position in pixels.
-            pixel_size (tuple): Surface size in pixels.
+            offset (tuple[float, float]): Offset position in pixels.
+            pixel_size (tuple[int, int]): Surface size in pixels.
         """
         screen_size = self.pixel_to_screen_size(pixel_size)
         return OutlinedRenderObject(
@@ -353,18 +353,18 @@ class GLRenderer:
         self.outline_render_list.clear()
 
     # convert pixels into screen size units
-    def pixel_to_screen_size(self, pixel_size: tuple):
+    def pixel_to_screen_size(self, pixel_size: tuple[int, int]) -> tuple[int, int]:
         screen_size = constants.SCREEN_SIZE
-        return [
+        return (
             (pixel_size[0] / screen_size[0]) * self.RENDER_SCALE[0] / 2,
             (pixel_size[1] / screen_size[1]) * self.RENDER_SCALE[1] / 2,
-        ]
+        )
 
     # converts pygame's pixel offset to the renderer's screen offset
-    def pixel_to_screen_offset(self, pixel_position: tuple, screen_size: tuple):
-        scaled = self.pixel_to_screen_size(pixel_position)
+    def pixel_to_screen_offset(self, pixel_position: tuple[int, int], screen_size: tuple[int, int]) -> tuple[int, int]:
+        scaled = list(self.pixel_to_screen_size(pixel_position))
         scaled[1] *= -1
-        return [scaled[0] + (screen_size[0]) - 1, scaled[1] - screen_size[1] + 1]
+        return (scaled[0] + (screen_size[0]) - 1, scaled[1] - screen_size[1] + 1)
 
     # set the light position of the lit shader.
     def set_light_position(self, index: int, x: float, y: float, z: float = 1):
@@ -377,7 +377,6 @@ class GLRenderer:
             z (float): z position of a light in screen space. 0 is close, 1 is further away. 1 is default because normal map alphas are used for distance, and I want the lights to work if we don't have time to make a depth mask for every room.
         """
         radius = self.light_position_radius_array[index][3]
-        print("position set to " + str(x) + ", " + str(y) + ", " + str(z))
         self.light_position_radius_array[index] = (x, y, z, radius)
 
     def set_light_radius(self, index: int, radius: float):
@@ -390,7 +389,6 @@ class GLRenderer:
         x = self.light_position_radius_array[index][0]
         y = self.light_position_radius_array[index][1]
         z = self.light_position_radius_array[index][2]
-        print(str(index) + " set radius to " + str(radius))
         self.light_position_radius_array[index] = (x, y, z, radius)
 
     def set_light_flicker_intensity(self, index: int, flicker: float = 0.25):

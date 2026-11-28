@@ -1,7 +1,7 @@
 """Object representing a room in the game."""
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from functools import cache
 from typing import ClassVar, Self
 
@@ -444,28 +444,15 @@ class Region:
 
     @classmethod
     def from_region_data(cls, data: RegionData) -> Self:
-        region = cls(
-            id=data.id,
-            description=data.description,
-            polygon=data.polygon,
-            depth=data.depth,
-            clickable=data.clickable,
-            interactions=data.interactions,
-        )
-        return region
+        values = asdict(data)
+        values["interactions"] = data.interactions
+        return cls(**values)
 
 
 @dataclass(frozen=True)
 class NamedPoint:
     """A named location in a room.
-    name: str
-    position: tuple[int, int]
-    light_index: int
-    light_color: tuple[float, float, float]
-    light_intensity: float
-    light_flicker_intensity: float
-    light_z_position: float
-    light_radius: float
+
 
     Attributes:
         name: Point's display name.
@@ -476,22 +463,23 @@ class NamedPoint:
     """
 
     id: str
-    description: str = ""
-    position: tuple[int, int] = (0, 0)
-    interactions: tuple[InteractionData, ...] = ()
+    description: str
+    position: tuple[int, int]
+    interactions: tuple[InteractionData, ...]
+
+    # Lighting properties for the point. Set light index to -1 to disable the light.
+    light_index: int
+    light_z_position: float
+    light_color: tuple[float, float, float]
+    light_intensity: float
+    light_flicker_intensity: float
+    light_radius: float
 
     @classmethod
     def from_point_data(cls, data: NamedPointData) -> Self:
-        return cls(
-            data.name,
-            data.position,
-            data.light_index,
-            data.light_color,
-            data.light_intensity,
-            data.light_flicker_intensity,
-            data.light_z_position,
-            data.light_radius,
-        )
+        values = asdict(data)
+        values["interactions"] = data.interactions
+        return cls(**values)
 
     def get_normalised_position(self) -> tuple[float, float]:
         """Return the position of the point normalised to the range [0, 1]."""
