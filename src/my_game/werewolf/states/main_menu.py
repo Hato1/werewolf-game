@@ -43,13 +43,15 @@ class MainMenuButton:
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
     TITLE_FONT_SIZE = 60 // 2
     MENU_BUTTON_OFFSET_Y = 200 // 2
+    CLOUD_SPEED = 5
 
     def __init__(self) -> None:
         super().__init__()
 
         # background
-        self.background_color = pg.Color("gray20")
-        self.background = Images.BACKGROUNDTEST2.load()
+        self.clouds = Images.BACKGROUND_CLOUDS.load()
+        self.clouds_rect = self.clouds.get_rect()
+        self.total_dt = 0.0
 
         # text
         self.FONT = Fonts.PICO8.load(MENU_FONT_SIZE)
@@ -96,11 +98,21 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                         self.quit = True
 
     def update(self, dt: float, input_state: InputState) -> None:
-        pass
+        self.total_dt += dt
+        self.clouds_rect.x = (
+            -self.total_dt * self.CLOUD_SPEED % self.clouds.get_width()
+        )  # Move clouds to the left over time
 
     def draw(self, renderer: Renderer, dt: float) -> None:
-        renderer.fill(self.background_color)
-        renderer(self.background, renderer.rect, fit=True)
+        second_clouds_rect = self.clouds_rect.copy()
+        second_clouds_rect.x -= self.clouds.get_width()
+
+        renderer(Images.BACKGROUND_NIGHTSKY.load())
+        renderer(Images.BACKGROUND_FULLMOON.load())
+        renderer(self.clouds, self.clouds_rect)
+        renderer(self.clouds, second_clouds_rect)
+        renderer(Images.TITLE_SCREEN.load())
+
         renderer(self.title_surface, self.title_rect, unlit=True)
 
         for i in range(len(self.buttons)):
