@@ -21,6 +21,8 @@ class Converser:
     OUTLINE = "#b2972a"
     FILL = "sienna4"
     FONT = Fonts.PICO8.load(DIALOGUE_FONT_SIZE)
+    BUTTON_FONT = Fonts.PICO8.load(24)
+    OPT_DISP_MAX = 2
 
     def __init__(self, name, image: pg.Surface, *, is_player: bool = False, flipx: bool = False, flipy: bool = False):
         self.outline_loc = (0, 0)
@@ -76,6 +78,12 @@ class Converser:
 
         self.pos = -1
 
+        self.up_surf = pg.Font.render(self.BUTTON_FONT, "up", DIALOGUE_ANTI_ALIAS, pg.Color("White"))
+        self.up_rect = self.up_surf.get_rect(topright=(self.textbox_rect.topright))
+
+        self.down_surf = pg.Font.render(self.BUTTON_FONT, "dn", DIALOGUE_ANTI_ALIAS, pg.Color("White"))
+        self.down_rect = self.down_surf.get_rect(bottomright=(self.textbox_rect.bottomright))
+
     def set_line(self, line: Line):
         self.line = line
         self.pos = 0
@@ -120,10 +128,10 @@ class Converser:
                 DIALOGUE_ANTI_ALIAS,
                 o1_color,
                 None,
-                self.textbox_width - self.BORDER * 2,
+                self.textbox_width - self.BORDER * 2 - self.up_rect.width,
             )
             self.opt_1_rect = self.opt_1_surf.get_rect(
-                topleft=textbox_topleft, size=(self.textbox_width, int(self.textbox_height / 2))
+                topleft=textbox_topleft, size=(self.textbox_width - self.up_rect.width, int(self.textbox_height / 2))
             )
 
             self.opt_2_surf = pg.Font.render(
@@ -132,11 +140,11 @@ class Converser:
                 DIALOGUE_ANTI_ALIAS,
                 o2_color,
                 None,
-                self.textbox_width - self.BORDER * 2,
+                self.textbox_width - self.BORDER * 2 - self.down_rect.width,
             )
             self.opt_2_rect = self.opt_2_surf.get_rect(
                 topleft=(textbox_topleft[0], int(textbox_topleft[1] + self.textbox_height / 2)),
-                size=(self.textbox_width, int(self.textbox_height / 2)),
+                size=(self.textbox_width - self.down_rect.width, int(self.textbox_height / 2)),
             )
         else:
             self.opt_1 = ""
@@ -162,6 +170,9 @@ class Converser:
             renderer(self.opt_1_surf, self.opt_1_rect, unlit=True)
         if self.opt_2:
             renderer(self.opt_2_surf, self.opt_2_rect, unlit=True)
+        if len(self.line.options) > self.OPT_DISP_MAX and self.name == "Player":
+            renderer(self.up_surf, self.up_rect, unlit=True)
+            renderer(self.down_surf, self.down_rect, unlit=True)
 
 
 class DialogueView(State[WerewolfState, WerewolfTransitionData]):
@@ -228,16 +239,21 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
 
     def handle_mouse(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.MOUSE_SELECT in actions:
-            if len(self.player.line.options) > 0 and (self.player.opt_1_rect.collidepoint(event.pos)):
-                if self.player.pos % 2 == 0:
-                    self.next_line(self.player.pos)
-                else:
-                    self.next_line(self.player.pos - 1)
-            elif len(self.player.line.options) > 0 and (self.player.opt_2_rect.collidepoint(event.pos)):
-                if self.player.pos % 2 == 0:
-                    self.next_line(self.player.pos + 1)
-                else:
-                    self.next_line(self.player.pos)
+            if len(self.player.line.options) > 0:
+                if self.player.opt_1_rect.collidepoint(event.pos):
+                    if self.player.pos % 2 == 0:
+                        self.next_line(self.player.pos)
+                    else:
+                        self.next_line(self.player.pos - 1)
+                elif self.player.opt_2_rect.collidepoint(event.pos):
+                    if self.player.pos % 2 == 0:
+                        self.next_line(self.player.pos + 1)
+                    else:
+                        self.next_line(self.player.pos)
+                elif self.player.up_rect.collidepoint(event.pos):
+                    self.player.change_option(down=False)
+                elif self.player.down_rect.collidepoint(event.pos):
+                    self.player.change_option(down=True)
             elif len(self.player.line.options) == 0 and (
                 self.talker.textbox_rect.collidepoint(event.pos) or self.player.textbox_rect.collidepoint(event.pos)
             ):
