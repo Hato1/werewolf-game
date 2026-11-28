@@ -3,7 +3,7 @@ from enum import Enum
 
 import pygame as pg
 
-from my_game.constants import MENU_ANTI_ALIAS, MENU_BUTTON_OFFSET_X, MENU_BUTTON_SPACING_Y, MENU_FONT_SIZE
+from my_game.constants import MENU_ANTI_ALIAS, MENU_FONT_SIZE
 from my_game.core.input_manager import InputState
 from my_game.core.renderer import Renderer
 from my_game.core.state_manager import State
@@ -13,31 +13,19 @@ from my_game.werewolf.state_data import WerewolfState, WerewolfTransitionData
 
 
 class MainMenuButton:
-    def __init__(self, font, text, next_state: WerewolfState | None) -> None:
-        self.text = text
+    def __init__(self, font, image: Images, next_state: WerewolfState | None) -> None:
+        self.image = image.load()
+        self.selected_image = self.image.copy()
+        self.selected_image.fill((255, 255, 0), special_flags=pg.BLEND_RGB_ADD)
+        self.image_mask = pg.mask.from_surface(self.image)
         self.font = font
-        self.pos = (0, 0)
         self.next_state = next_state
 
-        # shapes
-        self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color("white"))
-        self.rect = self.surf.get_rect(topleft=self.pos)
-
     def draw(self, renderer: Renderer, *, selected: bool) -> None:
-        draw_pos = self.pos
-        font_color = "white"
-        if selected:
-            font_color = "yellow"
-            draw_pos = self.pos[0] + 25 // 2, self.pos[1]
+        renderer(self.selected_image if selected else self.image, unlit=True)
 
-        self.surf = self.font.render(self.text, MENU_ANTI_ALIAS, pg.Color(font_color))
-        self.rect = self.surf.get_rect(topleft=(draw_pos))
-
-        renderer(self.surf, self.rect, unlit=True)
-
-    def set_pos(self, pos):
-        self.pos = pos
-        self.rect = self.surf.get_rect(topleft=pos)
+    def collidepoint(self, pos):
+        return self.image_mask.get_at((pos[0], pos[1]))
 
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
@@ -60,20 +48,18 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         title = "The Beast of \nTemerev"
         self.title_surface = self.TITLE_FONT.render(title, MENU_ANTI_ALIAS, pg.Color("white"))
         self.title_rect = self.title_surface.get_rect(topleft=(50 // 2, 50 // 2))
+        self.title_rect.x += 150
 
         # buttons
         self.buttons = [
-            MainMenuButton(self.FONT, "start", WerewolfState.ROOM),
-            MainMenuButton(self.FONT, "enter test room", WerewolfState.TEST_ROOM),
-            MainMenuButton(self.FONT, "load", WerewolfState.RENDER_TEST),
-            MainMenuButton(self.FONT, "options", WerewolfState.OPTIONS_MENU),
+            MainMenuButton(self.FONT, Images.PLAQUE_START, WerewolfState.ROOM),
+            MainMenuButton(self.FONT, Images.PLAQUE_LOAD, WerewolfState.RENDER_TEST),
+            MainMenuButton(self.FONT, Images.PLAQUE_OPTIONS, WerewolfState.OPTIONS_MENU),
+            MainMenuButton(self.FONT, Images.PLAQUE_CREDITS, WerewolfState.TEST_ROOM),
         ]
         if sys.platform != "emscripten":
-            self.buttons.append(MainMenuButton(self.FONT, "exit", None))
+            self.buttons.append(MainMenuButton(self.FONT, Images.PLAQUE_EXIT, None))
         self.button_index = 0
-
-        for i in range(len(self.buttons)):
-            self.buttons[i].set_pos((MENU_BUTTON_OFFSET_X, self.MENU_BUTTON_OFFSET_Y + (i * MENU_BUTTON_SPACING_Y)))
 
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
@@ -90,7 +76,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
         if Action.MOUSE_SELECT in actions:
             for button in self.buttons:
-                if button.rect.collidepoint(event.pos):
+                if button.collidepoint(event.pos):
                     self.done = True
                     self.next_state = button.next_state
                     if not self.next_state:
@@ -111,6 +97,8 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         renderer(self.clouds, self.clouds_rect)
         renderer(self.clouds, second_clouds_rect)
         renderer(Images.TITLE_SCREEN.load())
+
+        renderer(Images.PLAQUE1.load())
 
         renderer(self.title_surface, self.title_rect, unlit=True)
 
