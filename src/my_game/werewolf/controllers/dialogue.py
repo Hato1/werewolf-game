@@ -21,7 +21,7 @@ by reducing redundancies where possible.
 
 from dataclasses import dataclass
 
-from my_game.werewolf.assets import DialogueFile, Fonts
+from my_game.werewolf.assets import DialogueFile
 
 
 @dataclass
@@ -39,7 +39,6 @@ class Node:
 
 
 class DialogueParser:
-    FONT = Fonts.PICO8.load(6)
     unique_id = None
     char_id = None
     npc_id = None

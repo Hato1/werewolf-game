@@ -95,12 +95,16 @@ class Converser:
         if self.name.strip() == "Player" and len(self.line.options) > 0:
             o1_color = pg.Color("White")
             o2_color = pg.Color("White")
+            o1_adder = ""
+            o2_adder = ""
             top_pos = self.pos
             if self.pos % 2 == 0:
                 o1_color = pg.Color("Yellow")
+                o1_adder = "   "
             else:
                 o2_color = pg.Color("Yellow")
                 top_pos -= 1
+                o2_adder = "   "
 
             self.opt_1 = self.line.options[top_pos]
             if len(self.line.options) - 1 == top_pos:
@@ -112,7 +116,7 @@ class Converser:
 
             self.opt_1_surf = pg.Font.render(
                 self.FONT,
-                "   * " + self.opt_1,
+                o1_adder + "* " + self.opt_1,
                 DIALOGUE_ANTI_ALIAS,
                 o1_color,
                 None,
@@ -122,7 +126,7 @@ class Converser:
 
             self.opt_2_surf = pg.Font.render(
                 self.FONT,
-                "* " + self.opt_2,
+                o2_adder + "* " + self.opt_2,
                 DIALOGUE_ANTI_ALIAS,
                 o2_color,
                 None,
