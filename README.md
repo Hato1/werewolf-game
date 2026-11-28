@@ -40,7 +40,9 @@ Launch the desktop room editor with:
 uv run room-editor
 ```
 
-Choose a room to preview the top 480×208 room pixels at 2× size. Drag props and characters to reposition them, and use the sidebar to edit properties or add and remove props, characters, regions, points, and walkable areas. Coordinates remain in room pixels. Select **Save room definitions** to write changes back to `src/my_game/werewolf/room/rooms.py`.
+Choose a room to preview the top 480×208 room pixels at 2× size. Drag props and characters to reposition them, and use the sidebar to edit properties or add and remove props, characters, regions, points, and walkable areas. Coordinates remain in room pixels. Select **SAVE ALL CHANGES** to write changes back to `src/my_game/werewolf/room/rooms.py`.
+
+On Windows, non-programmers can double-click `Launch Room Editor.bat` in the project folder. It installs UV if needed, then launches the room editor. Keep the black window open while the editor is running; it closes when the editor exits. If anything fails, the window stays open with an error message.
 
 
 >####  💡 Optional: Activate the virtual environment  
