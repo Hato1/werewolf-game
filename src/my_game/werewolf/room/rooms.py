@@ -276,7 +276,19 @@ TOWN_ENTRANCE = RoomData(
             polygon=((454, 144), (478, 144), (478, 206), (454, 204), (452, 147), (454, 146)),
             depth=0,
             clickable=True,
-            interactions=(),
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="town_hall_exterior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
     ),
     points=(),
@@ -740,12 +752,24 @@ INN_EXTERIOR = RoomData(
             ),
         ),
         RegionData(
-            id="region_3",
+            id="to_town_hall_from_inn",
             description="",
             polygon=((478, 152), (453, 150), (455, 207), (478, 204)),
             depth=0,
-            clickable=True,
-            interactions=(),
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="town_hall_exterior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
     ),
     points=(),
@@ -841,7 +865,7 @@ TOWN_HALL_INTERIOR = RoomData(
     ),
     regions=(
         RegionData(
-            id="region_1",
+            id="to_town_hall_from_indoors",
             description="",
             polygon=((28, 170), (38, 169), (26, 196), (11, 195)),
             depth=0,
@@ -1114,12 +1138,24 @@ CHURCH_INTERIOR = RoomData(
     ),
     regions=(
         RegionData(
-            id="region_1",
+            id="to_church_outdoors_from_indoors",
             description="",
             polygon=((1, 206), (28, 198), (70, 200), (63, 207)),
             depth=0,
-            clickable=True,
-            interactions=(),
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.INTERACT,
+                    effects=(
+                        ChangeRoom(
+                            room_id="CHURCH_EXTERIOR",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
     ),
     points=(),
@@ -1259,12 +1295,24 @@ CHURCH_EXTERIOR = RoomData(
             ),
         ),
         RegionData(
-            id="region_3",
+            id="to_cemetary_from_church",
             description="",
             polygon=((430, 176), (446, 185), (454, 168), (438, 166)),
             depth=0,
-            clickable=True,
-            interactions=(),
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.INTERACT,
+                    effects=(
+                        ChangeRoom(
+                            room_id="church_cemetary",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
     ),
     points=(),
@@ -1386,8 +1434,20 @@ CHURCH_CEMETARY = RoomData(
             description="to_shed",
             polygon=((412, 162), (410, 105), (450, 104), (450, 174)),
             depth=0,
-            clickable=True,
-            interactions=(),
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="church_shed",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
         RegionData(
             id="to_church_exterior",
@@ -1395,7 +1455,19 @@ CHURCH_CEMETARY = RoomData(
             polygon=((26, 202), (0, 205), (0, 188), (24, 184)),
             depth=0,
             clickable=True,
-            interactions=(),
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="CHURCH_EXTERIOR",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
     ),
     points=(),
