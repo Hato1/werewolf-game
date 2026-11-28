@@ -602,7 +602,7 @@ class MainTabview(CTkTabview):
     def refresh_tree(self, room: RoomData) -> None:
         """Update all tab titles and selectors with current room data."""
         for tab_data in self.tabs.values():
-            names = [item.name for item in tab_data.get_items(room)]
+            ids = [item.id for item in tab_data.get_items(room)]
 
             cmd = tab_data.selector_button._command
             for child in tab_data.scrollable_frame.winfo_children():
@@ -611,7 +611,7 @@ class MainTabview(CTkTabview):
             selector = CTkSegmentedButton(
                 tab_data.scrollable_frame,
                 orientation="vertical",
-                values=names,
+                values=ids,
                 command=cmd,
             )
             selector.pack(fill="x")
@@ -1545,11 +1545,11 @@ class RoomEditor(CTk):
 
         _run_ruff_fix(ROOMS_FILE)
 
-    def on_select_item(self, item_name: str, get_items: Callable[[RoomData], Sequence]) -> None:
+    def on_select_item(self, item_id: str, get_items: Callable[[RoomData], Sequence]) -> None:
         """Generic item selection handler for props, characters, regions, and points."""
         items = get_items(self.current_room)
         for i, item in enumerate(items):
-            if item.name == item_name:
+            if item.id == item_id:
                 self.app_state.selected_index = i
                 self.app_state.selected = item
                 self.room_viewport.draw_room(self.current_room)
