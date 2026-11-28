@@ -276,22 +276,28 @@ class Character:
     def rect(self) -> pg.Rect:
         return self.sprite.get_rect(topleft=self.position)
 
-    @property
-    def feet_rect(self) -> pg.Rect:
-        """A rect centered around the character's feet approximately.
+    # @property
+    # def feet_rect(self) -> pg.Rect:
+    #     """A rect centered around the character's feet approximately.
 
-        Currently unused, but could be used for collision detection.
-        """
-        return pg.Rect(
-            self.position_int[0] + self.rect.width * 0.3,
-            self.position_int[1] + self.rect.height * 0.9,
-            self.rect.width * 0.4,
-            self.rect.height * 0.10,
-        )
+    #     Currently unused, but could be used for collision detection.
+    #     """
+    #     return pg.Rect(
+    #         self.position_int[0] + self.rect.width * 0.3,
+    #         self.position_int[1] + self.rect.height * 0.9,
+    #         self.rect.width * 0.4,
+    #         self.rect.height * 0.10,
+    #     )
 
     @property
     def feet_position(self) -> tuple[int, int]:
-        return self.feet_rect.center
+        x = self.position_int[0] + self.rect.width * 0.5
+        y = self.position_int[1] + self.rect.height * 0.95
+        return round(x), round(y)
+
+    @feet_position.setter
+    def feet_position(self, value: tuple[float, float]) -> None:
+        self.position = pg.Vector2(value[0] - self.rect.width * 0.5, value[1] - self.rect.height * 0.95)
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         """Return this frame's movement as a vector of length at most 1 (a fraction of full speed).
@@ -303,7 +309,7 @@ class Character:
             if not (self.loop and self.path):
                 return pg.Vector2()
             self.path_index = 0
-        delta = pg.Vector2(self.path[self.path_index]) - self.position
+        delta = pg.Vector2(self.path[self.path_index]) - self.feet_position
         step = self.speed * dt
         if delta.length() <= step:
             self.path_index += 1
@@ -322,8 +328,11 @@ class Character:
             self.position += direction * self.speed * dt
             if direction.x:
                 self.facing_left = direction.x < 0
-            self.position.x = min(max(self.position.x, 0), SCREEN_SIZE[0])
-            self.position.y = min(max(self.position.y, 0), SCREEN_SIZE[1])
+            # Clamp the character's position to the screen boundaries using feet_position.
+            self.feet_position = (
+                min(max(self.feet_position[0], 0), SCREEN_SIZE[0]),
+                min(max(self.feet_position[1], 0), SCREEN_SIZE[1]),
+            )
 
         self.frame_time += dt
         while self.frame_time >= self.FRAME_DURATION:
@@ -376,10 +385,10 @@ class Player(Character):
         if self.target is None:
             return pg.Vector2()
         nearest = pg.Vector2(
-            min(max(self.position.x, self.target.left), self.target.right),
-            min(max(self.position.y, self.target.top), self.target.bottom),
+            min(max(self.feet_position[0], self.target.left), self.target.right),
+            min(max(self.feet_position[1], self.target.top), self.target.bottom),
         )
-        return nearest - self.position
+        return nearest - self.feet_position
 
     def get_direction(self, dt: float, input_state: InputState) -> pg.Vector2:
         direction = pg.Vector2(

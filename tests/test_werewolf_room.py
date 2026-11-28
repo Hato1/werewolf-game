@@ -103,15 +103,14 @@ def test_player_moves_with_held_input_and_animates() -> None:
     pg.display.set_mode((1, 1))
     room_state = RoomState(rooms.INN_INTERIOR)
     player = room_state.player
-    start = player.position.copy()
+    start_feet = player.feet_position
 
     assert len(player.walk_frames) == 10
     room_state.update(0.5, InputState(frozenset({Action.LEFT}), {}))
 
     assert player.walking
     assert player.facing_left
-    assert player.position.x == start.x - player.speed * 0.5
-    assert player.position.y == start.y
+    assert player.feet_position == (start_feet[0] - player.speed * 0.5, start_feet[1])
     assert player.frame_index == 5
 
     room_state.update(0.0, InputState(frozenset(), {}))
@@ -127,7 +126,7 @@ def test_player_stays_within_bounds() -> None:
 
     room_state.update(100.0, InputState(frozenset({Action.RIGHT, Action.DOWN}), {}))
 
-    assert room_state.player.position == pg.Vector2(bounds.right, bounds.bottom)
+    assert room_state.player.feet_position == (bounds.right, bounds.bottom)
 
 
 def test_player_is_a_character() -> None:
@@ -138,10 +137,15 @@ def test_player_is_a_character() -> None:
 
 
 def make_npc(
-    position: tuple[int, int], path: tuple[tuple[int, int], ...], *, speed: float, loop: bool = False
+    feet_position: tuple[int, int], path: tuple[tuple[int, int], ...], *, speed: float, loop: bool = False
 ) -> Character:
     pg.init()
     pg.display.set_mode((1, 1))
+    sprite = Images.MC_IDLE.load()
+    position = (
+        round(feet_position[0] - sprite.get_width() * 0.5),
+        round(feet_position[1] - sprite.get_height() * 0.95),
+    )
     data = CharacterData(
         id="npc",
         description="An NPC.",
@@ -161,17 +165,17 @@ def test_character_follows_path_and_stops_on_waypoints() -> None:
 
     npc.update(0.5, idle)
     assert npc.walking
-    assert npc.position == pg.Vector2(50, 100)
+    assert npc.feet_position == (50, 100)
 
     npc.update(0.75, idle)
-    assert npc.position == pg.Vector2(100, 100)
+    assert npc.feet_position == (100, 100)
 
     npc.update(1.0, idle)
-    assert npc.position == pg.Vector2(100, 150)
+    assert npc.feet_position == (100, 150)
 
     npc.update(1.0, idle)
     assert not npc.walking
-    assert npc.position == pg.Vector2(100, 150)
+    assert npc.feet_position == (100, 150)
 
 
 def test_character_path_can_loop() -> None:
@@ -181,7 +185,7 @@ def test_character_path_can_loop() -> None:
     for _ in range(4):
         npc.update(1.0, idle)
 
-    assert npc.position == pg.Vector2(0, 0)
+    assert npc.feet_position == (0, 0)
     assert npc.path_index == 2
 
 
@@ -191,7 +195,7 @@ def test_room_updates_its_characters() -> None:
 
     room.update(1.0, InputState(frozenset(), {}))
 
-    assert npc.position == pg.Vector2(10, 0)
+    assert npc.feet_position == (10, 0)
 
 
 def test_room_builds_characters_from_room_data() -> None:
