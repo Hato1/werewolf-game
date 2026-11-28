@@ -67,6 +67,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self.clouds = Images.BACKGROUND_CLOUDS.load()
         self.clouds_rect = self.clouds.get_rect()
         self.total_dt = 0.0
+        self.mouse_pos = (0, 0)
 
         # title
         title = "Beast of \nTemerev"
@@ -85,12 +86,19 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
             self.buttons.append(MainMenuButton(self.FONT, Images.PLAQUE_EXIT, None))
         self.button_index = 0
 
+    def press_button(self) -> None:
+        """Switch to the state of the currently selected button.
+
+        If the button has no next state, quit the game.
+        """
+        self.done = True
+        self.next_state = self.buttons[self.button_index].next_state
+        if not self.next_state:
+            self.quit = True
+
     def handle_event(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.UI_SELECT in actions:
-            self.done = True
-            self.next_state = self.buttons[self.button_index].next_state
-            if not self.next_state:
-                self.quit = True
+            self.press_button()
 
         if Action.UP in actions:
             self.button_index = (self.button_index - 1) % len(self.buttons)
@@ -101,10 +109,13 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         if Action.MOUSE_SELECT in actions:
             for button in self.buttons:
                 if button.collidepoint(event.pos):
-                    self.done = True
-                    self.next_state = button.next_state
-                    if not self.next_state:
-                        self.quit = True
+                    self.button_index = self.buttons.index(button)
+                    self.press_button()
+
+        if event.type == pg.MOUSEMOTION:
+            for i, button in enumerate(self.buttons):
+                if button.collidepoint(event.pos):
+                    self.button_index = i
 
     def update(self, dt: float, input_state: InputState) -> None:
         self.total_dt += dt
