@@ -213,7 +213,29 @@ TOWN_ENTRANCE = RoomData(
             ),
         ),
     ),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_hall_from_entrance",
+            name="Region 1",
+            description="",
+            polygon=((309, 145), (353, 148), (352, 132), (327, 131)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="town_hall_exterior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -347,7 +369,29 @@ WOODS = RoomData(
         ),
     ),
     characters=(),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_inn_from_woods",
+            name="Region 1",
+            description="",
+            polygon=((2, 167), (40, 165), (40, 206), (0, 208)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="INN_EXTERIOR",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -475,7 +519,7 @@ INN_INTERIOR = RoomData(
                     verb=Verb.ENTER,
                     effects=(
                         ChangeRoom(
-                            room_id="Town Center Room",
+                            room_id="town_hall_exterior",
                         ),
                     ),
                     priority=0,
@@ -568,7 +612,50 @@ INN_EXTERIOR = RoomData(
         ),
     ),
     characters=(),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_inn_from_outdoors",
+            name="Region 1",
+            description="",
+            polygon=((318, 150), (345, 148), (349, 155), (319, 158)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="inn_interior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+        RegionData(
+            id="to_woods_from_inn",
+            name="Region 2",
+            description="",
+            polygon=((0, 192), (19, 191), (19, 207), (1, 206)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="Woods Room",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -665,7 +752,29 @@ TOWN_HALL_INTERIOR = RoomData(
             ),
         ),
     ),
-    regions=(),
+    regions=(
+        RegionData(
+            id="region_1",
+            name="Region 1",
+            description="",
+            polygon=((28, 170), (38, 169), (26, 196), (11, 195)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="town_hall_exterior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -714,7 +823,92 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
     ),
     characters=(),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_town_hall_from_outdoors",
+            name="Region 1",
+            description="",
+            polygon=((215, 134), (254, 134), (263, 145), (204, 146)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="town_hall_interior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+        RegionData(
+            id="to_church_from_town_hall",
+            name="Region 2",
+            description="",
+            polygon=((479, 137), (479, 180), (472, 180), (470, 136)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="CHURCH_EXTERIOR",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+        RegionData(
+            id="to_inn_from_town_hall",
+            name="Region 3a",
+            description="",
+            polygon=((1, 179), (1, 148), (15, 147), (15, 179)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="INN_EXTERIOR",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+        RegionData(
+            id="to_town_entrance_from_town_hall",
+            name="Region 4",
+            description="",
+            polygon=((133, 207), (328, 207), (323, 201), (140, 199)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="Town Entrance Room",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -748,7 +942,7 @@ CHURCH_INTERIOR = RoomData(
             description="New prop",
             image=Images.CLOTHES_BASKET_1,
             normal_image=None,
-            position=(354, 177),
+            position=(223, 141),
             visible=True,
             clickable=True,
             clickable_area=None,
@@ -769,7 +963,7 @@ CHURCH_INTERIOR = RoomData(
             image=Images.CHAR_NUN,
             normal_image=None,
             position=(160, 87),
-            walk_image=Images.MC_WALK,
+            walk_image=Images.CHAR_NUN,
             normal_walk_image=None,
             scale=1.0,
             size=None,
@@ -793,7 +987,29 @@ CHURCH_INTERIOR = RoomData(
             ),
         ),
     ),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_church_exterior_from_inside",
+            name="Region 1",
+            description="",
+            polygon=((301, 202), (179, 202), (179, 208), (302, 208)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="CHURCH_EXTERIOR",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -841,7 +1057,50 @@ CHURCH_EXTERIOR = RoomData(
         ),
     ),
     characters=(),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_church_from_outdoors",
+            name="Region 1",
+            description="",
+            polygon=((373, 175), (399, 174), (401, 178), (373, 179)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="church_interior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+        RegionData(
+            id="to_town_hall_from_church",
+            name="Region 2",
+            description="",
+            polygon=((6, 174), (7, 207), (1, 206), (1, 172)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="town_hall_exterior",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
@@ -1005,7 +1264,29 @@ CHURCH_SHED = RoomData(
         ),
     ),
     characters=(),
-    regions=(),
+    regions=(
+        RegionData(
+            id="to_graveyard_from_shed",
+            name="Region 1",
+            description="",
+            polygon=((118, 202), (353, 198), (366, 207), (110, 208)),
+            depth=0,
+            clickable=False,
+            interactions=(
+                InteractionData(
+                    verb=Verb.ENTER,
+                    effects=(
+                        ChangeRoom(
+                            room_id="church_cemetary",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
+        ),
+    ),
     points=(),
     walkable_areas=(),
 )
