@@ -42,7 +42,7 @@ from customtkinter import (
 from PIL import Image, ImageTk
 
 from my_game.core.logger import get_logger
-from my_game.werewolf.assets import Images, populate_images_enum
+from my_game.werewolf.assets import Images
 from my_game.werewolf.interactions import editor_data as interaction_editor_data
 from my_game.werewolf.interactions.definitions import Condition, Effect, InteractionData, Verb
 from my_game.werewolf.room import rooms
@@ -68,7 +68,6 @@ ROOMS_FILE = PROJECT_ROOT / "src/my_game/werewolf/room/rooms.py"
 
 
 def run() -> None:
-    populate_images_enum()
     set_appearance_mode("Dark")
     set_default_color_theme(DEFAULT_THEME)
     DrawEngine.preferred_drawing_method = "polygon_shapes"

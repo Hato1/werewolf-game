@@ -3,7 +3,7 @@
 from enum import StrEnum
 from pathlib import Path
 
-from my_game.werewolf.assets import populate_images_enum
+from my_game.werewolf.assets import Images, populate_images_enum
 
 
 def _fixture_enum() -> type[StrEnum]:
@@ -16,6 +16,17 @@ def _fixture_enum() -> type[StrEnum]:
 def _touch(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.touch()
+
+
+def test_real_images_enum_is_populated_on_import() -> None:
+    assert "SIGN1" in Images.__members__
+    assert Images.SIGN1.value == "props/sign1.png"
+    assert Images("props/sign1.png") is Images.SIGN1
+
+
+def test_populating_real_images_enum_again_keeps_dynamic_attributes() -> None:
+    assert populate_images_enum() == ()
+    assert Images.SIGN1.value == "props/sign1.png"
 
 
 def test_populate_images_enum_adds_missing_images(tmp_path: Path) -> None:

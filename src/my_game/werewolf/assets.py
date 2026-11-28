@@ -1,7 +1,7 @@
 """Asset catalog for the werewolf game."""
 
 import re
-from enum import Enum, StrEnum, unique
+from enum import Enum, EnumMeta, StrEnum, unique
 from functools import cache
 from importlib.resources import files
 from pathlib import Path
@@ -24,8 +24,15 @@ UI_PATH = ASSETS_PATH / "ui"
 SHADERS_PATH = ASSETS_PATH / "shaders"
 
 
+class _ImagesMeta(EnumMeta):
+    """Tell static checkers that image members may be added from disk at runtime."""
+
+    def __getattr__(cls, name: str) -> Any:
+        raise AttributeError(name)
+
+
 @unique
-class Images(StrEnum):
+class Images(StrEnum, metaclass=_ImagesMeta):
     # Root level
     ARTEMIS_STAINED_GLASS = "artemis_stained_glass.png"
     BG2 = "bg2.png"
@@ -269,7 +276,7 @@ def populate_images_enum(
         added.append(name)
 
     if added:
-        logger.info("Registered %d missing image(s): %s", len(added), ", ".join(added))
+        logger.error("Registered %d missing image(s): %s", len(added), ", ".join(added))
     return tuple(added)
 
 
@@ -330,3 +337,7 @@ class UIElements(Enum):
     @cache
     def load(self) -> pg.Surface:
         return load_image(UI_PATH / self.value)
+
+
+# Populate before room modules import so saved definitions can reference new images.
+populate_images_enum()
