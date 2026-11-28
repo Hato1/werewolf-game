@@ -25,10 +25,16 @@ from my_game.werewolf.assets import DialogueFile
 
 
 @dataclass
+class Option:
+    option: str
+    jump: str | None = None
+
+
+@dataclass
 class Line:
     name: str
     dialogue: str
-    options: list[str]
+    options: list[Option]
     done: bool = False
 
 
@@ -68,13 +74,13 @@ class DialogueParser:
                         split_index = line.index(">")
 
                     if len(node.lines[len(node.lines) - 1].options) > 0:
-                        node.lines[len(node.lines) - 1].options.append(line[split_index + 1 :].strip())
+                        node.lines[len(node.lines) - 1].options.append(Option(line[split_index + 1 :].strip()))
                     else:
-                        line_node = Line("", "", [line[split_index + 1 :].strip()])
+                        line_node = Line("", "", [Option(line[split_index + 1 :].strip())])
                         node.lines.append(line_node)
                 else:
                     colon_index = line.index(":")
-                    line_node = Line(line[:colon_index].strip(), line[colon_index + 1 :].strip(), list(""))
+                    line_node = Line(line[:colon_index].strip(), line[colon_index + 1 :].strip(), [])
                     node.lines.append(line_node)
         return node
 

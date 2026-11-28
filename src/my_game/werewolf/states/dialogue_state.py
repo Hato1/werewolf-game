@@ -114,11 +114,11 @@ class Converser:
                 top_pos -= 1
                 o2_adder = "   "
 
-            self.opt_1 = self.line.options[top_pos]
+            self.opt_1 = self.line.options[top_pos].option
             if len(self.line.options) - 1 == top_pos:
                 self.opt_2 = ""
             elif len(self.line.options) > top_pos:
-                self.opt_2 = self.line.options[top_pos + 1]
+                self.opt_2 = self.line.options[top_pos + 1].option
 
             textbox_topleft = self.textbox_rect.__getattribute__("topleft")
 
