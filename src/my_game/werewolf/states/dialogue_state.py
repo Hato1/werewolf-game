@@ -60,7 +60,7 @@ class Converser:
         self.textbox_surf.fill(self.FILL)
         self.textbox_rect = self.textbox_surf.get_rect(bottomleft=self.textbox_loc)
 
-        self.line: Line | None = None
+        self.line = Line("", "", [])
 
         self.says = ""
         self.says_surf = pg.Surface((0, 0))
@@ -74,9 +74,9 @@ class Converser:
         self.opt_2_surf = pg.Surface((0, 0))
         self.opt_2_rect = self.opt_2_surf.get_rect()
 
-        self.pos = 0
+        self.pos = -1
 
-    def set_line(self, line: Line, pos):
+    def set_line(self, line: Line):
         self.line = line
         self.pos = 0
 
@@ -122,7 +122,9 @@ class Converser:
                 None,
                 self.textbox_width - self.BORDER * 2,
             )
-            self.opt_1_rect = self.opt_1_surf.get_rect(topleft=textbox_topleft)
+            self.opt_1_rect = self.opt_1_surf.get_rect(
+                topleft=textbox_topleft, size=(self.textbox_width, int(self.textbox_height / 2))
+            )
 
             self.opt_2_surf = pg.Font.render(
                 self.FONT,
@@ -133,7 +135,8 @@ class Converser:
                 self.textbox_width - self.BORDER * 2,
             )
             self.opt_2_rect = self.opt_2_surf.get_rect(
-                topleft=(textbox_topleft[0], int(textbox_topleft[1] + self.textbox_height / 2))
+                topleft=(textbox_topleft[0], int(textbox_topleft[1] + self.textbox_height / 2)),
+                size=(self.textbox_width, int(self.textbox_height / 2)),
             )
         else:
             self.opt_1 = ""
@@ -196,11 +199,13 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
         self.dialogue_parser = DialogueParser(self.player.name, self.talker.name, self.transition_data.dialogue)
         self.next_line()
 
-    def next_line(self):
+    def next_line(self, pos=-1):
         if not self.dialogue_parser:
             logger.error("No dialogue object")
             return
-        line = self.dialogue_parser.get_next_line(selected=self.player.pos)
+        if self.player.line and self.player.line.options and len(self.player.line.options) > 0:
+            print(self.player.line.options[pos])
+        line = self.dialogue_parser.get_next_line(selected=pos)
 
         if not line:
             logger.error("No line returned")
@@ -210,12 +215,12 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
             self.next_state = WerewolfState(str(self.transition_data.previous_state))
             return
 
-        self.player.set_line(line, 0)
-        self.talker.set_line(line, 0)
+        self.player.set_line(line)
+        self.talker.set_line(line)
 
     def handle_keyboard(self, actions: set[Enum]) -> None:
         if Action.UI_SELECT in actions or Action.RIGHT in actions:
-            self.next_line()
+            self.next_line(self.player.pos)
         elif Action.UP in actions:
             self.player.change_option(down=False)
         elif Action.DOWN in actions:
@@ -223,7 +228,20 @@ class DialogueView(State[WerewolfState, WerewolfTransitionData]):
 
     def handle_mouse(self, actions: set[Enum], event: pg.Event) -> None:
         if Action.MOUSE_SELECT in actions:
-            self.next_line()
+            if len(self.player.line.options) > 0 and (self.player.opt_1_rect.collidepoint(event.pos)):
+                if self.player.pos % 2 == 0:
+                    self.next_line(self.player.pos)
+                else:
+                    self.next_line(self.player.pos - 1)
+            elif len(self.player.line.options) > 0 and (self.player.opt_2_rect.collidepoint(event.pos)):
+                if self.player.pos % 2 == 0:
+                    self.next_line(self.player.pos + 1)
+                else:
+                    self.next_line(self.player.pos)
+            elif len(self.player.line.options) == 0 and (
+                self.talker.textbox_rect.collidepoint(event.pos) or self.player.textbox_rect.collidepoint(event.pos)
+            ):
+                self.next_line()
 
     def handle_event(self, actions, event):
         self.handle_keyboard(actions)
