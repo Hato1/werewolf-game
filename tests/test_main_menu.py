@@ -101,6 +101,46 @@ def test_clouds_stay_between_moon_and_mountains() -> None:
     assert moon_index < clouds_index < mountains_index
 
 
+def test_button_hitbox_is_smallest_rect_containing_mask() -> None:
+    menu = MainMenu()
+
+    for button in menu.buttons:
+        mask_rects = pg.mask.from_surface(button.image).get_bounding_rects()
+        expected = mask_rects[0]
+        for mask_rect in mask_rects[1:]:
+            expected = expected.union(mask_rect)
+        assert button.hitbox == expected
+
+        assert button.collidepoint((expected.centerx, expected.centery))
+        assert not button.collidepoint((0, 0))
+        assert not button.collidepoint((button.image.get_width() - 1, button.image.get_height() - 1))
+
+        transparent_point = next(
+            (x, y)
+            for y in range(expected.y, expected.bottom)
+            for x in range(expected.x, expected.right)
+            if not pg.mask.from_surface(button.image).get_at((x, y))
+        )
+        assert button.collidepoint(transparent_point)
+
+
+def test_mouseover_uses_expanded_button_hitbox() -> None:
+    menu = MainMenu()
+    menu.button_index = 1
+    button = menu.buttons[0]
+    transparent_point = next(
+        (x, y)
+        for y in range(button.hitbox.y, button.hitbox.bottom)
+        for x in range(button.hitbox.x, button.hitbox.right)
+        if not pg.mask.from_surface(button.image).get_at((x, y))
+    )
+    pos = (button.rect.x + transparent_point[0], button.rect.y + transparent_point[1])
+
+    menu.handle_event(set(), pg.event.Event(pg.MOUSEMOTION, pos=pos))
+
+    assert menu.button_index == 0
+
+
 def test_plaque_and_buttons_move_together() -> None:
     menu = MainMenu()
     menu.parallax.update(1.0, -1.0)

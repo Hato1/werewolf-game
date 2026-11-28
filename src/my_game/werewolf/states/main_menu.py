@@ -18,7 +18,10 @@ class MainMenuButton:
         self.selected_image = self.image.copy()
         self.selected_image.fill((255, 255, 0), special_flags=pg.BLEND_RGB_ADD)
         self.rect = self.image.get_rect()
-        self.image_mask = pg.mask.from_surface(self.image)
+        mask_rects = pg.mask.from_surface(self.image).get_bounding_rects()
+        self.hitbox = mask_rects[0].copy() if mask_rects else pg.Rect(0, 0, 0, 0)
+        for mask_rect in mask_rects[1:]:
+            self.hitbox = self.hitbox.union(mask_rect)
         self.font = font
         self.next_state = next_state
 
@@ -27,11 +30,9 @@ class MainMenuButton:
         renderer(self.selected_image if selected else self.image, self.rect, unlit=True)
 
     def collidepoint(self, pos) -> bool:
+        """Use the smallest rect containing the visible pixels as the click area."""
         local_pos = (pos[0] - self.rect.x, pos[1] - self.rect.y)
-        try:
-            return bool(self.image_mask.get_at(local_pos))
-        except IndexError:
-            return False
+        return bool(self.hitbox.collidepoint(local_pos))
 
 
 def _extend_surface_edges(surface: pg.Surface, margin_x: int, margin_y: int | None = None) -> pg.Surface:
