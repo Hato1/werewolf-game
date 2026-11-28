@@ -1,7 +1,7 @@
 """Room definitions for the werewolf game."""
 
 from my_game.werewolf.assets import Dialogue, Images
-from my_game.werewolf.interactions.definitions import ChangeRoom, EnterDialogue, InteractionData, Verb, WalkTo
+from my_game.werewolf.interactions.definitions import ChangeRoom, Describe, EnterDialogue, InteractionData, Verb, WalkTo
 from my_game.werewolf.room import props
 from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropData, RegionData, RoomData
 
@@ -787,12 +787,12 @@ TOWN_HALL_INTERIOR = RoomData(
             normal_image=None,
             position=(0, 0),
             visible=True,
-            clickable=True,
+            clickable=False,
             clickable_area=None,
             scale=1.0,
             size=None,
             parallax=0.0,
-            depth=0,
+            depth=9999,
             baseline=0,
             walk_to_interact=False,
             interactions=(),
@@ -829,7 +829,20 @@ TOWN_HALL_INTERIOR = RoomData(
             depth=0,
             baseline=0,
             walk_to_interact=True,
-            interactions=(),
+            interactions=(
+                InteractionData(
+                    verb=Verb.INTERACT,
+                    effects=(
+                        WalkTo(),
+                        Describe(
+                            text="These could come in handy.",
+                        ),
+                    ),
+                    priority=0,
+                    conditions=(),
+                    once=False,
+                ),
+            ),
         ),
     ),
     characters=(
@@ -1145,7 +1158,7 @@ CHURCH_INTERIOR = RoomData(
             clickable=False,
             interactions=(
                 InteractionData(
-                    verb=Verb.INTERACT,
+                    verb=Verb.ENTER,
                     effects=(
                         ChangeRoom(
                             room_id="CHURCH_EXTERIOR",
@@ -1302,7 +1315,7 @@ CHURCH_EXTERIOR = RoomData(
             clickable=False,
             interactions=(
                 InteractionData(
-                    verb=Verb.INTERACT,
+                    verb=Verb.ENTER,
                     effects=(
                         ChangeRoom(
                             room_id="church_cemetary",
