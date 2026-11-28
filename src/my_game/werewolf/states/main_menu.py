@@ -41,24 +41,23 @@ class MainMenuButton:
 
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
-    TITLE_FONT_SIZE = 60 // 2
+    TITLE_FONT_SIZE = 32
     MENU_BUTTON_OFFSET_Y = 200 // 2
     CLOUD_SPEED = 5
 
     def __init__(self) -> None:
         super().__init__()
 
+        self.FONT = Fonts.PICO8.load(MENU_FONT_SIZE)
+        self.TITLE_FONT = Fonts.BITMGOTHIC.load(self.TITLE_FONT_SIZE)
+
         # background
         self.clouds = Images.BACKGROUND_CLOUDS.load()
         self.clouds_rect = self.clouds.get_rect()
         self.total_dt = 0.0
 
-        # text
-        self.FONT = Fonts.PICO8.load(MENU_FONT_SIZE)
-        self.TITLE_FONT = Fonts.PICO8.load(self.TITLE_FONT_SIZE)
-
         # title
-        title = "the beast of \ntemerev"
+        title = "The Beast of \nTemerev"
         self.title_surface = self.TITLE_FONT.render(title, MENU_ANTI_ALIAS, pg.Color("white"))
         self.title_rect = self.title_surface.get_rect(topleft=(50 // 2, 50 // 2))
 
