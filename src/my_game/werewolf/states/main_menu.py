@@ -34,9 +34,27 @@ class MainMenuButton:
             return False
 
 
+def add_outline_to_image(
+    image: pg.Surface, thickness: int, color: pg.Color, color_key: tuple = (255, 0, 255)
+) -> pg.Surface:
+    mask = pg.mask.from_surface(image)
+    mask_surf = mask.to_surface(setcolor=color)
+    mask_surf.set_colorkey((0, 0, 0))
+
+    new_img = pg.Surface((image.get_width() + 2 * thickness, image.get_height() + 2 * thickness))
+    new_img.fill(color_key)
+    new_img.set_colorkey(color_key)
+
+    for i in range(-thickness, thickness + 1):
+        new_img.blit(mask_surf, (i + thickness, thickness))
+        new_img.blit(mask_surf, (thickness, i + thickness))
+    new_img.blit(image, (thickness, thickness))
+
+    return new_img
+
+
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
-    TITLE_FONT_SIZE = 32
-    MENU_BUTTON_OFFSET_Y = 200 // 2
+    TITLE_FONT_SIZE = 64
     CLOUD_SPEED = 5
 
     def __init__(self) -> None:
@@ -51,10 +69,10 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         self.total_dt = 0.0
 
         # title
-        title = "The Beast of \nTemerev"
-        self.title_surface = self.TITLE_FONT.render(title, MENU_ANTI_ALIAS, pg.Color("white"))
-        self.title_rect = self.title_surface.get_rect(topleft=(50 // 2, 50 // 2))
-        self.title_rect.x += 150
+        title = "Beast of \nTemerev"
+        self.title_surface = self.TITLE_FONT.render(title, MENU_ANTI_ALIAS, pg.Color("gray70"))
+        self.title_surface = add_outline_to_image(self.title_surface, 2, pg.Color("darkred"))
+        self.title_rect = self.title_surface.get_rect(topleft=(5, 5))
 
         # buttons
         self.buttons = [
