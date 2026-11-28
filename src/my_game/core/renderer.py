@@ -176,8 +176,8 @@ class Renderer:
         target_rect = rect if rect is not None else surface.get_rect()
 
         if self.gl_renderer is None:
-            # surface, target_rect = self.scale(surface, target_rect)
-            self.surface.blit(surface, target_rect)
+            if not to_mask and not to_normal:
+                self.surface.blit(surface, target_rect)
         elif to_mask:
             self.gl_renderer.blit_to_light_mask(surface, target_rect)
         elif to_normal:
