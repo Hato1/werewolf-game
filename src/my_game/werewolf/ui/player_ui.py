@@ -90,7 +90,7 @@ class Inventory:
             return
         for i, item in enumerate(self.inventory):
             if self.get_rect(i).collidepoint(pos):
-                logger.info("Inventory item clicked", item=item.name)
+                logger.info("Inventory item clicked", item=item.id)
                 self.selected = item
 
     def draw(self, renderer: Renderer) -> None:

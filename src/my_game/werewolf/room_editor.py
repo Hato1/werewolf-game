@@ -422,7 +422,6 @@ class RoomViewport(CTkFrame):
         # Create a new region
         new_region = RegionData(
             id=f"region_{len(self.app_state.current_room.regions) + 1}",
-            name=f"Region {len(self.app_state.current_room.regions) + 1}",
             description="",
             polygon=polygon,
         )
@@ -603,7 +602,7 @@ class MainTabview(CTkTabview):
     def refresh_tree(self, room: RoomData) -> None:
         """Update all tab titles and selectors with current room data."""
         for tab_data in self.tabs.values():
-            names = [item.name for item in tab_data.get_items(room)]
+            ids = [item.id for item in tab_data.get_items(room)]
 
             cmd = tab_data.selector_button._command
             for child in tab_data.scrollable_frame.winfo_children():
@@ -612,7 +611,7 @@ class MainTabview(CTkTabview):
             selector = CTkSegmentedButton(
                 tab_data.scrollable_frame,
                 orientation="vertical",
-                values=names,
+                values=ids,
                 command=cmd,
             )
             selector.pack(fill="x")
@@ -1000,11 +999,11 @@ class ObjectForm(CTkFrame):
         if selected is None:
             # Show room metadata
             current_room = self.app_state.current_room
-            self.title_label.configure(text=f"Room: {current_room.name}")
+            self.title_label.configure(text=f"Room: {current_room.id}")
             self._add_field_widgets(current_room)
         else:
             # Show selected object attributes
-            self.title_label.configure(text=f"{type(selected).__name__}: {selected.name}")
+            self.title_label.configure(text=f"{type(selected).__name__}: {selected.id}")
             self._add_field_widgets(selected)
             self._add_interactions_section(selected)
 
@@ -1546,11 +1545,11 @@ class RoomEditor(CTk):
 
         _run_ruff_fix(ROOMS_FILE)
 
-    def on_select_item(self, item_name: str, get_items: Callable[[RoomData], Sequence]) -> None:
+    def on_select_item(self, item_id: str, get_items: Callable[[RoomData], Sequence]) -> None:
         """Generic item selection handler for props, characters, regions, and points."""
         items = get_items(self.current_room)
         for i, item in enumerate(items):
-            if item.name == item_name:
+            if item.id == item_id:
                 self.app_state.selected_index = i
                 self.app_state.selected = item
                 self.room_viewport.draw_room(self.current_room)
@@ -1566,7 +1565,6 @@ class RoomEditor(CTk):
         if tab_name == "Props":
             new_item_prop = PropData(
                 id=f"prop_{current_index}",
-                name=f"Prop{current_index}",
                 description="New prop",
                 image=Images.LANTERN_1,
                 position=(240, 75),
@@ -1576,7 +1574,6 @@ class RoomEditor(CTk):
         elif tab_name == "Characters":
             new_item_char = CharacterData(
                 id=f"character_{current_index}",
-                name=f"Character{current_index}",
                 description="New character",
                 image=Images.MC_IDLE,
                 position=(240, 75),
@@ -1587,7 +1584,6 @@ class RoomEditor(CTk):
         elif tab_name == "Regions":
             new_item_region = RegionData(
                 id=f"region_{current_index}",
-                name=f"Region{current_index}",
                 description="New region",
                 polygon=((10, 10), (100, 10), (100, 100), (10, 100)),
             )
@@ -1596,7 +1592,6 @@ class RoomEditor(CTk):
         elif tab_name == "Points":
             new_item_point = NamedPointData(
                 id=f"point_{current_index}",
-                name=f"Point{current_index}",
                 description="New point",
                 position=(240, 75),
             )
@@ -1621,7 +1616,7 @@ class RoomEditor(CTk):
             return
 
         selected = self.app_state.selected
-        item_name = selected.name if hasattr(selected, "name") else str(selected)
+        item_name = selected.id if hasattr(selected, "id") else str(selected)
 
         # Show confirmation dialog unless skip confirmation is enabled
         skip_confirmation = self.sidebar_frame.skip_confirmation_switch.get()
@@ -1689,7 +1684,7 @@ class RoomEditor(CTk):
             counter += 1
 
         # Create a new room with default values
-        new_room = RoomData(id=room_name, name=room_name, description="")
+        new_room = RoomData(id=room_name, description="")
 
         # Add to room data using the Python variable name as key
         self.app_state.room_data[var_name] = new_room

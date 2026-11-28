@@ -64,7 +64,6 @@ class Prop:
     """Props are objects within a room that the player can interact with.
 
     Attributes:
-        name: Prop's display name.
         description: Prop's description.
         sprite: Pygame surface containing the prop's visual representation.
         position: Top-left coordinate of the prop's sprite.
@@ -82,7 +81,6 @@ class Prop:
     """
 
     id: str
-    name: str
     description: str
     sprite: pg.Surface
     normal_sprite: pg.Surface | None
@@ -104,12 +102,11 @@ class Prop:
         normal_sprite = load_image(data.normal_image, data.size, data.scale) if data.normal_image else None
         if normal_sprite and sprite.get_size() != normal_sprite.get_size():
             logger.error(
-                "Sprite size mismatch.", size=sprite.get_size(), normal_size=normal_sprite.get_size(), sprite=data.name
+                "Sprite size mismatch.", size=sprite.get_size(), normal_size=normal_sprite.get_size(), sprite=data.id
             )
             raise ValueError("Sprite size does not match normal sprite size (See above log for details).")
         prop = cls(
             id=data.id,
-            name=data.name,
             description=data.description,
             sprite=sprite,
             normal_sprite=normal_sprite,
@@ -166,7 +163,6 @@ class Character:
     follows a preprogrammed path; subclasses (such as the player) can override it.
 
     Attributes:
-        name: Character's display name.
         description: Character's description.
         idle_frames: Animation frames shown while standing still.
         walk_frames: Animation frames shown while moving.
@@ -184,7 +180,6 @@ class Character:
     FRAME_DURATION = 0.1
 
     id: str
-    name: str
     description: str
     idle_frames: list[pg.Surface]
     normal_idle_frames: list[pg.Surface] | None
@@ -223,7 +218,7 @@ class Character:
                 "Idle sprite size mismatch.",
                 size=idle[0].get_size(),
                 normal_size=normal_idle[0].get_size(),
-                sprite=data.name,
+                sprite=data.id,
             )
             raise ValueError("Idle Sprite size does not match normal sprite size (See above log for details).")
         if normal_walk and walk[0].get_size() != normal_walk[0].get_size():
@@ -231,13 +226,12 @@ class Character:
                 "Walk sprite size mismatch.",
                 size=walk[0].get_size(),
                 normal_size=normal_walk[0].get_size(),
-                sprite=data.name,
+                sprite=data.id,
             )
             raise ValueError("Walk Sprite size does not match normal sprite size (See above log for details).")
 
         character = cls(
             id=data.id,
-            name=data.name,
             description=data.description,
             idle_frames=idle,
             normal_idle_frames=normal_idle,
@@ -414,7 +408,6 @@ class Region:
     """Region represents a distinct area within a room that may have specific properties or rules.
 
     Attributes:
-        name: Region's display name.
         description: Region's description.
         polygon: List of coordinate tuples defining the region's shape.
         id: Stable identifier for interaction references.
@@ -422,7 +415,6 @@ class Region:
     """
 
     id: str
-    name: str
     description: str
     polygon: Polygon
     depth: int
@@ -445,7 +437,6 @@ class Region:
     def from_region_data(cls, data: RegionData) -> Self:
         region = cls(
             id=data.id,
-            name=data.name,
             description=data.description,
             polygon=data.polygon,
             depth=data.depth,
@@ -468,7 +459,6 @@ class NamedPoint:
     """
 
     id: str
-    name: str
     description: str = ""
     position: tuple[int, int] = (0, 0)
     interactions: tuple[InteractionData, ...] = ()
@@ -477,7 +467,6 @@ class NamedPoint:
     def from_point_data(cls, data: NamedPointData) -> Self:
         return cls(
             id=data.id,
-            name=data.name,
             description=data.description,
             position=data.position,
             interactions=data.interactions,
@@ -489,7 +478,7 @@ class Room:
     """Room represents a location in the game that contains props the player can interact with.
 
     Attributes:
-        name: Room's display name.
+        id: Room's stable identifier.
         description: Room's description.
         props: Objects within the room, including the background.
         characters: Entities within the room that the player can converse with.
@@ -500,7 +489,7 @@ class Room:
 
     registry: ClassVar[dict[RoomData, Self]] = {}
 
-    name: str
+    id: str
     description: str
     props: list[Prop] = field(default_factory=list)
     characters: list[Character] = field(default_factory=list)
@@ -513,7 +502,7 @@ class Room:
         if data in cls.registry and not overwrite:
             return cls.registry[data]
         room = cls(
-            name=data.name,
+            id=data.id,
             description=data.description,
             props=[Prop.from_prop_data(prop) for prop in data.props],
             characters=[Character.from_character_data(ch) for ch in data.characters],

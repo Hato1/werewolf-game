@@ -4,7 +4,6 @@ from my_game.werewolf.assets import Images
 from my_game.werewolf.room.loaders import CharacterData
 
 PLAYER = CharacterData(
-    name="Player",
     description="The player character.",
     image=Images.MC_IDLE,
     position=(240, 75),
@@ -15,7 +14,6 @@ PLAYER = CharacterData(
 
 
 TEST_CHARACTER = CharacterData(
-    name="Test Character",
     description="A test character.",
     image=Images.MC_IDLE,
     position=(80, 60),

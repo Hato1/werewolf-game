@@ -8,7 +8,6 @@ from my_game.werewolf.assets import Images
 from my_game.werewolf.room.loaders import PropData
 
 BACKGROUND = PropData(
-    name="Background",
     description="The room background.",
     image=Images.ROOM_TEST,
     size=(960, 540),
@@ -18,7 +17,6 @@ BACKGROUND = PropData(
 )
 
 STUDIO = PropData(
-    name="Studio",
     description="a tiny studio model.",
     image=Images.STUDIO,
     position=(800 // 2, 70 // 2),
@@ -29,7 +27,6 @@ STUDIO = PropData(
 )
 
 BACKGROUND_CHURCH_CEMETARY = PropData(
-    name="Church Cemetary Background",
     description="The church cemetary background.",
     image=Images.CHURCH_CEMETARY,
     scale=1,
@@ -39,7 +36,6 @@ BACKGROUND_CHURCH_CEMETARY = PropData(
 )
 
 BACKGROUND_INN = PropData(
-    name="Inn Background",
     description="The inn background.",
     image=Images.INN,
     scale=1,
@@ -49,7 +45,6 @@ BACKGROUND_INN = PropData(
 )
 
 BACKGROUND_TOWN_CENTER = PropData(
-    name="Town Center Background",
     description="The town center background.",
     image=Images.BACKGROUND_TOWN_CENTER,
     size=(960 // 2, 540 // 2),
@@ -59,7 +54,6 @@ BACKGROUND_TOWN_CENTER = PropData(
 )
 
 BACKGROUND_TOWN_ENTRANCE = PropData(
-    name="Town Entrance Background",
     description="The town entrance background.",
     image=Images.BACKGROUND_TOWN_ENTRANCE,
     size=(960 // 2, 540 // 2),
@@ -69,7 +63,6 @@ BACKGROUND_TOWN_ENTRANCE = PropData(
 )
 
 BACKGROUND_TOWN_HALL = PropData(
-    name="Town Hall Background",
     description="The town hall background.",
     image=Images.BACKGROUND_TOWN_HALL_1,
     size=(960 // 2, 540 // 2),
@@ -79,7 +72,6 @@ BACKGROUND_TOWN_HALL = PropData(
 )
 
 BACKGROUND_WOODS = PropData(
-    name="Woods Background",
     description="The woods background.",
     image=Images.WOODS,
     scale=1,
@@ -89,7 +81,6 @@ BACKGROUND_WOODS = PropData(
 )
 
 GRAVEYARD_CHAINS = PropData(
-    name="Graveyard Chains",
     description="An interactable set of graveyard chains.",
     image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
     position=(300, 150),

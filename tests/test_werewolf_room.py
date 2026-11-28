@@ -33,7 +33,6 @@ def test_room_draws_visible_props_at_their_positions() -> None:
     sprite.fill(pg.Color("red"))
     prop = Prop(
         id="test",
-        name="test",
         description="A test prop.",
         sprite=sprite,
         normal_sprite=None,
@@ -63,7 +62,6 @@ def test_hidden_props_are_not_drawn() -> None:
     sprite.fill(pg.Color("red"))
     prop = Prop(
         id="test",
-        name="test",
         description="A test prop.",
         sprite=sprite,
         normal_sprite=None,
@@ -146,7 +144,6 @@ def make_npc(
     pg.display.set_mode((1, 1))
     data = CharacterData(
         id="npc",
-        name="npc",
         description="An NPC.",
         image=Images.MC_IDLE,
         position=position,
@@ -200,24 +197,20 @@ def test_room_updates_its_characters() -> None:
 def test_room_builds_characters_from_room_data() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    npc = CharacterData(id="npc", name="npc", description="An NPC.", image=Images.MC_IDLE, position=(5, 6))
+    npc = CharacterData(id="npc", description="An NPC.", image=Images.MC_IDLE, position=(5, 6))
 
-    room = Room.from_room_data(
-        RoomData("char room", "char room", "A room with a character.", characters=(npc,)), overwrite=True
-    )
+    room = Room.from_room_data(RoomData("char room", "A room with a character.", characters=(npc,)), overwrite=True)
 
-    assert room.characters[0].name == npc.name
+    assert room.characters[0].id == npc.id
     assert room.characters[0].position == pg.Vector2(5, 6)
 
 
 def test_character_scale_applies_to_all_frames() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    base_data = CharacterData(
-        id="npc", name="npc", description="An NPC.", image=Images.MC_IDLE, walk_image=Images.MC_WALK
-    )
+    base_data = CharacterData(id="npc", description="An NPC.", image=Images.MC_IDLE, walk_image=Images.MC_WALK)
     scaled_data = CharacterData(
-        id="npc", name="npc", description="An NPC.", image=Images.MC_IDLE, walk_image=Images.MC_WALK, scale=2
+        id="npc", description="An NPC.", image=Images.MC_IDLE, walk_image=Images.MC_WALK, scale=2
     )
     base = Character.from_character_data(base_data)
     scaled = Character.from_character_data(scaled_data)
@@ -233,13 +226,12 @@ def make_walk_to_room_state(*, walk_to_interact: bool) -> tuple[RoomState, Prop]
     pg.display.set_mode((1, 1))
     prop_data = PropData(
         id="far_prop",
-        name="far prop",
         description="A far away prop.",
         image=Images.INTERACTABLE_GRAVEYARD_CHAINS,
         position=(100, 100),
         walk_to_interact=walk_to_interact,
     )
-    room_state = RoomState(RoomData("walk room", "walk room", "A room for walking.", props=(prop_data,)))
+    room_state = RoomState(RoomData("walk room", "A room for walking.", props=(prop_data,)))
     return room_state, room_state.room.props[0]
 
 
