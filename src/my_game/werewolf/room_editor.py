@@ -643,7 +643,7 @@ class DefinitionWidget(CTkFrame):
         room_ids: Sequence[str] = (),
     ) -> None:
         super().__init__(master)
-        self.kind = kind
+        self.kind: DefinitionKind = kind
         self.room_ids = tuple(room_ids)
         self.field_widgets: dict[str, object] = {}
         self.type_menu: CTkOptionMenu
@@ -748,7 +748,7 @@ class DefinitionListWidget(CTkFrame):
         room_ids: Sequence[str] = (),
     ) -> None:
         super().__init__(master)
-        self.kind = kind
+        self.kind: DefinitionKind = kind
         self.room_ids = tuple(room_ids)
         self.rows: list[DefinitionWidget] = []
 
