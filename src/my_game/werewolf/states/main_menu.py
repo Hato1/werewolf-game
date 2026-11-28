@@ -17,15 +17,21 @@ class MainMenuButton:
         self.image = image.load()
         self.selected_image = self.image.copy()
         self.selected_image.fill((255, 255, 0), special_flags=pg.BLEND_RGB_ADD)
+        self.rect = self.image.get_rect()
         self.image_mask = pg.mask.from_surface(self.image)
         self.font = font
         self.next_state = next_state
 
-    def draw(self, renderer: Renderer, *, selected: bool) -> None:
-        renderer(self.selected_image if selected else self.image, unlit=True)
+    def draw(self, renderer: Renderer, *, x_offset: int = 0, selected: bool) -> None:
+        self.rect = self.image.get_rect(topleft=(x_offset, 0))
+        renderer(self.selected_image if selected else self.image, self.rect, unlit=True)
 
-    def collidepoint(self, pos):
-        return self.image_mask.get_at((pos[0], pos[1]))
+    def collidepoint(self, pos) -> bool:
+        local_pos = (pos[0] - self.rect.x, pos[1] - self.rect.y)
+        try:
+            return bool(self.image_mask.get_at(local_pos))
+        except IndexError:
+            return False
 
 
 class MainMenu(State[WerewolfState, WerewolfTransitionData]):
@@ -84,11 +90,12 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
 
     def update(self, dt: float, input_state: InputState) -> None:
         self.total_dt += dt
-        self.clouds_rect.x = (
-            -self.total_dt * self.CLOUD_SPEED % self.clouds.get_width()
-        )  # Move clouds to the left over time
+
+        # Move clouds to the left over time
+        self.clouds_rect.x = -self.total_dt * self.CLOUD_SPEED % self.clouds.get_width()
 
     def draw(self, renderer: Renderer, dt: float) -> None:
+        # Draw second layer of clouds for seamless scrolling
         second_clouds_rect = self.clouds_rect.copy()
         second_clouds_rect.x -= self.clouds.get_width()
 
@@ -96,11 +103,17 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
         renderer(Images.BACKGROUND_FULLMOON.load())
         renderer(self.clouds, self.clouds_rect)
         renderer(self.clouds, second_clouds_rect)
-        renderer(Images.TITLE_SCREEN.load())
+        renderer(Images.BG_GEO2.load())
+        renderer(Images.BG_GEO3.load())
+        renderer(Images.TITLE_TEMEREV.load())
+        renderer(Images.TITLE_TREE.load())
 
-        renderer(Images.PLAQUE1.load())
+        plaque_x_offset = 350
+        plaque = Images.PLAQUE1.load()
+        plaque_rect = plaque.get_rect(topleft=(plaque_x_offset, 0))
+        renderer(plaque, plaque_rect)
 
         renderer(self.title_surface, self.title_rect, unlit=True)
 
         for i in range(len(self.buttons)):
-            self.buttons[i].draw(renderer, selected=self.button_index == i)
+            self.buttons[i].draw(renderer, x_offset=plaque_x_offset, selected=self.button_index == i)
