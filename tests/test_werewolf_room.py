@@ -103,7 +103,7 @@ def test_main_menu_opens_registered_room() -> None:
 def test_player_moves_with_held_input_and_animates() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    room_state = RoomState(rooms.INN)
+    room_state = RoomState(rooms.INN_INTERIOR)
     player = room_state.player
     start = player.position.copy()
 
@@ -124,7 +124,7 @@ def test_player_moves_with_held_input_and_animates() -> None:
 def test_player_stays_within_bounds() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
-    room_state = RoomState(rooms.INN)
+    room_state = RoomState(rooms.INN_INTERIOR)
     bounds = pg.Rect(0, 0, *SCREEN_SIZE)
 
     room_state.update(100.0, InputState(frozenset({Action.RIGHT, Action.DOWN}), {}))
@@ -136,7 +136,7 @@ def test_player_is_a_character() -> None:
     pg.init()
     pg.display.set_mode((1, 1))
 
-    assert isinstance(RoomState(rooms.INN).player, Character)
+    assert isinstance(RoomState(rooms.INN_INTERIOR).player, Character)
 
 
 def make_npc(

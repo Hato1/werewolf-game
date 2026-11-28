@@ -45,7 +45,7 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
 
     def __init__(self, room: RoomData | None = None) -> None:
         super().__init__()
-        self.room = Room.from_room_data(room or rooms.INN)
+        self.room = Room.from_room_data(room or rooms.INN_INTERIOR)
         self.message_font = Fonts.PICO8.load(self.MESSAGE_FONT_SIZE)
         # By having only one message surface, we ensure that only one message is shown at a time.
         self.message_surface: pg.Surface | None = None
@@ -158,13 +158,13 @@ class RoomState(State[WerewolfState, WerewolfTransitionData]):
         elif Action.DEBUG_ROOM_1 in actions:
             self.change_room(rooms.CHURCH_CEMETARY)
         elif Action.DEBUG_ROOM_2 in actions:
-            self.change_room(rooms.INN)
+            self.change_room(rooms.INN_INTERIOR)
         elif Action.DEBUG_ROOM_3 in actions:
             self.change_room(rooms.TOWN_CENTER)
         elif Action.DEBUG_ROOM_4 in actions:
             self.change_room(rooms.TOWN_ENTRANCE)
         elif Action.DEBUG_ROOM_5 in actions:
-            self.change_room(rooms.TOWN_HALL)
+            self.change_room(rooms.TOWN_HALL_EXTERIOR)
         elif Action.DEBUG_ROOM_6 in actions:
             self.change_room(rooms.WOODS)
         elif Action.DEBUG_ADD_ITEM in actions:

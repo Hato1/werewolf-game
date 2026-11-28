@@ -147,9 +147,9 @@ CHURCH_CEMETARY = RoomData(
     walkable_areas=(),
 )
 
-INN = RoomData(
-    id="Inn Room",
-    name="Inn Room",
+INN_INTERIOR = RoomData(
+    id="inn_interior",
+    name="Inn Interior",
     description="A room set in the inn.",
     props=(
         PropData(
@@ -466,9 +466,9 @@ TOWN_ENTRANCE = RoomData(
     walkable_areas=(),
 )
 
-TOWN_HALL = RoomData(
-    id="Town Hall Room",
-    name="Town Hall Room",
+TOWN_HALL_EXTERIOR = RoomData(
+    id="town_hall_exterior",
+    name="Town Hall Exterior",
     description="A room set in the town hall.",
     props=(
         props.BACKGROUND_TOWN_HALL,
@@ -618,9 +618,9 @@ WOODS = RoomData(
     walkable_areas=(),
 )
 
-INSIDE_TOWN_HALL = RoomData(
-    id="INSIDE_TOWN_HALL",
-    name="INSIDE_TOWN_HALL",
+TOWN_HALL_INTERIOR = RoomData(
+    id="town_hall_interior",
+    name="Town Hall Interior",
     description="",
     props=(
         PropData(
