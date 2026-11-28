@@ -17,7 +17,6 @@ class CharacterData:
     """Data representation of a character."""
 
     id: str
-    name: str
     description: str
     image: Images
     # Normal image for lighting engine.
@@ -40,7 +39,6 @@ class PropData:
     """Data representation of a prop."""
 
     id: str
-    name: str
     description: str
     image: Images
     # Normal image for lighting engine.
@@ -63,7 +61,6 @@ class RegionData:
     """Data representation of a region."""
 
     id: str
-    name: str
     description: str
     polygon: Polygon = field(default_factory=tuple)
     depth: int = 0
@@ -76,7 +73,6 @@ class NamedPointData:
     """Data representation of a point."""
 
     id: str
-    name: str
     description: str
     position: Point
     interactions: tuple[InteractionData, ...] = ()
@@ -87,7 +83,6 @@ class RoomData:
     """Data representation of a room."""
 
     id: str
-    name: str
     description: str
     props: tuple[PropData, ...] = field(default_factory=tuple)
     characters: tuple[CharacterData, ...] = field(default_factory=tuple)

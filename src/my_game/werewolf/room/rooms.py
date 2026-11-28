@@ -7,13 +7,11 @@ from my_game.werewolf.room.loaders import CharacterData, NamedPointData, PropDat
 
 TEST_ROOM = RoomData(
     id="Test Room",
-    name="Test Room",
     description="A room for testing the room rendering system.",
     props=(
         props.BACKGROUND_INN,
         PropData(
             id="Studio",
-            name="Studio",
             description="a tiny studio model.",
             image=Images.STUDIO,
             normal_image=None,
@@ -31,7 +29,6 @@ TEST_ROOM = RoomData(
         ),
         PropData(
             id="Prop2",
-            name="Prop2",
             description="New prop",
             image=Images.LANTERN_1,
             normal_image=None,
@@ -65,7 +62,6 @@ TEST_ROOM = RoomData(
     regions=(
         RegionData(
             id="Test Region",
-            name="Test Region",
             description="A region for testing purposes.",
             polygon=((10, 10), (100, 10), (100, 100), (10, 100)),
             depth=0,
@@ -76,7 +72,6 @@ TEST_ROOM = RoomData(
     points=(
         NamedPointData(
             id="Test Point",
-            name="Test Point",
             description="A test named point.",
             position=(324, 100),
             interactions=(),
@@ -87,12 +82,10 @@ TEST_ROOM = RoomData(
 
 TOWN_ENTRANCE = RoomData(
     id="Town Entrance Room",
-    name="Town Entrance Room",
     description="A room set in the town entrance.",
     props=(
         PropData(
             id="background town entrance",
-            name="background town entrance",
             description="New prop",
             image=Images.BACKGROUND_TOWN_ENTRANCE,
             normal_image=None,
@@ -110,7 +103,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="ammo",
-            name="ammo",
             description="New prop",
             image=Images.AMMO_2,
             normal_image=None,
@@ -128,7 +120,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="supplies",
-            name="supplies",
             description="New prop",
             image=Images.SUPPLIES1,
             normal_image=None,
@@ -146,7 +137,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="oil jug",
-            name="oil jug",
             description="New prop",
             image=Images.OIL_JUG1,
             normal_image=None,
@@ -164,7 +154,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="peddler stall",
-            name="peddler stall",
             description="New prop",
             image=Images.MERCHANT_STALL1,
             normal_image=None,
@@ -182,7 +171,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="tree",
-            name="tree",
             description="New prop",
             image=Images.BACKGROUND_TOWN_ENTRANCE2,
             normal_image=None,
@@ -200,7 +188,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="night_sky",
-            name="night_sky",
             description="New prop",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -218,7 +205,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="clouds",
-            name="clouds",
             description="New prop",
             image=Images.BACKGROUND_CLOUDS,
             normal_image=None,
@@ -236,7 +222,6 @@ TOWN_ENTRANCE = RoomData(
         ),
         PropData(
             id="geo",
-            name="geo",
             description="New prop",
             image=Images.BACKGROUND_GEO,
             normal_image=None,
@@ -256,7 +241,6 @@ TOWN_ENTRANCE = RoomData(
     characters=(
         CharacterData(
             id="Peddler",
-            name="Peddler",
             description="New character",
             image=Images.CHAR_MERCHANT,
             normal_image=None,
@@ -288,7 +272,6 @@ TOWN_ENTRANCE = RoomData(
     regions=(
         RegionData(
             id="to_hall_from_entrance",
-            name="to_hall_from_entrance",
             description="",
             polygon=((454, 144), (478, 144), (478, 206), (454, 204), (452, 147), (454, 146)),
             depth=0,
@@ -302,7 +285,6 @@ TOWN_ENTRANCE = RoomData(
 
 TOWN_CENTER = RoomData(
     id="Town Center Room",
-    name="Town Center Room",
     description="A room set in the town center.",
     props=(),
     characters=(),
@@ -313,12 +295,10 @@ TOWN_CENTER = RoomData(
 
 WOODS = RoomData(
     id="Woods Room",
-    name="Woods Room",
     description="A room set in the woods.",
     props=(
         PropData(
             id="woods",
-            name="woods",
             description="woods",
             image=Images.WOODS_1,
             normal_image=None,
@@ -336,7 +316,6 @@ WOODS = RoomData(
         ),
         PropData(
             id="pie tin",
-            name="pie tin",
             description="New prop",
             image=Images.PIE_TIN2,
             normal_image=None,
@@ -354,7 +333,6 @@ WOODS = RoomData(
         ),
         PropData(
             id="tax collector corpse",
-            name="tax collector corpse",
             description="New prop",
             image=Images.TAX_COLLECTOR_CORPSE,
             normal_image=None,
@@ -372,7 +350,6 @@ WOODS = RoomData(
         ),
         PropData(
             id="box of coins",
-            name="box of coins",
             description="New prop",
             image=Images.BOX_COINS,
             normal_image=None,
@@ -390,7 +367,6 @@ WOODS = RoomData(
         ),
         PropData(
             id="branch pile",
-            name="branch pile",
             description="New prop",
             image=Images.BRANCHES1,
             normal_image=None,
@@ -408,7 +384,6 @@ WOODS = RoomData(
         ),
         PropData(
             id="nightsky",
-            name="nightsky",
             description="nightsky",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -426,7 +401,6 @@ WOODS = RoomData(
         ),
         PropData(
             id="prop_6",
-            name="Prop6",
             description="New prop",
             image=Images.BACKGROUND_CLOUDS,
             normal_image=None,
@@ -447,7 +421,6 @@ WOODS = RoomData(
     regions=(
         RegionData(
             id="to_inn_from_woods",
-            name="Region 1",
             description="",
             polygon=((2, 167), (40, 165), (40, 206), (0, 208)),
             depth=0,
@@ -473,12 +446,10 @@ WOODS = RoomData(
 
 INN_INTERIOR = RoomData(
     id="inn_interior",
-    name="Inn Interior",
     description="A room set in the inn.",
     props=(
         PropData(
             id="Inn Background",
-            name="Inn Background",
             description="The inn background.",
             image=Images.INN,
             normal_image=Images.BACKGROUND_INN_NN,
@@ -496,7 +467,6 @@ INN_INTERIOR = RoomData(
         ),
         PropData(
             id="tankard",
-            name="tankard",
             description="An interactable set of graveyard chains.",
             image=Images.TANKARD_2,
             normal_image=None,
@@ -514,7 +484,6 @@ INN_INTERIOR = RoomData(
         ),
         PropData(
             id="table",
-            name="table",
             description="New prop",
             image=Images.INN_TABLE,
             normal_image=None,
@@ -532,7 +501,6 @@ INN_INTERIOR = RoomData(
         ),
         PropData(
             id="lamp",
-            name="lamp",
             description="New prop",
             image=Images.INN_LAMP,
             normal_image=None,
@@ -552,7 +520,6 @@ INN_INTERIOR = RoomData(
     characters=(
         CharacterData(
             id="innkeeper",
-            name="innkeeper",
             description="New character",
             image=Images.CHAR_INNK,
             normal_image=Images.CHAR_INNK_NN,
@@ -584,7 +551,6 @@ INN_INTERIOR = RoomData(
     regions=(
         RegionData(
             id="inn_door",
-            name="door_teleporter",
             description="",
             polygon=((451, 169), (469, 193), (463, 194), (446, 170)),
             depth=0,
@@ -605,7 +571,6 @@ INN_INTERIOR = RoomData(
         ),
         RegionData(
             id="inn_window",
-            name="window",
             description="It's getting dark, I better finish my work quickly.",
             polygon=((344, 38), (398, 38), (398, 108), (344, 109), (344, 38)),
             depth=0,
@@ -614,7 +579,6 @@ INN_INTERIOR = RoomData(
         ),
         RegionData(
             id="staircase",
-            name="staircase",
             description="I haven't paid for a room...",
             polygon=((274, 179), (260, 179), (116, 13), (141, 16), (143, 0), (150, 0), (277, 128), (281, 156)),
             depth=0,
@@ -628,12 +592,10 @@ INN_INTERIOR = RoomData(
 
 INN_EXTERIOR = RoomData(
     id="INN_EXTERIOR",
-    name="INN_EXTERIOR",
     description="",
     props=(
         PropData(
             id="inn_exterior",
-            name="inn_exterior",
             description="New prop",
             image=Images.BACKGROUND_TOWN_INN1,
             normal_image=None,
@@ -651,7 +613,6 @@ INN_EXTERIOR = RoomData(
         ),
         PropData(
             id="night_sky",
-            name="night_sky",
             description="New prop",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -669,7 +630,6 @@ INN_EXTERIOR = RoomData(
         ),
         PropData(
             id="ground_marks",
-            name="ground_marks",
             description="New prop",
             image=Images.DRAG_MARKS,
             normal_image=None,
@@ -687,7 +647,6 @@ INN_EXTERIOR = RoomData(
         ),
         PropData(
             id="clouds",
-            name="clouds",
             description="New prop",
             image=Images.BACKGROUND_CLOUDS,
             normal_image=None,
@@ -705,7 +664,6 @@ INN_EXTERIOR = RoomData(
         ),
         PropData(
             id="geo",
-            name="geo",
             description="New prop",
             image=Images.BACKGROUND_GEO,
             normal_image=None,
@@ -723,7 +681,6 @@ INN_EXTERIOR = RoomData(
         ),
         PropData(
             id="prop_5",
-            name="Prop5",
             description="New prop",
             image=Images.SIGN1,
             normal_image=None,
@@ -744,7 +701,6 @@ INN_EXTERIOR = RoomData(
     regions=(
         RegionData(
             id="to_inn_from_outdoors",
-            name="Region 1",
             description="",
             polygon=((318, 150), (345, 148), (349, 155), (319, 158)),
             depth=0,
@@ -765,7 +721,6 @@ INN_EXTERIOR = RoomData(
         ),
         RegionData(
             id="to_woods_from_inn",
-            name="Region 2",
             description="",
             polygon=((0, 192), (19, 191), (19, 207), (1, 206)),
             depth=0,
@@ -786,7 +741,6 @@ INN_EXTERIOR = RoomData(
         ),
         RegionData(
             id="region_3",
-            name="Region 3",
             description="",
             polygon=((478, 152), (453, 150), (455, 207), (478, 204)),
             depth=0,
@@ -800,12 +754,10 @@ INN_EXTERIOR = RoomData(
 
 TOWN_HALL_INTERIOR = RoomData(
     id="town_hall_interior",
-    name="Town Hall Interior",
     description="",
     props=(
         PropData(
             id="hall_background",
-            name="hall_background",
             description="New prop",
             image=Images.BACKGROUND_HALL,
             normal_image=None,
@@ -823,7 +775,6 @@ TOWN_HALL_INTERIOR = RoomData(
         ),
         PropData(
             id="dresser",
-            name="dresser",
             description="New prop",
             image=Images.DRESSER_1,
             normal_image=None,
@@ -841,7 +792,6 @@ TOWN_HALL_INTERIOR = RoomData(
         ),
         PropData(
             id="boots",
-            name="boots",
             description="New prop",
             image=Images.BOOTS_1,
             normal_image=None,
@@ -861,7 +811,6 @@ TOWN_HALL_INTERIOR = RoomData(
     characters=(
         CharacterData(
             id="Mayor",
-            name="Mayor",
             description="New character",
             image=Images.CHAR_ELDER,
             normal_image=None,
@@ -893,7 +842,6 @@ TOWN_HALL_INTERIOR = RoomData(
     regions=(
         RegionData(
             id="region_1",
-            name="Region 1",
             description="",
             polygon=((28, 170), (38, 169), (26, 196), (11, 195)),
             depth=0,
@@ -919,12 +867,10 @@ TOWN_HALL_INTERIOR = RoomData(
 
 TOWN_HALL_EXTERIOR = RoomData(
     id="town_hall_exterior",
-    name="Town Hall Exterior",
     description="A room set in the town hall.",
     props=(
         PropData(
             id="town_hall_background",
-            name="Town Hall Background",
             description="The town hall background.",
             image=Images.BACKGROUND_TOWN_HALL_1,
             normal_image=None,
@@ -942,7 +888,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         PropData(
             id="Sky",
-            name="Sky",
             description="New prop",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -960,7 +905,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         PropData(
             id="Tree and Cart",
-            name="Tree and Cart",
             description="New prop",
             image=Images.BACKGROUND_TOWN_HALL_2,
             normal_image=None,
@@ -978,7 +922,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         PropData(
             id="clouds",
-            name="clouds",
             description="New prop",
             image=Images.BACKGROUND_CLOUDS,
             normal_image=None,
@@ -996,7 +939,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         PropData(
             id="geo",
-            name="geo",
             description="New prop",
             image=Images.BACKGROUND_GEO,
             normal_image=None,
@@ -1017,7 +959,6 @@ TOWN_HALL_EXTERIOR = RoomData(
     regions=(
         RegionData(
             id="to_town_hall_from_outdoors",
-            name="Region 1",
             description="",
             polygon=((215, 134), (254, 134), (263, 145), (204, 146)),
             depth=0,
@@ -1038,7 +979,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         RegionData(
             id="to_church_from_town_hall",
-            name="Region 2",
             description="",
             polygon=((479, 137), (479, 180), (472, 180), (470, 136)),
             depth=0,
@@ -1059,7 +999,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         RegionData(
             id="to_inn_from_town_hall",
-            name="Region 3a",
             description="",
             polygon=((1, 179), (1, 148), (15, 147), (15, 179)),
             depth=0,
@@ -1080,7 +1019,6 @@ TOWN_HALL_EXTERIOR = RoomData(
         ),
         RegionData(
             id="to_town_entrance_from_town_hall",
-            name="Region 4",
             description="",
             polygon=((133, 207), (328, 207), (323, 201), (140, 199)),
             depth=0,
@@ -1106,12 +1044,10 @@ TOWN_HALL_EXTERIOR = RoomData(
 
 CHURCH_INTERIOR = RoomData(
     id="church_interior",
-    name="church_interior",
     description="",
     props=(
         PropData(
             id="church_background",
-            name="church_background",
             description="New prop",
             image=Images.BACKGROUND_CHURCH,
             normal_image=None,
@@ -1129,7 +1065,6 @@ CHURCH_INTERIOR = RoomData(
         ),
         PropData(
             id="clothes basket",
-            name="clothes basket",
             description="New prop",
             image=Images.CLOTHES_BASKET_1,
             normal_image=None,
@@ -1149,7 +1084,6 @@ CHURCH_INTERIOR = RoomData(
     characters=(
         CharacterData(
             id="nun",
-            name="nun",
             description="New character",
             image=Images.CHAR_NUN,
             normal_image=None,
@@ -1181,7 +1115,6 @@ CHURCH_INTERIOR = RoomData(
     regions=(
         RegionData(
             id="region_1",
-            name="Region 1",
             description="",
             polygon=((1, 206), (28, 198), (70, 200), (63, 207)),
             depth=0,
@@ -1195,12 +1128,10 @@ CHURCH_INTERIOR = RoomData(
 
 CHURCH_EXTERIOR = RoomData(
     id="CHURCH_EXTERIOR",
-    name="CHURCH_EXTERIOR",
     description="",
     props=(
         PropData(
             id="church_background",
-            name="Prop0",
             description="New prop",
             image=Images.BACKGROUND_CLOUDS,
             normal_image=None,
@@ -1218,7 +1149,6 @@ CHURCH_EXTERIOR = RoomData(
         ),
         PropData(
             id="clouds",
-            name="Prop1",
             description="New prop",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -1236,7 +1166,6 @@ CHURCH_EXTERIOR = RoomData(
         ),
         PropData(
             id="prop_2",
-            name="Prop2",
             description="New prop",
             image=Images.BACKGROUND_GEO,
             normal_image=None,
@@ -1254,7 +1183,6 @@ CHURCH_EXTERIOR = RoomData(
         ),
         PropData(
             id="prop_3",
-            name="Prop3",
             description="New prop",
             image=Images.BACKGROUND_TOWN_CHURCH1,
             normal_image=None,
@@ -1272,7 +1200,6 @@ CHURCH_EXTERIOR = RoomData(
         ),
         PropData(
             id="prop_4",
-            name="Prop4",
             description="New prop",
             image=Images.SIGN2,
             normal_image=None,
@@ -1293,7 +1220,6 @@ CHURCH_EXTERIOR = RoomData(
     regions=(
         RegionData(
             id="to_church_from_outdoors",
-            name="Region 1",
             description="",
             polygon=((373, 175), (399, 174), (401, 178), (373, 179)),
             depth=0,
@@ -1314,7 +1240,6 @@ CHURCH_EXTERIOR = RoomData(
         ),
         RegionData(
             id="to_town_hall_from_church",
-            name="Region 2",
             description="",
             polygon=((6, 174), (7, 207), (1, 206), (1, 172)),
             depth=0,
@@ -1335,7 +1260,6 @@ CHURCH_EXTERIOR = RoomData(
         ),
         RegionData(
             id="region_3",
-            name="Region 3",
             description="",
             polygon=((430, 176), (446, 185), (454, 168), (438, 166)),
             depth=0,
@@ -1349,12 +1273,10 @@ CHURCH_EXTERIOR = RoomData(
 
 CHURCH_CEMETARY = RoomData(
     id="church_cemetary",
-    name="Church Cemetary Room",
     description="A room set in the church cemetary.",
     props=(
         PropData(
             id="church_cemetary_background",
-            name="Church Cemetary Background",
             description="The church cemetary background.",
             image=Images.CHURCH_CEMETARY,
             normal_image=None,
@@ -1372,7 +1294,6 @@ CHURCH_CEMETARY = RoomData(
         ),
         PropData(
             id="chains",
-            name="chains",
             description="New prop",
             image=Images.CHAINS_1,
             normal_image=None,
@@ -1390,7 +1311,6 @@ CHURCH_CEMETARY = RoomData(
         ),
         PropData(
             id="nightsky",
-            name="nightsky",
             description="New prop",
             image=Images.BACKGROUND_NIGHTSKY,
             normal_image=None,
@@ -1408,7 +1328,6 @@ CHURCH_CEMETARY = RoomData(
         ),
         PropData(
             id="clouds",
-            name="clouds",
             description="clouds",
             image=Images.BACKGROUND_CLOUDS,
             normal_image=None,
@@ -1426,7 +1345,6 @@ CHURCH_CEMETARY = RoomData(
         ),
         PropData(
             id="geo",
-            name="geo",
             description="geo",
             image=Images.BACKGROUND_GEO,
             normal_image=None,
@@ -1446,7 +1364,6 @@ CHURCH_CEMETARY = RoomData(
     characters=(
         CharacterData(
             id="groundskeeper",
-            name="groundskeeper",
             description="groundskeeper",
             image=Images.CHAR_GRNDK,
             normal_image=Images.CHAR_GRNDK_NORMAL,
@@ -1466,7 +1383,6 @@ CHURCH_CEMETARY = RoomData(
     regions=(
         RegionData(
             id="to_shed",
-            name="to_shed",
             description="to_shed",
             polygon=((412, 162), (410, 105), (450, 104), (450, 174)),
             depth=0,
@@ -1475,7 +1391,6 @@ CHURCH_CEMETARY = RoomData(
         ),
         RegionData(
             id="to_church_exterior",
-            name="to_church_exterior",
             description="to_church_exterior",
             polygon=((26, 202), (0, 205), (0, 188), (24, 184)),
             depth=0,
@@ -1489,12 +1404,10 @@ CHURCH_CEMETARY = RoomData(
 
 CHURCH_SHED = RoomData(
     id="church_shed",
-    name="Church Shed",
     description="",
     props=(
         PropData(
             id="shed background",
-            name="shed background",
             description="New prop",
             image=Images.CEMETARY_SHED,
             normal_image=None,
@@ -1512,7 +1425,6 @@ CHURCH_SHED = RoomData(
         ),
         PropData(
             id="door handle",
-            name="door handle",
             description="New prop",
             image=Images.DOOR_HANDLE2,
             normal_image=None,
@@ -1530,7 +1442,6 @@ CHURCH_SHED = RoomData(
         ),
         PropData(
             id="hook",
-            name="hook",
             description="New prop",
             image=Images.INTERACTABLE_SHED_HOOK,
             normal_image=None,
@@ -1548,7 +1459,6 @@ CHURCH_SHED = RoomData(
         ),
         PropData(
             id="chest",
-            name="chest",
             description="New prop",
             image=Images.CHEST_1,
             normal_image=None,
@@ -1566,7 +1476,6 @@ CHURCH_SHED = RoomData(
         ),
         PropData(
             id="rags",
-            name="rags",
             description="New prop",
             image=Images.RAGS_1,
             normal_image=None,
@@ -1587,7 +1496,6 @@ CHURCH_SHED = RoomData(
     regions=(
         RegionData(
             id="to_graveyard_from_shed",
-            name="Region 1",
             description="",
             polygon=((118, 202), (353, 198), (366, 207), (110, 208)),
             depth=0,
