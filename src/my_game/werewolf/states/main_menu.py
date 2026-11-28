@@ -113,6 +113,7 @@ class MainMenu(State[WerewolfState, WerewolfTransitionData]):
                     self.press_button()
 
         if event.type == pg.MOUSEMOTION:
+            self.mouse_pos = event.pos
             for i, button in enumerate(self.buttons):
                 if button.collidepoint(event.pos):
                     self.button_index = i
